@@ -1088,7 +1088,7 @@
                 this.hostSeat = null;
                 this.guestSeat = null;
                 
-                // Workspace
+                // Workspace - Initialize channels properly
                 this.currentChannel = 'general';
                 this.channels = {
                     general: { messages: [] },
@@ -1102,6 +1102,7 @@
                 
                 // Security features
                 this.roomPassword = null;
+                this.needsRoomPassword = false;
                 this.messageAutoDelete = null;
                 
                 this.init();
@@ -1209,10 +1210,17 @@
                 // For DEFCON 1, this becomes the room password everyone needs
                 if (this.securityLevel === 1) {
                     this.roomPassword = password;
+                    // Note: In a real app, this would be hashed and verified securely
                 }
                 
                 this.userName = name;
                 this.isHost = true;
+                
+                // Initialize channels for host
+                this.channels = {
+                    general: { messages: [] },
+                    random: { messages: [] }
+                };
                 
                 // Generate cryptographic seats
                 this.hostSeat = await this.crypto.generateSeat();
@@ -1220,6 +1228,7 @@
                 
                 // Derive initial key from guest seat (shared with joiners)
                 await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
+                console.log('[CREATE] Encryption key derived from guest seat');
                 
                 this.showWorkspace();
                 this.addSystemMessage(`Welcome to ${this.workspaceId}! Share the invite link to add teammates.`);
@@ -1235,16 +1244,31 @@
                 }
                 
                 // Check room password for DEFCON 1
-                if (this.securityLevel === 1) {
+                if (this.securityLevel === 1 && this.needsRoomPassword) {
                     const password = document.getElementById('joiner-password').value;
-                    if (!password || password !== this.roomPassword) {
-                        this.showToast('Invalid room password', 'error');
+                    // For now, we can't validate the password since it's not in the invite
+                    // In a real app, this would validate against a server or use PAKE
+                    if (!password) {
+                        this.showToast('Room password required', 'error');
                         return;
                     }
+                    this.roomPassword = password; // Store for later verification
                 }
                 
                 this.userName = name;
                 this.isHost = false;
+                
+                // Initialize channels for joiners (critical fix!)
+                this.channels = {
+                    general: { messages: [] },
+                    random: { messages: [] }
+                };
+                
+                // Derive encryption key from guest seat
+                if (this.guestSeat) {
+                    await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
+                    console.log('[JOIN] Encryption key derived from guest seat');
+                }
                 
                 this.showWorkspace();
             }
@@ -1281,9 +1305,6 @@
                             secret: Uint8Array.from(atob(data.guestSeat.secret), c => c.charCodeAt(0)),
                             id: Uint8Array.from(atob(data.guestSeat.id), c => c.charCodeAt(0))
                         };
-                        
-                        // Derive shared key
-                        await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
                     }
                     
                     // Show invite info
@@ -1301,7 +1322,9 @@
                     // Show password field if DEFCON 1
                     if (data.needsPassword) {
                         document.getElementById('join-password-group').classList.remove('hidden');
-                        this.roomPassword = true; // Flag that password is needed
+                        this.needsRoomPassword = true; // Flag that password is needed
+                        // Note: The actual password is NOT in the invite for security
+                        // It must be communicated separately
                     }
                     
                     return true;
@@ -1388,7 +1411,9 @@
                         if (data.target === this.userId) {
                             const peer = this.peers.get(from);
                             if (peer) {
-                                await peer.pc.addIceCandidate(data.candidate);
+                                // Create RTCIceCandidate from plain object
+                                const candidate = new RTCIceCandidate(data.candidate);
+                                await peer.pc.addIceCandidate(candidate);
                             }
                         }
                         break;
@@ -1416,7 +1441,7 @@
                             from: this.userId,
                             data: {
                                 type: 'ice',
-                                candidate: event.candidate,
+                                candidate: event.candidate.toJSON(), // Serialize to plain object
                                 target: peerId
                             }
                         });
@@ -1456,37 +1481,48 @@
             setupDataChannel(peer) {
                 const channel = peer.channel;
                 
+                console.log('[CHANNEL] Setting up data channel for', peer.name);
+                
                 channel.onopen = async () => {
-                    console.log(`Connected to ${peer.name}`);
+                    console.log('[CHANNEL] Data channel OPEN with', peer.name);
                     this.pendingConnections.delete(peer.id);
                     
                     // Show verification for DEFCON 1-2
                     if (this.securityLevel <= 2) {
                         this.showVerification(peer);
                     } else {
+                        console.log('[CHANNEL] Auto-verifying for security level', this.securityLevel);
                         peer.verified = true;
                         this.onPeerConnected(peer);
                     }
                 };
                 
                 channel.onmessage = async (event) => {
+                    console.log('[CHANNEL] Message received from', peer.name, 'size:', event.data.length);
                     try {
                         // Decrypt if we have a key
                         let data;
                         if (this.crypto.currentKey) {
+                            console.log('[CHANNEL] Decrypting message');
                             data = await this.crypto.decrypt(event.data);
                         } else {
+                            console.log('[CHANNEL] Parsing plain message');
                             data = JSON.parse(event.data);
                         }
                         
                         this.handlePeerMessage(peer, data);
                     } catch (e) {
-                        console.error('Message handling error:', e);
+                        console.error('[CHANNEL] Message handling error:', e);
                     }
                 };
                 
                 channel.onclose = () => {
+                    console.log('[CHANNEL] Data channel CLOSED with', peer.name);
                     this.handleDisconnect(peer.id, peer.name);
+                };
+                
+                channel.onerror = (error) => {
+                    console.error('[CHANNEL] Data channel error with', peer.name, error);
                 };
             }
             
@@ -1513,15 +1549,20 @@
             
             // Verification for high security levels
             showVerification(peer) {
-                if (this.securityLevel > 2) {
+                // Auto-verify for DEFCON 3+
+                if (this.securityLevel >= 3) {
+                    console.log('[VERIFY] Auto-verifying peer for security level', this.securityLevel);
                     peer.verified = true;
                     this.onPeerConnected(peer);
                     return;
                 }
                 
+                // Show verification modal for DEFCON 1-2
+                console.log('[VERIFY] Showing verification for', peer.name);
+                
                 // Generate verification codes
-                const fingerprint = this.crypto.generateFingerprint(this.crypto.salt);
-                const emojis = this.crypto.generateEmojiFingerprint(this.crypto.salt);
+                const fingerprint = this.crypto.generateFingerprint(this.crypto.salt || new Uint8Array(16));
+                const emojis = this.crypto.generateEmojiFingerprint(this.crypto.salt || new Uint8Array(16));
                 
                 this.pendingVerifications.set(peer.id, peer);
                 
@@ -1529,11 +1570,6 @@
                 document.getElementById('verification-code').textContent = fingerprint;
                 document.getElementById('verification-emoji').textContent = emojis;
                 document.getElementById('verification-modal').classList.remove('hidden');
-                
-                // Auto-accept for DEFCON 3+
-                if (this.securityLevel >= 3) {
-                    setTimeout(() => this.acceptVerification(), 3000);
-                }
             }
             
             acceptVerification() {
@@ -1579,33 +1615,63 @@
                     timestamp: Date.now()
                 };
                 
+                console.log('[SEND] Creating message:', message);
+                
                 this.channels[this.currentChannel].messages.push(message);
                 this.addMessageToUI(message);
                 
                 input.value = '';
                 
+                // Check peer status
+                console.log('[SEND] Active peers:', this.peers.size);
+                
                 // Broadcast encrypted to all verified peers
-                for (const peer of this.peers.values()) {
+                let sentCount = 0;
+                for (const [peerId, peer] of this.peers.entries()) {
+                    console.log(`[SEND] Peer ${peer.name}: channel=${peer.channel?.readyState}, verified=${peer.verified}`);
+                    
                     if (peer.channel?.readyState === 'open' && peer.verified) {
                         const payload = {
                             type: 'message',
                             message: message
                         };
                         
-                        if (this.crypto.currentKey) {
-                            const encrypted = await this.crypto.encrypt(payload);
-                            peer.channel.send(encrypted);
-                        } else {
-                            peer.channel.send(JSON.stringify(payload));
+                        try {
+                            if (this.crypto.currentKey) {
+                                console.log('[SEND] Encrypting message for', peer.name);
+                                const encrypted = await this.crypto.encrypt(payload);
+                                peer.channel.send(encrypted);
+                            } else {
+                                console.log('[SEND] Sending plain message to', peer.name);
+                                peer.channel.send(JSON.stringify(payload));
+                            }
+                            sentCount++;
+                        } catch (err) {
+                            console.error('[SEND] Error sending to', peer.name, err);
                         }
                     }
+                }
+                
+                console.log(`[SEND] Message sent to ${sentCount} peers`);
+                
+                if (sentCount === 0 && this.peers.size > 0) {
+                    console.warn('[SEND] No messages sent despite having peers!');
                 }
             }
             
             handlePeerMessage(peer, data) {
+                console.log('[RECEIVE] Message from', peer.name, 'type:', data.type);
+                
                 switch (data.type) {
                     case 'sync':
+                        console.log('[RECEIVE] Syncing', data.messages?.length || 0, 'messages');
                         data.messages?.forEach(msg => {
+                            // Ensure channel exists
+                            if (!this.channels[msg.channel]) {
+                                console.log('[RECEIVE] Creating missing channel:', msg.channel);
+                                this.channels[msg.channel] = { messages: [] };
+                            }
+                            
                             if (!this.messageExists(msg)) {
                                 this.channels[msg.channel].messages.push(msg);
                                 if (msg.channel === this.currentChannel) {
@@ -1617,13 +1683,29 @@
                         
                     case 'message':
                         const msg = data.message;
+                        console.log('[RECEIVE] New message:', msg);
+                        
+                        // Ensure channel exists
+                        if (!this.channels[msg.channel]) {
+                            console.log('[RECEIVE] Creating missing channel:', msg.channel);
+                            this.channels[msg.channel] = { messages: [] };
+                        }
+                        
                         if (!this.messageExists(msg)) {
                             this.channels[msg.channel].messages.push(msg);
                             if (msg.channel === this.currentChannel) {
                                 this.addMessageToUI(msg);
+                                console.log('[RECEIVE] Added message to UI');
+                            } else {
+                                console.log('[RECEIVE] Message for different channel:', msg.channel);
                             }
+                        } else {
+                            console.log('[RECEIVE] Duplicate message ignored');
                         }
                         break;
+                        
+                    default:
+                        console.log('[RECEIVE] Unknown message type:', data.type);
                 }
             }
             
@@ -1726,6 +1808,10 @@
             }
             
             messageExists(message) {
+                // Add safety check for channel existence
+                if (!this.channels[message.channel]) {
+                    this.channels[message.channel] = { messages: [] };
+                }
                 return this.channels[message.channel].messages.some(m => m.id === message.id);
             }
             
