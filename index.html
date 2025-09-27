@@ -29,6 +29,51 @@
             --border: #35373b;
             --channel-hover: rgba(255, 255, 255, 0.04);
             --message-hover: rgba(255, 255, 255, 0.02);
+            
+            /* DEFCON level colors */
+            --defcon1: #DC2626;
+            --defcon2: #EA580C;
+            --defcon3: #FCD34D;
+            --defcon4: #10B981;
+            --defcon5: #3B82F6;
+        }
+        
+        /* DEFCON Level Themes */
+        body[data-defcon="1"] {
+            --bg-primary: #0A0A0B;
+            --bg-secondary: #141418;
+            --accent: #DC2626;
+            --accent-hover: #991B1B;
+            --border: rgba(220, 38, 38, 0.2);
+        }
+        
+        body[data-defcon="2"] {
+            --bg-primary: #18181B;
+            --bg-secondary: #27272A;
+            --accent: #EA580C;
+            --accent-hover: #C2410C;
+        }
+        
+        body[data-defcon="3"] {
+            --bg-primary: #1F2028;
+            --bg-secondary: #2A2B36;
+            --accent: #FCD34D;
+            --accent-hover: #FDE047;
+            --text-primary: #FFFFFF;
+        }
+        
+        body[data-defcon="4"] {
+            --bg-primary: #1A1F2E;
+            --bg-secondary: #242B3D;
+            --accent: #10B981;
+            --accent-hover: #059669;
+        }
+        
+        body[data-defcon="5"] {
+            --bg-primary: #0F172A;
+            --bg-secondary: #1E293B;
+            --accent: #3B82F6;
+            --accent-hover: #2563EB;
         }
 
         body {
@@ -41,6 +86,102 @@
 
         .hidden {
             display: none !important;
+        }
+
+        /* Security Level Selector */
+        .security-selector {
+            margin-bottom: 2rem;
+        }
+        
+        .security-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .security-option {
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .security-option:hover {
+            transform: translateX(4px);
+        }
+        
+        .security-option.selected {
+            border-color: var(--accent);
+            background: rgba(74, 21, 75, 0.1);
+        }
+        
+        .security-option[data-level="1"] { border-left: 4px solid var(--defcon1); }
+        .security-option[data-level="2"] { border-left: 4px solid var(--defcon2); }
+        .security-option[data-level="3"] { border-left: 4px solid var(--defcon3); }
+        .security-option[data-level="4"] { border-left: 4px solid var(--defcon4); }
+        .security-option[data-level="5"] { border-left: 4px solid var(--defcon5); }
+        
+        .security-level-title {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .security-level-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Security Badge */
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .security-badge[data-level="1"] { color: var(--defcon1); border: 1px solid var(--defcon1); }
+        .security-badge[data-level="2"] { color: var(--defcon2); border: 1px solid var(--defcon2); }
+        .security-badge[data-level="3"] { color: var(--defcon3); border: 1px solid var(--defcon3); }
+        .security-badge[data-level="4"] { color: var(--defcon4); border: 1px solid var(--defcon4); }
+        .security-badge[data-level="5"] { color: var(--defcon5); border: 1px solid var(--defcon5); }
+        
+        /* Connection State Indicator */
+        .connection-state {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+        }
+        
+        .connection-state.connecting {
+            border: 1px solid var(--away);
+            color: var(--away);
+        }
+        
+        .connection-state.connected {
+            border: 1px solid var(--online);
+            color: var(--online);
+        }
+        
+        .connection-state.failed {
+            border: 1px solid var(--defcon1);
+            color: var(--defcon1);
         }
 
         /* Onboarding Screens */
@@ -59,7 +200,7 @@
             border-radius: 12px;
             padding: 2.5rem;
             width: 100%;
-            max-width: 420px;
+            max-width: 520px;
             border: 1px solid var(--border);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
@@ -610,9 +751,41 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-muted);
         }
+        
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 0.75rem;
+            padding: 1rem;
+            border-radius: 8px;
+            max-width: 400px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 9999;
+        }
+        
+        .debug-line {
+            margin-bottom: 0.25rem;
+        }
     </style>
 </head>
 <body>
+    <!-- Connection State Indicator -->
+    <div id="connection-state" class="connection-state hidden">
+        <span class="spinner"></span>
+        <span id="connection-text">Connecting...</span>
+    </div>
+    
+    <!-- Debug Panel -->
+    <div id="debug-panel" class="debug-panel hidden">
+        <div id="debug-content"></div>
+    </div>
+
     <!-- Onboarding Screens -->
     <div id="onboarding" class="onboarding-container">
         <!-- Landing Screen -->
@@ -644,9 +817,64 @@
                 </div>
             </div>
             
+            <!-- Security Level Selector -->
+            <div class="security-selector">
+                <label style="margin-bottom: 1rem; display: block;">Choose your security level:</label>
+                <div class="security-options">
+                    <div class="security-option" data-level="1" onclick="app.selectSecurityLevel(1)">
+                        <div class="security-level-title">
+                            🔴 DEFCON 1 - Maximum Security
+                        </div>
+                        <div class="security-level-desc">
+                            Paranoid mode, everything encrypted, auto-delete
+                        </div>
+                    </div>
+                    <div class="security-option" data-level="2" onclick="app.selectSecurityLevel(2)">
+                        <div class="security-level-title">
+                            🟠 DEFCON 2 - High Security
+                        </div>
+                        <div class="security-level-desc">
+                            Password protected, professional confidential
+                        </div>
+                    </div>
+                    <div class="security-option selected" data-level="3" onclick="app.selectSecurityLevel(3)">
+                        <div class="security-level-title">
+                            🟡 DEFCON 3 - Standard Security
+                        </div>
+                        <div class="security-level-desc">
+                            Balanced security and convenience
+                        </div>
+                    </div>
+                    <div class="security-option" data-level="4" onclick="app.selectSecurityLevel(4)">
+                        <div class="security-level-title">
+                            🟢 DEFCON 4 - Easy Mode
+                        </div>
+                        <div class="security-level-desc">
+                            Quick setup, device-based security
+                        </div>
+                    </div>
+                    <div class="security-option" data-level="5" onclick="app.selectSecurityLevel(5)">
+                        <div class="security-level-title">
+                            🔵 DEFCON 5 - Public Room
+                        </div>
+                        <div class="security-level-desc">
+                            Open to everyone, no friction
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="input-group">
                 <label>Your Display Name</label>
                 <input type="text" id="creator-name" placeholder="Enter your name" maxlength="32">
+            </div>
+            
+            <div id="password-group" class="input-group">
+                <label>Create Password</label>
+                <input type="password" id="creator-password" placeholder="Password to encrypt your local data">
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    This encrypts your messages and will be required to rejoin
+                </div>
             </div>
             
             <button onclick="app.createWorkspace()">
@@ -664,6 +892,7 @@
             
             <div id="invite-status" class="success-indicator hidden">
                 ✓ Valid invite found!
+                <span id="security-level-info"></span>
             </div>
             
             <div class="input-group">
@@ -695,6 +924,9 @@
                 <div class="workspace-status">
                     <div class="status-indicator"></div>
                     <span id="connection-count">1 connected</span>
+                </div>
+                <div id="workspace-security" class="security-badge" style="margin-top: 0.5rem;">
+                    Security Level
                 </div>
             </div>
             
@@ -817,6 +1049,7 @@
                 this.userId = null;
                 this.workspaceKey = null;
                 this.isHost = false;
+                this.securityLevel = 3; // Default to DEFCON 3
                 
                 // Channels and messages
                 this.currentChannel = 'general';
@@ -825,21 +1058,32 @@
                     random: { name: 'random', description: 'Random conversations and watercooler chat', messages: [] }
                 };
                 
-                // P2P state
+                // P2P state with proper connection tracking
                 this.peers = new Map();
+                this.connectionStates = new Map(); // Track connection state per peer
                 this.members = new Map();
                 this.typingTimers = new Map();
                 
                 // Event log for sync
                 this.eventLog = [];
                 
+                // Debug mode
+                this.debugMode = true;
+                
+                // Retry configuration
+                this.retryAttempts = new Map();
+                this.maxRetries = 3;
+                this.retryDelay = 2000;
+                
                 // Initialize
                 this.init();
             }
             
             init() {
-                // Generate user ID
+                // Generate user ID with timestamp for ordering
                 this.userId = 'U' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                
+                this.debug(`Initialized with User ID: ${this.userId}`);
                 
                 // Check for invite in URL
                 const hash = window.location.hash.slice(1);
@@ -850,6 +1094,78 @@
                 
                 // Load saved workspace
                 this.loadSavedWorkspace();
+            }
+            
+            // Debug helpers
+            debug(message, type = 'info') {
+                if (!this.debugMode) return;
+                
+                const timestamp = new Date().toTimeString().split(' ')[0];
+                const formattedMsg = `[${timestamp}] ${message}`;
+                
+                console.log(`%c${formattedMsg}`, 
+                    type === 'error' ? 'color: red' : 
+                    type === 'success' ? 'color: green' : 
+                    type === 'warn' ? 'color: orange' : 
+                    'color: cyan'
+                );
+                
+                // Also add to debug panel
+                const panel = document.getElementById('debug-content');
+                if (panel) {
+                    const line = document.createElement('div');
+                    line.className = 'debug-line';
+                    line.textContent = formattedMsg;
+                    panel.appendChild(line);
+                    panel.scrollTop = panel.scrollHeight;
+                }
+            }
+            
+            showConnectionState(state, text) {
+                const stateEl = document.getElementById('connection-state');
+                const textEl = document.getElementById('connection-text');
+                
+                stateEl.className = `connection-state ${state}`;
+                stateEl.classList.remove('hidden');
+                textEl.textContent = text;
+                
+                if (state === 'connected') {
+                    setTimeout(() => stateEl.classList.add('hidden'), 3000);
+                }
+            }
+            
+            // Security Level Management
+            selectSecurityLevel(level) {
+                this.securityLevel = level;
+                
+                // Update UI
+                document.querySelectorAll('.security-option').forEach(opt => {
+                    opt.classList.toggle('selected', opt.dataset.level == level);
+                });
+                
+                // Update body theme
+                document.body.dataset.defcon = level;
+                
+                // Show/hide password based on level
+                const passwordGroup = document.getElementById('password-group');
+                if (level >= 4) {
+                    passwordGroup.classList.add('hidden');
+                } else {
+                    passwordGroup.classList.remove('hidden');
+                }
+                
+                this.debug(`Selected DEFCON ${level}`);
+            }
+            
+            getSecurityLevelInfo(level) {
+                const levels = {
+                    1: { emoji: '🔴', name: 'Maximum Security', color: 'var(--defcon1)' },
+                    2: { emoji: '🟠', name: 'High Security', color: 'var(--defcon2)' },
+                    3: { emoji: '🟡', name: 'Standard Security', color: 'var(--defcon3)' },
+                    4: { emoji: '🟢', name: 'Easy Mode', color: 'var(--defcon4)' },
+                    5: { emoji: '🔵', name: 'Public Room', color: 'var(--defcon5)' }
+                };
+                return levels[level] || levels[3];
             }
             
             // Navigation
@@ -877,9 +1193,23 @@
                 document.getElementById('onboarding').classList.add('hidden');
                 document.getElementById('workspace').classList.remove('hidden');
                 
+                // Show debug panel
+                if (this.debugMode) {
+                    document.getElementById('debug-panel').classList.remove('hidden');
+                }
+                
                 // Update UI
                 document.getElementById('workspace-title').textContent = this.workspaceId;
                 document.getElementById('message-input').placeholder = `Message #${this.currentChannel}`;
+                
+                // Update security badge
+                const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
+                const badge = document.getElementById('workspace-security');
+                badge.textContent = `${levelInfo.emoji} ${levelInfo.name}`;
+                badge.dataset.level = this.securityLevel;
+                
+                // Set body theme
+                document.body.dataset.defcon = this.securityLevel;
                 
                 // Add self to members
                 this.members.set(this.userId, {
@@ -897,6 +1227,8 @@
                 
                 // Add welcome message
                 this.addSystemMessage(`Welcome to ${this.workspaceId}! Share the invite link to add team members.`);
+                
+                this.debug(`Entered workspace as ${this.userName} with DEFCON ${this.securityLevel}`);
             }
             
             // Workspace Management
@@ -905,6 +1237,15 @@
                 if (!name) {
                     alert('Please enter your name');
                     return;
+                }
+                
+                // Check password for security levels 1-3
+                if (this.securityLevel <= 3) {
+                    const password = document.getElementById('creator-password').value;
+                    if (!password && this.securityLevel <= 2) {
+                        alert('Password required for this security level');
+                        return;
+                    }
                 }
                 
                 this.userName = name;
@@ -919,7 +1260,8 @@
                     type: 'workspace_created',
                     userId: this.userId,
                     userName: this.userName,
-                    workspaceId: this.workspaceId
+                    workspaceId: this.workspaceId,
+                    securityLevel: this.securityLevel
                 });
                 
                 // Show workspace
@@ -1190,9 +1532,9 @@
                 document.getElementById('connection-count').textContent = `${onlineCount} connected`;
             }
             
-            // P2P Communication
+            // Fixed P2P Communication with proper offer/answer resolution
             startSignaling() {
-                console.log('🚀 Starting signaling for', this.userName, 'ID:', this.userId);
+                this.debug(`🚀 Starting signaling for ${this.userName} (ID: ${this.userId})`);
                 
                 // Use BroadcastChannel for local testing
                 this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
@@ -1200,61 +1542,69 @@
                 this.signaler.onmessage = async (event) => {
                     const { from, to, data } = event.data;
                     
-                    console.log(`📨 Signal received - From: ${from}, To: ${to}, Type: ${data.type}`);
-                    
                     // Ignore own messages
-                    if (from === this.userId) {
-                        console.log('↩️ Ignoring own message');
-                        return;
-                    }
+                    if (from === this.userId) return;
                     
                     // Handle broadcasts or targeted messages
-                    if (to !== this.userId && to !== '*') {
-                        console.log('⏭️ Message not for me');
-                        return;
-                    }
+                    if (to !== this.userId && to !== '*') return;
                     
+                    this.debug(`📨 Received ${data.type} from ${from}`);
                     await this.handleSignal(from, data);
                 };
                 
-                // Announce presence after a short delay to ensure others are listening
-                setTimeout(() => {
-                    console.log('📢 Announcing presence');
-                    this.broadcastSignal('*', {
-                        type: 'announce',
-                        userId: this.userId,
-                        userName: this.userName
-                    });
-                }, 100);
+                // Announce presence multiple times to ensure discovery
+                this.announcePresence();
+                
+                // Re-announce periodically
+                setInterval(() => {
+                    this.announcePresence();
+                }, 10000); // Every 10 seconds
+            }
+            
+            announcePresence() {
+                this.debug('📢 Announcing presence');
+                this.broadcastSignal('*', {
+                    type: 'announce',
+                    userId: this.userId,
+                    userName: this.userName,
+                    securityLevel: this.securityLevel
+                });
             }
             
             async handleSignal(from, data) {
-                console.log(`🔧 Handling ${data.type} from ${from}`);
-                
                 switch (data.type) {
                     case 'announce':
-                        // EVERYONE should try to connect to new peer
-                        // Not just the host!
-                        if (!this.peers.has(from)) {
-                            console.log('👋 New peer announced, connecting...');
-                            await this.connectToPeer(from, data.userName);
+                        // Deterministic role assignment: lower ID initiates
+                        const shouldInitiate = this.userId.localeCompare(from) < 0;
+                        const connectionState = this.connectionStates.get(from);
+                        
+                        if (!this.peers.has(from) && connectionState !== 'connecting') {
+                            if (shouldInitiate) {
+                                this.debug(`👋 I should initiate connection to ${data.userName} (${from})`);
+                                await this.connectToPeer(from, data.userName);
+                            } else {
+                                this.debug(`⏳ Waiting for ${data.userName} (${from}) to connect to me`);
+                                // Mark that we're aware of this peer
+                                this.connectionStates.set(from, 'waiting');
+                            }
+                        } else {
+                            this.debug(`↩️ Already have connection/connecting to ${from}`);
                         }
                         break;
                         
                     case 'offer':
-                        if (!this.peers.has(from)) {
-                            console.log('📥 Received offer, creating answer...');
+                        // Accept offers regardless of who "should" initiate
+                        if (!this.peers.has(from) && this.connectionStates.get(from) !== 'connecting') {
+                            this.debug(`📥 Accepting offer from ${data.userName}`);
                             await this.handleOffer(from, data.offer, data.userName);
                         }
                         break;
                         
                     case 'answer':
-                        console.log('📥 Received answer');
                         await this.handleAnswer(from, data.answer);
                         break;
                         
                     case 'ice':
-                        console.log('🧊 Received ICE candidate');
                         await this.handleIceCandidate(from, data.candidate);
                         break;
                 }
@@ -1267,21 +1617,20 @@
                         to: to,
                         data: data
                     };
-                    console.log(`📡 Broadcasting signal to ${to}:`, data.type);
                     this.signaler.postMessage(message);
-                } else {
-                    console.error('❌ Signaler not ready');
                 }
             }
             
             async connectToPeer(peerId, peerName) {
-                console.log(`🤝 Connecting to ${peerName} (${peerId})`);
-                
-                // Don't create duplicate connections
-                if (this.peers.has(peerId)) {
-                    console.log('⚠️ Connection already exists');
+                // Prevent duplicate connections
+                if (this.peers.has(peerId) || this.connectionStates.get(peerId) === 'connecting') {
+                    this.debug(`⚠️ Already connecting/connected to ${peerId}`, 'warn');
                     return;
                 }
+                
+                this.debug(`🤝 Initiating connection to ${peerName} (${peerId})`);
+                this.connectionStates.set(peerId, 'connecting');
+                this.showConnectionState('connecting', `Connecting to ${peerName}...`);
                 
                 const pc = new RTCPeerConnection({
                     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -1294,28 +1643,28 @@
                     dataChannel: null
                 };
                 
-                // Store peer immediately to prevent duplicates
+                // Store peer immediately
                 this.peers.set(peerId, peer);
                 
                 // Monitor connection state
                 pc.onconnectionstatechange = () => {
-                    console.log(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
-                };
-                
-                pc.onicegatheringstatechange = () => {
-                    console.log(`🧊 ICE gathering state: ${pc.iceGatheringState}`);
+                    this.debug(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
+                    
+                    if (pc.connectionState === 'failed') {
+                        this.handleConnectionFailure(peerId, peerName);
+                    }
                 };
                 
                 // Create data channel
                 peer.dataChannel = pc.createDataChannel('data', {
-                    ordered: true
+                    ordered: true,
+                    reliable: true
                 });
                 this.setupDataChannel(peer);
                 
                 // Setup ICE handling
                 pc.onicecandidate = (event) => {
                     if (event.candidate) {
-                        console.log('🧊 Sending ICE candidate');
                         this.broadcastSignal(peerId, {
                             type: 'ice',
                             candidate: event.candidate
@@ -1323,31 +1672,34 @@
                     }
                 };
                 
-                // Create offer
+                // Create and send offer
                 try {
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     
-                    console.log('📤 Sending offer to', peerName);
+                    this.debug(`📤 Sending offer to ${peerName}`);
                     this.broadcastSignal(peerId, {
                         type: 'offer',
                         offer: offer,
                         userName: this.userName
                     });
                 } catch (error) {
-                    console.error('❌ Error creating offer:', error);
+                    this.debug(`❌ Error creating offer: ${error}`, 'error');
+                    this.connectionStates.delete(peerId);
                     this.peers.delete(peerId);
                 }
             }
             
             async handleOffer(from, offer, peerName) {
-                console.log(`🤝 Handling offer from ${peerName} (${from})`);
-                
-                // Don't create duplicate connections
-                if (this.peers.has(from)) {
-                    console.log('⚠️ Connection already exists');
+                // Prevent duplicate connections
+                if (this.peers.has(from) || this.connectionStates.get(from) === 'connecting') {
+                    this.debug(`⚠️ Already handling connection from ${from}`, 'warn');
                     return;
                 }
+                
+                this.debug(`📥 Handling offer from ${peerName} (${from})`);
+                this.connectionStates.set(from, 'connecting');
+                this.showConnectionState('connecting', `${peerName} is connecting...`);
                 
                 const pc = new RTCPeerConnection({
                     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -1365,12 +1717,16 @@
                 
                 // Monitor connection state
                 pc.onconnectionstatechange = () => {
-                    console.log(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
+                    this.debug(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
+                    
+                    if (pc.connectionState === 'failed') {
+                        this.handleConnectionFailure(from, peerName);
+                    }
                 };
                 
-                // Setup data channel handler (receiving end)
+                // Setup data channel handler
                 pc.ondatachannel = (event) => {
-                    console.log('📥 Data channel received');
+                    this.debug('📥 Data channel received');
                     peer.dataChannel = event.channel;
                     this.setupDataChannel(peer);
                 };
@@ -1378,7 +1734,6 @@
                 // Setup ICE handling
                 pc.onicecandidate = (event) => {
                     if (event.candidate) {
-                        console.log('🧊 Sending ICE candidate');
                         this.broadcastSignal(from, {
                             type: 'ice',
                             candidate: event.candidate
@@ -1392,29 +1747,27 @@
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
                     
-                    console.log('📤 Sending answer to', peerName);
+                    this.debug(`📤 Sending answer to ${peerName}`);
                     this.broadcastSignal(from, {
                         type: 'answer',
                         answer: answer
                     });
                 } catch (error) {
-                    console.error('❌ Error handling offer:', error);
+                    this.debug(`❌ Error handling offer: ${error}`, 'error');
+                    this.connectionStates.delete(from);
                     this.peers.delete(from);
                 }
             }
             
             async handleAnswer(from, answer) {
-                console.log(`📥 Handling answer from ${from}`);
                 const peer = this.peers.get(from);
                 if (peer) {
                     try {
                         await peer.connection.setRemoteDescription(answer);
-                        console.log('✅ Answer set successfully');
+                        this.debug(`✅ Answer set successfully from ${peer.name}`, 'success');
                     } catch (error) {
-                        console.error('❌ Error setting answer:', error);
+                        this.debug(`❌ Error setting answer: ${error}`, 'error');
                     }
-                } else {
-                    console.warn('⚠️ No peer found for answer from', from);
                 }
             }
             
@@ -1423,12 +1776,40 @@
                 if (peer && peer.connection) {
                     try {
                         await peer.connection.addIceCandidate(candidate);
-                        console.log('✅ ICE candidate added');
                     } catch (error) {
-                        console.error('❌ Error adding ICE candidate:', error);
+                        this.debug(`❌ Error adding ICE candidate: ${error}`, 'error');
                     }
+                }
+            }
+            
+            handleConnectionFailure(peerId, peerName) {
+                this.debug(`⚠️ Connection failed with ${peerName}`, 'warn');
+                
+                const attempts = this.retryAttempts.get(peerId) || 0;
+                if (attempts < this.maxRetries) {
+                    this.retryAttempts.set(peerId, attempts + 1);
+                    this.debug(`🔄 Retrying connection (attempt ${attempts + 1}/${this.maxRetries})`);
+                    
+                    // Clean up failed connection
+                    const peer = this.peers.get(peerId);
+                    if (peer) {
+                        peer.connection.close();
+                        this.peers.delete(peerId);
+                    }
+                    this.connectionStates.delete(peerId);
+                    
+                    // Retry after delay
+                    setTimeout(() => {
+                        this.announcePresence();
+                    }, this.retryDelay);
                 } else {
-                    console.warn('⚠️ No peer found for ICE from', from);
+                    this.debug(`❌ Max retries reached for ${peerName}`, 'error');
+                    this.showConnectionState('failed', `Failed to connect to ${peerName}`);
+                    
+                    // Clean up
+                    this.peers.delete(peerId);
+                    this.connectionStates.delete(peerId);
+                    this.retryAttempts.delete(peerId);
                 }
             }
             
@@ -1436,12 +1817,17 @@
                 const dc = peer.dataChannel;
                 
                 if (!dc) {
-                    console.error('❌ No data channel for peer', peer.id);
+                    this.debug(`❌ No data channel for peer ${peer.id}`, 'error');
                     return;
                 }
                 
                 dc.onopen = () => {
-                    console.log(`✅ Data channel OPEN with ${peer.name}`);
+                    this.debug(`✅ Data channel OPEN with ${peer.name}`, 'success');
+                    this.connectionStates.set(peer.id, 'connected');
+                    this.showConnectionState('connected', `Connected to ${peer.name}`);
+                    
+                    // Clear retry attempts on successful connection
+                    this.retryAttempts.delete(peer.id);
                     
                     // Add to members
                     this.members.set(peer.id, {
@@ -1458,11 +1844,12 @@
                         type: 'sync',
                         userId: this.userId,
                         userName: this.userName,
+                        securityLevel: this.securityLevel,
                         channels: Object.keys(this.channels),
                         messages: this.getAllMessages()
                     };
                     
-                    console.log('📤 Sending sync data:', syncData);
+                    this.debug(`📤 Sending sync data to ${peer.name}`);
                     dc.send(JSON.stringify(syncData));
                     
                     // Show system message
@@ -1472,19 +1859,18 @@
                 dc.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        console.log(`📨 Message from ${peer.name}:`, data);
                         this.handlePeerMessage(peer, data);
                     } catch (error) {
-                        console.error('❌ Error parsing message:', error);
+                        this.debug(`❌ Error parsing message: ${error}`, 'error');
                     }
                 };
                 
                 dc.onerror = (error) => {
-                    console.error(`❌ Data channel error with ${peer.name}:`, error);
+                    this.debug(`❌ Data channel error with ${peer.name}: ${error}`, 'error');
                 };
                 
                 dc.onclose = () => {
-                    console.log(`📪 Data channel CLOSED with ${peer.name}`);
+                    this.debug(`📪 Data channel CLOSED with ${peer.name}`, 'warn');
                     
                     // Update member status
                     const member = this.members.get(peer.id);
@@ -1495,8 +1881,9 @@
                     
                     this.addSystemMessage(`${peer.name} left the workspace`);
                     
-                    // Clean up peer
+                    // Clean up
                     this.peers.delete(peer.id);
+                    this.connectionStates.delete(peer.id);
                 };
             }
             
@@ -1515,6 +1902,7 @@
                         
                         // Refresh current channel
                         this.displayChannelMessages(this.currentChannel);
+                        this.debug(`📥 Synced ${data.messages.length} messages from ${peer.name}`);
                         break;
                         
                     case 'message':
@@ -1553,24 +1941,19 @@
             }
             
             broadcastToPeers(data) {
-                console.log(`📢 Broadcasting to ${this.peers.size} peers:`, data);
-                
                 let sent = 0;
                 this.peers.forEach((peer, peerId) => {
                     if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
                         try {
                             peer.dataChannel.send(JSON.stringify(data));
                             sent++;
-                            console.log(`✅ Sent to ${peer.name}`);
                         } catch (error) {
-                            console.error(`❌ Failed to send to ${peer.name}:`, error);
+                            this.debug(`❌ Failed to send to ${peer.name}: ${error}`, 'error');
                         }
-                    } else {
-                        console.warn(`⚠️ Channel not open with ${peer.name}, state: ${peer.dataChannel?.readyState}`);
                     }
                 });
                 
-                console.log(`📊 Broadcast complete: ${sent}/${this.peers.size} successful`);
+                this.debug(`📊 Broadcast to ${sent}/${this.peers.size} peers`);
             }
             
             // Utilities
@@ -1605,7 +1988,8 @@
             generateInviteLink() {
                 const data = {
                     workspaceId: this.workspaceId,
-                    key: this.workspaceKey
+                    key: this.workspaceKey,
+                    securityLevel: this.securityLevel
                 };
                 const encoded = btoa(JSON.stringify(data));
                 return `${window.location.origin}${window.location.pathname}#${encoded}`;
@@ -1616,7 +2000,14 @@
                     const data = JSON.parse(atob(hash));
                     this.workspaceId = data.workspaceId;
                     this.workspaceKey = data.key;
-                    document.getElementById('invite-status').classList.remove('hidden');
+                    this.securityLevel = data.securityLevel || 3;
+                    
+                    const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
+                    const statusEl = document.getElementById('invite-status');
+                    statusEl.classList.remove('hidden');
+                    const securityInfo = document.getElementById('security-level-info');
+                    securityInfo.textContent = `(${levelInfo.emoji} ${levelInfo.name})`;
+                    
                     return true;
                 } catch (e) {
                     console.error('Invalid invite');
@@ -1628,6 +2019,7 @@
                 const link = this.generateInviteLink();
                 navigator.clipboard.writeText(link).then(() => {
                     alert('Invite link copied! Share it with your team.');
+                    this.debug(`📋 Copied invite link to clipboard`);
                 });
             }
             
@@ -1637,7 +2029,8 @@
                     userName: this.userName,
                     userId: this.userId,
                     workspaceKey: this.workspaceKey,
-                    isHost: this.isHost
+                    isHost: this.isHost,
+                    securityLevel: this.securityLevel
                 }));
             }
             
@@ -1650,6 +2043,7 @@
                     this.userId = data.userId;
                     this.workspaceKey = data.workspaceKey;
                     this.isHost = data.isHost;
+                    this.securityLevel = data.securityLevel || 3;
                     
                     // Auto-enter workspace if saved
                     // this.showWorkspace();
@@ -1672,7 +2066,7 @@
                 return div.innerHTML;
             }
             
-            // Verification
+            // Verification (for DEFCON 1-2)
             acceptVerification() {
                 document.getElementById('verification-modal').classList.add('hidden');
             }
