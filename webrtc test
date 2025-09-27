@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC + Double Encryption Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        input, button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        input {
+            width: 200px;
+            margin-right: 10px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .status.connected { 
+            background: #d4edda; 
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected { 
+            background: #f8d7da; 
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.connecting { 
+            background: #fff3cd; 
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .log-entry.error { color: #d32f2f; }
+        .log-entry.success { color: #388e3c; }
+        .log-entry.info { color: #1976d2; }
+        .log-entry.crypto { color: #7b1fa2; }
+        .log-entry.warning { color: #f57c00; }
+        
+        .peers-list {
+            margin-top: 10px;
+        }
+        
+        .peer-item {
+            padding: 8px;
+            background: #e8f5e9;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .message-section {
+            margin-top: 20px;
+        }
+        
+        .messages {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            background: white;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .message {
+            padding: 5px;
+            margin: 3px 0;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+        
+        .message.own {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        
+        .message.double-encrypted {
+            border-left: 3px solid #ff6b35;
+        }
+        
+        .message.encrypted {
+            border-left: 3px solid #7b1fa2;
+        }
+        
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 3px solid #f44336;
+        }
+        
+        .message.system {
+            background: #f5f5f5;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .invite-link {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #7b1fa2;
+            color: white;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .security-badge.double {
+            background: #ff6b35;
+        }
+        
+        .password-info {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .create-room-form {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .join-room-form {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒🔒 WebRTC + Double Encryption Test</h1>
+        
+        <!-- Room Setup -->
+        <div class="section">
+            <h3>1. Create or Join Room</h3>
+            
+            <!-- Create Room -->
+            <div class="create-room-form">
+                <h4>Create New Room</h4>
+                <div>
+                    <input type="password" id="roomPassword" placeholder="Room password (optional)">
+                    <button onclick="createRoom()">Create Room</button>
+                    <span id="encryptionStatus" class="security-badge" style="display: none;">🔐 Encrypted</span>
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Leave password empty for single encryption, or set password for double encryption
+                </div>
+            </div>
+            
+            <div id="inviteLinkSection" style="display: none;">
+                <strong>Invite Link (includes base encryption key):</strong>
+                <div class="invite-link" id="inviteLink"></div>
+                <button onclick="copyInvite()">Copy Invite Link</button>
+                
+                <div id="passwordInfo" class="password-info" style="display: none;">
+                    <strong>⚠️ Important:</strong> Share the room password separately! 
+                    <br>Password: <code id="passwordDisplay"></code>
+                    <br><small>This room requires a password for double encryption</small>
+                </div>
+            </div>
+            
+            <!-- Join Room -->
+            <div class="join-room-form">
+                <h4>Join Existing Room</h4>
+                <div>
+                    <input type="text" id="inviteInput" placeholder="Paste invite link here">
+                    <button onclick="parseInvite()">Parse Invite</button>
+                </div>
+                
+                <div id="joinSection" style="display: none; margin-top: 10px;">
+                    <div id="requiresPassword" style="display: none;">
+                        <input type="password" id="joinPassword" placeholder="Room password (required)">
+                        <div style="font-size: 12px; color: #666;">This room requires a password for double encryption</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connect -->
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <input type="text" id="userName" placeholder="Your name" value="">
+                <button id="connectBtn" onclick="connect()" disabled>Connect</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+            </div>
+        </div>
+        
+        <!-- Connection Status -->
+        <div class="section">
+            <h3>2. Connection Status</h3>
+            <div id="status" class="status disconnected">Not connected</div>
+            <div class="peers-list">
+                <strong>Connected Peers:</strong>
+                <div id="peersList">None</div>
+            </div>
+        </div>
+        
+        <!-- Test Messages -->
+        <div class="section message-section">
+            <h3>3. Test Messages</h3>
+            <div class="messages" id="messages"></div>
+            <input type="text" id="messageInput" placeholder="Type a message..." disabled>
+            <button onclick="sendMessage()" id="sendBtn" disabled>Send</button>
+        </div>
+        
+        <!-- Debug Log -->
+        <div class="section">
+            <h3>4. Debug Log</h3>
+            <div class="log" id="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let roomId = null;
+        let userId = null;
+        let userName = null;
+        let signaler = null;
+        let peers = new Map();
+        let isInRoom = false;
+        let pendingConnections = new Set(); // Track pending connections
+        
+        // Encryption state
+        let inviteKey = null;  // Key from invite link (always present)
+        let passwordKey = null; // Key from password (optional, for double encryption)
+        let hasPassword = false;
+        let roomPassword = null; // Store for display
+        let roomSalt = null; // Store salt for room
+
+        // Generate random IDs
+        function generateId(prefix) {
+            return prefix + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        // Logging
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[${type.toUpperCase()}]`, message);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('Log cleared', 'info');
+        }
+
+        // Encryption functions
+        async function generateKey() {
+            const key = await crypto.subtle.generateKey(
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
+            return key;
+        }
+
+        async function deriveKeyFromPassword(password, salt) {
+            // Import password as key material
+            const encoder = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            
+            // Derive AES key from password
+            const key = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
+            
+            return key;
+        }
+
+        async function exportKey(key) {
+            const exported = await crypto.subtle.exportKey('raw', key);
+            return btoa(String.fromCharCode(...new Uint8Array(exported)));
+        }
+
+        async function importKey(keyString) {
+            const keyData = Uint8Array.from(atob(keyString), c => c.charCodeAt(0));
+            const key = await crypto.subtle.importKey(
+                'raw',
+                keyData,
+                'AES-GCM',
+                true,
+                ['encrypt', 'decrypt']
+            );
+            return key;
+        }
+
+        async function encryptData(data, key) {
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const encodedData = new TextEncoder().encode(JSON.stringify(data));
+            
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                encodedData
+            );
+            
+            // Combine IV and ciphertext
+            const combined = new Uint8Array(iv.length + encrypted.byteLength);
+            combined.set(iv);
+            combined.set(new Uint8Array(encrypted), iv.length);
+            
+            return btoa(String.fromCharCode(...combined));
+        }
+
+        async function decryptData(encryptedString, key) {
+            const combined = Uint8Array.from(atob(encryptedString), c => c.charCodeAt(0));
+            const iv = combined.slice(0, 12);
+            const ciphertext = combined.slice(12);
+            
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                ciphertext
+            );
+            
+            return JSON.parse(new TextDecoder().decode(decrypted));
+        }
+
+        // Double encryption functions
+        async function doubleEncrypt(data) {
+            let encrypted = data;
+            
+            // First encrypt with password key if available
+            if (passwordKey) {
+                encrypted = await encryptData(data, passwordKey);
+                log('Applied password encryption (layer 1)', 'crypto');
+            }
+            
+            // Then encrypt with invite key (always)
+            if (inviteKey) {
+                // If already encrypted, wrap it
+                const payload = passwordKey ? { doubleEncrypted: true, data: encrypted } : data;
+                encrypted = await encryptData(payload, inviteKey);
+                log('Applied invite encryption (layer 2)', 'crypto');
+            }
+            
+            return encrypted;
+        }
+
+        async function doubleDecrypt(encryptedData) {
+            let decrypted = encryptedData;
+            
+            // First decrypt with invite key
+            if (inviteKey) {
+                decrypted = await decryptData(encryptedData, inviteKey);
+                log('Removed invite encryption (layer 2)', 'crypto');
+                
+                // Check if it was double encrypted
+                if (decrypted.doubleEncrypted && passwordKey) {
+                    decrypted = await decryptData(decrypted.data, passwordKey);
+                    log('Removed password encryption (layer 1)', 'crypto');
+                }
+            }
+            
+            return decrypted;
+        }
+
+        // Create room with optional password
+        async function createRoom() {
+            const password = document.getElementById('roomPassword').value;
+            roomId = generateId('room-');
+            userId = generateId('U');
+            
+            // Always generate invite key
+            inviteKey = await generateKey();
+            log('Generated invite encryption key', 'crypto');
+            
+            // Initialize invite data
+            const inviteData = {
+                roomId: roomId,
+                key: await exportKey(inviteKey),
+                hasPassword: false
+            };
+            
+            // Generate password key if password provided
+            if (password) {
+                hasPassword = true;
+                roomPassword = password;
+                
+                // Generate salt ONCE and use it for both key derivation and invite
+                roomSalt = crypto.getRandomValues(new Uint8Array(16));
+                passwordKey = await deriveKeyFromPassword(password, roomSalt);
+                log('Generated password encryption key (double encryption enabled)', 'crypto');
+                
+                // Add password info to invite data
+                inviteData.hasPassword = true;
+                inviteData.salt = btoa(String.fromCharCode(...roomSalt)); // Use THE SAME salt
+                
+                // Show double encryption badge
+                document.getElementById('encryptionStatus').className = 'security-badge double';
+                document.getElementById('encryptionStatus').innerHTML = '🔐🔐 Double Encrypted';
+                
+                // Show password info
+                document.getElementById('passwordInfo').style.display = 'block';
+                document.getElementById('passwordDisplay').textContent = password;
+            } else {
+                document.getElementById('encryptionStatus').className = 'security-badge';
+                document.getElementById('encryptionStatus').innerHTML = '🔐 Encrypted';
+            }
+            
+            // Create invite link
+            const inviteLink = window.location.origin + window.location.pathname + '#' + btoa(JSON.stringify(inviteData));
+            
+            // Update UI
+            document.getElementById('inviteLinkSection').style.display = 'block';
+            document.getElementById('inviteLink').textContent = inviteLink;
+            document.getElementById('encryptionStatus').style.display = 'inline-block';
+            document.getElementById('connectBtn').disabled = false;
+            
+            log(`Room created: ${roomId} (password: ${hasPassword ? 'yes' : 'no'})`, 'success');
+        }
+
+        // Parse invite link
+        async function parseInvite() {
+            const inviteInput = document.getElementById('inviteInput').value.trim();
+            if (!inviteInput) {
+                alert('Please paste an invite link');
+                return;
+            }
+            
+            try {
+                // Extract hash from URL or use raw hash
+                let hash = inviteInput.includes('#') ? inviteInput.split('#')[1] : inviteInput;
+                const inviteData = JSON.parse(atob(hash));
+                
+                roomId = inviteData.roomId;
+                userId = generateId('U');
+                hasPassword = inviteData.hasPassword;
+                
+                // Import invite key
+                inviteKey = await importKey(inviteData.key);
+                log('Imported invite encryption key', 'crypto');
+                
+                // Show join section
+                document.getElementById('joinSection').style.display = 'block';
+                
+                // Show password field if room has password
+                if (hasPassword) {
+                    document.getElementById('requiresPassword').style.display = 'block';
+                    
+                    // Store salt for password derivation
+                    if (inviteData.salt) {
+                        roomSalt = Uint8Array.from(atob(inviteData.salt), c => c.charCodeAt(0));
+                    }
+                    
+                    log('Room requires password for double encryption', 'warning');
+                } else {
+                    log('Room uses single encryption (no password)', 'info');
+                }
+                
+                // Always enable connect button after successful parse
+                document.getElementById('connectBtn').disabled = false;
+                
+                log(`Parsed invite for room: ${roomId}`, 'success');
+            } catch (e) {
+                log('Invalid invite link: ' + e.message, 'error');
+                alert('Invalid invite link');
+            }
+        }
+
+        // Connect to room
+        async function connect() {
+            const nameInput = document.getElementById('userName').value.trim();
+            if (!nameInput) {
+                alert('Please enter your name');
+                return;
+            }
+            
+            if (!roomId) {
+                alert('Please create or join a room first');
+                return;
+            }
+            
+            // Check password if required
+            if (hasPassword && !passwordKey) {
+                const joinPassword = document.getElementById('joinPassword').value;
+                if (!joinPassword) {
+                    alert('This room requires a password');
+                    return;
+                }
+                
+                // Derive password key
+                try {
+                    passwordKey = await deriveKeyFromPassword(joinPassword, roomSalt);
+                    log('Derived password key for double encryption', 'crypto');
+                    
+                    // Test the password by trying to encrypt/decrypt
+                    const testData = { test: 'password-check' };
+                    const encrypted = await encryptData(testData, passwordKey);
+                    const decrypted = await decryptData(encrypted, passwordKey);
+                    
+                    if (decrypted.test !== 'password-check') {
+                        throw new Error('Password verification failed');
+                    }
+                    
+                    log('Password verified successfully', 'success');
+                } catch (e) {
+                    log('Failed to verify password: ' + e.message, 'error');
+                    alert('Failed to verify password. Please check and try again.');
+                    passwordKey = null;
+                    return;
+                }
+            }
+            
+            userName = nameInput;
+            isInRoom = true;
+            
+            // Update UI
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = false;
+            document.getElementById('userName').disabled = true;
+            document.getElementById('roomPassword').disabled = true;
+            document.getElementById('joinPassword').disabled = true;
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            
+            const encryptionType = hasPassword ? 'Double Encrypted 🔐🔐' : 'Encrypted 🔐';
+            updateStatus('connecting', `Connecting to room: ${roomId} (${encryptionType})`);
+            
+            // Start signaling
+            startSignaling();
+        }
+
+        // Disconnect
+        function disconnect() {
+            log('Disconnecting...', 'info');
+            
+            // Close all peer connections
+            peers.forEach((peer, peerId) => {
+                if (peer.pc) {
+                    peer.pc.close();
+                }
+                log(`Closed connection with ${peer.name}`, 'info');
+            });
+            peers.clear();
+            pendingConnections.clear();
+            
+            // Close signaler
+            if (signaler) {
+                signaler.close();
+                signaler = null;
+            }
+            
+            // Reset state
+            isInRoom = false;
+            
+            // Update UI
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+            document.getElementById('userName').disabled = false;
+            document.getElementById('roomPassword').disabled = false;
+            document.getElementById('joinPassword').disabled = false;
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('messages').innerHTML = '';
+            
+            updateStatus('disconnected', 'Disconnected');
+            updatePeersList();
+        }
+
+        // Copy invite
+        function copyInvite() {
+            const inviteText = document.getElementById('inviteLink').textContent;
+            navigator.clipboard.writeText(inviteText).then(() => {
+                log('Invite link copied to clipboard', 'success');
+                if (hasPassword) {
+                    alert('Invite link copied! Remember to share the password separately: ' + roomPassword);
+                } else {
+                    alert('Invite link copied to clipboard!');
+                }
+            });
+        }
+
+        // Signaling via BroadcastChannel
+        function startSignaling() {
+            signaler = new BroadcastChannel(`webrtc-double-${roomId}`);
+            
+            signaler.onmessage = async (event) => {
+                const { from, data } = event.data;
+                
+                // Ignore our own messages
+                if (from === userId) return;
+                
+                log(`Signal from ${from}: ${data.type}`, 'info');
+                await handleSignal(from, data);
+            };
+            
+            // Announce presence
+            announcePresence();
+            setInterval(() => {
+                if (isInRoom) announcePresence();
+            }, 3000);
+            
+            const encryptionType = hasPassword ? 'Double Encrypted 🔐🔐' : 'Encrypted 🔐';
+            updateStatus('connected', `Connected to room: ${roomId} (${encryptionType})`);
+        }
+
+        // Announce presence
+        function announcePresence() {
+            if (!signaler || !isInRoom) return;
+            
+            signaler.postMessage({
+                from: userId,
+                data: {
+                    type: 'announce',
+                    userName: userName,
+                    doubleEncrypted: hasPassword
+                }
+            });
+        }
+
+        // Handle signaling messages
+        async function handleSignal(from, data) {
+            switch (data.type) {
+                case 'announce':
+                    // Skip if we already have this peer or it's pending
+                    if (!peers.has(from) && !pendingConnections.has(from)) {
+                        const encType = data.doubleEncrypted ? 'double encrypted' : 'encrypted';
+                        
+                        // Check for encryption mismatch
+                        if (hasPassword !== data.doubleEncrypted) {
+                            log(`⚠️ Encryption mismatch with ${data.userName}: Room requires ${hasPassword ? 'password' : 'no password'}, but peer has ${data.doubleEncrypted ? 'password' : 'no password'}`, 'error');
+                            
+                            // Send rejection message
+                            if (signaler) {
+                                signaler.postMessage({
+                                    from: userId,
+                                    data: {
+                                        type: 'encryption-mismatch',
+                                        target: from,
+                                        expected: hasPassword,
+                                        message: hasPassword ? 
+                                            'This room requires a password for double encryption' : 
+                                            'This room does not use password encryption'
+                                    }
+                                });
+                            }
+                            return; // Don't connect with mismatched encryption
+                        }
+                        
+                        log(`New peer announced: ${data.userName} (${encType})`, 'success');
+                        
+                        // Mark as pending to prevent duplicates
+                        pendingConnections.add(from);
+                        
+                        // Always create offer for simplicity (WebRTC will handle collisions)
+                        await createPeerConnection(from, data.userName, true);
+                    }
+                    break;
+                    
+                case 'offer':
+                    if (!peers.has(from) && !pendingConnections.has(from)) {
+                        // Check for encryption mismatch in offer
+                        if (hasPassword !== data.doubleEncrypted) {
+                            log(`⚠️ Encryption mismatch in offer from ${data.userName}`, 'error');
+                            return; // Reject connection
+                        }
+                        
+                        log(`Received offer from ${data.userName}`, 'info');
+                        pendingConnections.add(from);
+                        await createPeerConnection(from, data.userName, false);
+                        const peer = peers.get(from);
+                        await peer.pc.setRemoteDescription(data.offer);
+                        
+                        const answer = await peer.pc.createAnswer();
+                        await peer.pc.setLocalDescription(answer);
+                        
+                        signaler.postMessage({
+                            from: userId,
+                            data: {
+                                type: 'answer',
+                                answer: answer,
+                                target: from,
+                                userName: userName,
+                                doubleEncrypted: hasPassword
+                            }
+                        });
+                        log('Sent answer', 'info');
+                    }
+                    break;
+                    
+                case 'answer':
+                    if (data.target === userId && peers.has(from)) {
+                        const peer = peers.get(from);
+                        await peer.pc.setRemoteDescription(data.answer);
+                        log('Received answer', 'info');
+                    }
+                    break;
+                    
+                case 'encryption-mismatch':
+                    if (data.target === userId) {
+                        log(`⚠️ Connection rejected: ${data.message}`, 'error');
+                        addMessage(`⚠️ Cannot connect: ${data.message}`, 'error');
+                        
+                        // Clean up any pending connection
+                        pendingConnections.delete(from);
+                        if (peers.has(from)) {
+                            const peer = peers.get(from);
+                            if (peer.pc) peer.pc.close();
+                            peers.delete(from);
+                        }
+                    }
+                    break;
+                    
+                case 'ice':
+                    if (data.target === userId && peers.has(from)) {
+                        const peer = peers.get(from);
+                        await peer.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        log('Added ICE candidate', 'info');
+                    }
+                    break;
+            }
+        }
+
+        // Create peer connection
+        async function createPeerConnection(peerId, peerName, createOffer) {
+            log(`Creating connection with ${peerName} (offer: ${createOffer})`, 'info');
+            
+            const pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            });
+            
+            const peer = {
+                id: peerId,
+                name: peerName,
+                pc: pc,
+                channel: null
+            };
+            
+            peers.set(peerId, peer);
+            
+            // Handle ICE candidates
+            pc.onicecandidate = (event) => {
+                if (event.candidate && signaler) {
+                    signaler.postMessage({
+                        from: userId,
+                        data: {
+                            type: 'ice',
+                            candidate: event.candidate.toJSON(),
+                            target: peerId
+                        }
+                    });
+                }
+            };
+            
+            // Monitor connection state
+            pc.onconnectionstatechange = () => {
+                log(`Connection state with ${peerName}: ${pc.connectionState}`, 
+                    pc.connectionState === 'connected' ? 'success' : 'info');
+                    
+                if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                    handleDisconnect(peerId, peerName);
+                }
+                
+                updatePeersList();
+            };
+            
+            // Create or handle data channel
+            if (createOffer) {
+                peer.channel = pc.createDataChannel('double-encrypted-channel');
+                setupDataChannel(peer);
+                
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                signaler.postMessage({
+                    from: userId,
+                    data: {
+                        type: 'offer',
+                        offer: offer,
+                        userName: userName,
+                        doubleEncrypted: hasPassword
+                    }
+                });
+                log('Sent offer', 'info');
+            } else {
+                pc.ondatachannel = (event) => {
+                    peer.channel = event.channel;
+                    setupDataChannel(peer);
+                    log('Data channel received', 'success');
+                };
+            }
+        }
+
+        // Setup data channel
+        function setupDataChannel(peer) {
+            const channel = peer.channel;
+            
+            channel.onopen = () => {
+                log(`Data channel open with ${peer.name}`, 'success');
+                const encType = hasPassword ? 'double encrypted 🔐🔐' : 'encrypted 🔐';
+                addMessage(`📢 ${peer.name} joined (${encType})`, 'system');
+                
+                // Clear from pending now that connection is established
+                pendingConnections.delete(peer.id);
+                updatePeersList();
+            };
+            
+            channel.onmessage = async (event) => {
+                try {
+                    const decrypted = await doubleDecrypt(event.data);
+                    
+                    if (decrypted.type === 'message') {
+                        const msgClass = hasPassword ? 'peer double-encrypted' : 'peer encrypted';
+                        addMessage(`${peer.name}: ${decrypted.text}`, msgClass);
+                        log(`Received and decrypted message (${hasPassword ? 'double' : 'single'} encryption)`, 'crypto');
+                    }
+                } catch (e) {
+                    log('Error decrypting message: ' + e.message, 'error');
+                    
+                    // More specific error message
+                    if (hasPassword) {
+                        addMessage(`⚠️ Failed to decrypt message from ${peer.name} - they may not have the correct password`, 'error');
+                    } else {
+                        addMessage(`⚠️ Failed to decrypt message from ${peer.name} - encryption error`, 'error');
+                    }
+                }
+            };
+            
+            channel.onclose = () => {
+                log(`Data channel closed with ${peer.name}`, 'info');
+                handleDisconnect(peer.id, peer.name);
+            };
+            
+            channel.onerror = (error) => {
+                log(`Data channel error with ${peer.name}: ${error}`, 'error');
+            };
+        }
+
+        // Handle disconnect
+        function handleDisconnect(peerId, peerName) {
+            peers.delete(peerId);
+            pendingConnections.delete(peerId);
+            addMessage(`📤 ${peerName} left`, 'system');
+            updatePeersList();
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            // Add to our own messages
+            const msgClass = hasPassword ? 'own double-encrypted' : 'own encrypted';
+            addMessage(`You: ${text}`, msgClass);
+            
+            // Send to all peers
+            let sentCount = 0;
+            for (const [peerId, peer] of peers.entries()) {
+                if (peer.channel && peer.channel.readyState === 'open') {
+                    try {
+                        const payload = {
+                            type: 'message',
+                            text: text
+                        };
+                        
+                        // Double encrypt if password is set
+                        const encrypted = await doubleEncrypt(payload);
+                        peer.channel.send(encrypted);
+                        
+                        const encType = hasPassword ? 'double-encrypted' : 'encrypted';
+                        log(`Sent ${encType} message to ${peer.name}`, 'crypto');
+                        sentCount++;
+                    } catch (e) {
+                        log(`Error sending to ${peer.name}: ${e.message}`, 'error');
+                    }
+                }
+            }
+            
+            if (sentCount === 0) {
+                log('No connected peers to send message to', 'warning');
+            } else {
+                log(`Message sent to ${sentCount} peer${sentCount > 1 ? 's' : ''}`, 'info');
+            }
+            
+            input.value = '';
+        }
+
+        // Add message to UI
+        function addMessage(text, type = 'peer') {
+            const messagesEl = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        // Update status
+        function updateStatus(state, text) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${state}`;
+            statusEl.textContent = text;
+        }
+
+        // Update peers list
+        function updatePeersList() {
+            const peersListEl = document.getElementById('peersList');
+            
+            if (peers.size === 0) {
+                peersListEl.innerHTML = '<em>None</em>';
+            } else {
+                peersListEl.innerHTML = '';
+                peers.forEach(peer => {
+                    const peerEl = document.createElement('div');
+                    peerEl.className = 'peer-item';
+                    
+                    const state = peer.pc.connectionState;
+                    const channelState = peer.channel ? peer.channel.readyState : 'none';
+                    const encIcon = hasPassword ? '🔐🔐' : '🔐';
+                    
+                    peerEl.innerHTML = `
+                        <span>${encIcon} ${peer.name}</span>
+                        <span>
+                            <small>PC: ${state}</small> | 
+                            <small>DC: ${channelState}</small>
+                        </span>
+                    `;
+                    peersListEl.appendChild(peerEl);
+                });
+            }
+        }
+
+        // Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Set default name
+        document.getElementById('userName').value = 'User' + Math.floor(Math.random() * 1000);
+
+        // Check for invite in URL
+        if (window.location.hash) {
+            document.getElementById('inviteInput').value = window.location.href;
+            parseInvite();
+        }
+        
+        // Initial log message
+        log('WebRTC Double Encryption Test ready', 'success');
+    </script>
+</body>
+</html>
