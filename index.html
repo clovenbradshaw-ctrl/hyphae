@@ -38,42 +38,384 @@
             --defcon5: #3B82F6;
         }
         
-        /* DEFCON Level Themes */
+        /* ==================== DEFCON 1: MAXIMUM INTENSITY ==================== */
         body[data-defcon="1"] {
             --bg-primary: #0A0A0B;
             --bg-secondary: #141418;
+            --bg-tertiary: #1a1a1e;
             --accent: #DC2626;
             --accent-hover: #991B1B;
             --border: rgba(220, 38, 38, 0.2);
+            --blood: #DC2626;
+            --void: #000000;
+            --ash: #171717;
+            --danger: #FF0000;
+            --pulse: #FF000040;
         }
         
+        /* Intense scanner overlay for DEFCON 1 */
+        body[data-defcon="1"]::before {
+            content: "";
+            position: fixed;
+            top: -100%;
+            left: 0;
+            right: 0;
+            height: 200%;
+            background: linear-gradient(
+                0deg,
+                transparent 0%,
+                var(--pulse) 50%,
+                transparent 100%
+            );
+            animation: scanner 4s linear infinite;
+            pointer-events: none;
+            mix-blend-mode: hard-light;
+            z-index: 9998;
+        }
+        
+        @keyframes scanner {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        /* Glitch effect for DEFCON 1 headers */
+        body[data-defcon="1"] h1,
+        body[data-defcon="1"] .workspace-name {
+            animation: glitch 2s infinite;
+        }
+        
+        @keyframes glitch {
+            0%, 100% { 
+                text-shadow: 0.05em 0 0 var(--danger), -0.025em -0.05em 0 #00FF00, 0.025em 0.05em 0 #0000FF; 
+            }
+            25% { 
+                text-shadow: -0.05em -0.025em 0 var(--danger), 0.025em 0.025em 0 #00FF00, -0.05em -0.05em 0 #0000FF; 
+            }
+            50% { 
+                text-shadow: 0.025em 0.05em 0 var(--danger), 0.05em 0 0 #00FF00, 0 -0.05em 0 #0000FF; 
+            }
+            75% { 
+                text-shadow: -0.025em 0 0 var(--danger), -0.025em -0.025em 0 #00FF00, -0.025em -0.05em 0 #0000FF; 
+            }
+        }
+        
+        /* Static noise for DEFCON 1 messages */
+        body[data-defcon="1"] .messages-container {
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    var(--ash) 0px,
+                    transparent 1px,
+                    transparent 2px,
+                    var(--ash) 3px
+                );
+            animation: static-shift 0.5s steps(10) infinite;
+        }
+        
+        @keyframes static-shift {
+            0% { background-position: 0 0; }
+            100% { background-position: 3px 3px; }
+        }
+        
+        /* Red alert pulsing borders for DEFCON 1 */
+        body[data-defcon="1"] .workspace-container {
+            border: 2px solid var(--blood);
+            animation: alert-pulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes alert-pulse {
+            0%, 100% { 
+                border-color: var(--blood);
+                box-shadow: inset 0 0 20px var(--pulse);
+            }
+            50% { 
+                border-color: var(--danger);
+                box-shadow: inset 0 0 40px var(--blood);
+            }
+        }
+        
+        /* No smooth transitions in DEFCON 1 */
+        body[data-defcon="1"] * {
+            transition-duration: 0s !important;
+            animation-timing-function: step-end !important;
+        }
+        
+        /* Countdown timer for DEFCON 1 */
+        body[data-defcon="1"] .security-badge::after {
+            content: " ⚠ 5:00";
+            color: var(--danger);
+            animation: blink 1s step-end infinite;
+            font-family: monospace;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* ==================== DEFCON 2: HIGH INTENSITY ==================== */
         body[data-defcon="2"] {
             --bg-primary: #18181B;
             --bg-secondary: #27272A;
+            --bg-tertiary: #2d2f3a;
             --accent: #EA580C;
             --accent-hover: #C2410C;
+            --orange-glow: #EA580C40;
         }
         
+        /* Sophisticated scanner for DEFCON 2 */
+        body[data-defcon="2"]::after {
+            content: "";
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 100px;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                var(--orange-glow) 50%, 
+                transparent 100%);
+            animation: scan 8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 9998;
+        }
+        
+        @keyframes scan {
+            0%, 100% { transform: translateY(-100px); }
+            50% { transform: translateY(calc(100vh + 100px)); }
+        }
+        
+        /* Glass morphism for DEFCON 2 panels */
+        body[data-defcon="2"] .card,
+        body[data-defcon="2"] .modal-card,
+        body[data-defcon="2"] .workspace-header {
+            background: linear-gradient(
+                135deg,
+                rgba(234, 88, 12, 0.1) 0%,
+                rgba(234, 88, 12, 0.05) 100%
+            ) !important;
+            backdrop-filter: blur(10px) saturate(180%);
+            -webkit-backdrop-filter: blur(10px) saturate(180%);
+            box-shadow: 
+                0 8px 32px rgba(234, 88, 12, 0.1),
+                inset 0 2px 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Verification badge rotation for DEFCON 2 */
+        body[data-defcon="2"] .member-avatar::after {
+            content: "⚜";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            color: var(--accent);
+            font-size: 12px;
+            animation: badge-rotate 20s linear infinite;
+            filter: drop-shadow(0 2px 4px rgba(234, 88, 12, 0.4));
+        }
+        
+        @keyframes badge-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Encryption animation for DEFCON 2 messages */
+        body[data-defcon="2"] .message {
+            animation: encrypt-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes encrypt-in {
+            0% { 
+                transform: scaleX(0) rotateY(90deg);
+                filter: blur(10px);
+                opacity: 0;
+            }
+            50% {
+                transform: scaleX(0.5) rotateY(45deg);
+                filter: blur(5px);
+            }
+            100% { 
+                transform: scaleX(1) rotateY(0deg);
+                filter: blur(0);
+                opacity: 1;
+            }
+        }
+        
+        /* ==================== DEFCON 3: MODERATE INTENSITY ==================== */
         body[data-defcon="3"] {
             --bg-primary: #1F2028;
             --bg-secondary: #2A2B36;
+            --bg-tertiary: #32334a;
             --accent: #FCD34D;
             --accent-hover: #FDE047;
             --text-primary: #FFFFFF;
+            --yellow-dim: #FCD34D20;
         }
         
+        /* Subtle gradient animation for DEFCON 3 */
+        body[data-defcon="3"] .workspace-container {
+            background: 
+                linear-gradient(135deg, var(--bg-primary) 0%, #16161D 100%),
+                radial-gradient(circle at 20% 80%, var(--yellow-dim) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, #FCD34D10 0%, transparent 50%);
+            background-blend-mode: normal, screen, screen;
+            animation: subtle-shift 30s ease-in-out infinite;
+        }
+        
+        @keyframes subtle-shift {
+            0%, 100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+            33% { background-position: 100% 100%, 100% 0%, 0% 100%; }
+            66% { background-position: 0% 100%, 0% 100%, 100% 0%; }
+        }
+        
+        /* Trust indicators for DEFCON 3 */
+        body[data-defcon="3"] .member-status-dot.online {
+            animation: trust-pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes trust-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 var(--yellow-dim);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px transparent;
+                transform: scale(1.2);
+            }
+        }
+        
+        /* Spring physics buttons for DEFCON 3 */
+        body[data-defcon="3"] button {
+            transition: all 0.3s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+        }
+        
+        body[data-defcon="3"] button:active {
+            transform: scale(0.95);
+        }
+        
+        /* ==================== DEFCON 4: LOW INTENSITY ==================== */
         body[data-defcon="4"] {
             --bg-primary: #1A1F2E;
             --bg-secondary: #242B3D;
+            --bg-tertiary: #2e3548;
             --accent: #10B981;
             --accent-hover: #059669;
+            --gradient: linear-gradient(135deg, #10B981, #06B6D4, #8B5CF6, #EC4899);
         }
         
+        /* Animated gradient background for DEFCON 4 */
+        body[data-defcon="4"] .onboarding-container {
+            background: var(--gradient);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Floating animation for DEFCON 4 */
+        body[data-defcon="4"] .card {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        /* Confetti on button click for DEFCON 4 */
+        body[data-defcon="4"] button:active::after {
+            content: "🎉";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            animation: confetti-burst 1s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes confetti-burst {
+            0% { 
+                transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(2) rotate(180deg);
+                opacity: 1;
+            }
+            100% { 
+                transform: translate(-50%, -150%) scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Morphing shapes for DEFCON 4 */
+        body[data-defcon="4"] .security-badge {
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            animation: morph 8s ease-in-out infinite;
+        }
+        
+        @keyframes morph {
+            0%, 100% {
+                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            }
+            33% {
+                border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
+            }
+            66% {
+                border-radius: 30% 70% 30% 70% / 50% 60% 40% 60%;
+            }
+        }
+        
+        /* ==================== DEFCON 5: ZERO INTENSITY ==================== */
         body[data-defcon="5"] {
-            --bg-primary: #0F172A;
-            --bg-secondary: #1E293B;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F8FAFC;
+            --bg-tertiary: #F1F5F9;
             --accent: #3B82F6;
             --accent-hover: #2563EB;
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+        }
+        
+        /* Rainbow animation for DEFCON 5 */
+        body[data-defcon="5"] .workspace-container {
+            animation: rainbow-bg 10s ease-in-out infinite;
+        }
+        
+        @keyframes rainbow-bg {
+            0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            25% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+            50% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+            75% { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        }
+        
+        /* Party mode for DEFCON 5 */
+        body[data-defcon="5"] .message:hover {
+            animation: party-mode 2s linear infinite;
+        }
+        
+        @keyframes party-mode {
+            0% { filter: hue-rotate(0deg); transform: scale(1); }
+            50% { filter: hue-rotate(180deg); transform: scale(1.05); }
+            100% { filter: hue-rotate(360deg); transform: scale(1); }
+        }
+        
+        /* Floating emojis for DEFCON 5 */
+        body[data-defcon="5"] .message::after {
+            content: "✨";
+            position: absolute;
+            right: -20px;
+            animation: float-emoji 3s ease-in-out infinite;
+        }
+        
+        @keyframes float-emoji {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(180deg); }
         }
 
         body {
@@ -106,6 +448,24 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .security-option::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+        
+        .security-option:hover::before {
+            transform: translateX(100%);
         }
         
         .security-option:hover {
@@ -117,11 +477,44 @@
             background: rgba(74, 21, 75, 0.1);
         }
         
-        .security-option[data-level="1"] { border-left: 4px solid var(--defcon1); }
-        .security-option[data-level="2"] { border-left: 4px solid var(--defcon2); }
-        .security-option[data-level="3"] { border-left: 4px solid var(--defcon3); }
-        .security-option[data-level="4"] { border-left: 4px solid var(--defcon4); }
-        .security-option[data-level="5"] { border-left: 4px solid var(--defcon5); }
+        .security-option[data-level="1"] { 
+            border-left: 4px solid var(--defcon1);
+            animation: defcon1-intensity 2s ease-in-out infinite;
+        }
+        
+        @keyframes defcon1-intensity {
+            0%, 100% { box-shadow: inset 0 0 0 rgba(220, 38, 38, 0); }
+            50% { box-shadow: inset 0 0 30px rgba(220, 38, 38, 0.3); }
+        }
+        
+        .security-option[data-level="2"] { 
+            border-left: 4px solid var(--defcon2); 
+        }
+        
+        .security-option[data-level="3"] { 
+            border-left: 4px solid var(--defcon3); 
+        }
+        
+        .security-option[data-level="4"] { 
+            border-left: 4px solid var(--defcon4);
+            animation: defcon4-bounce 3s ease-in-out infinite;
+        }
+        
+        @keyframes defcon4-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+        
+        .security-option[data-level="5"] { 
+            border-left: 4px solid var(--defcon5);
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            animation: defcon5-rainbow 5s ease-in-out infinite;
+        }
+        
+        @keyframes defcon5-rainbow {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+        }
         
         .security-level-title {
             font-weight: 700;
@@ -146,13 +539,47 @@
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
+            position: relative;
         }
         
-        .security-badge[data-level="1"] { color: var(--defcon1); border: 1px solid var(--defcon1); }
-        .security-badge[data-level="2"] { color: var(--defcon2); border: 1px solid var(--defcon2); }
-        .security-badge[data-level="3"] { color: var(--defcon3); border: 1px solid var(--defcon3); }
-        .security-badge[data-level="4"] { color: var(--defcon4); border: 1px solid var(--defcon4); }
-        .security-badge[data-level="5"] { color: var(--defcon5); border: 1px solid var(--defcon5); }
+        .security-badge[data-level="1"] { 
+            color: var(--defcon1); 
+            border: 1px solid var(--defcon1);
+            animation: critical-flash 1s ease-in-out infinite;
+        }
+        
+        @keyframes critical-flash {
+            0%, 100% { background: rgba(220, 38, 38, 0.1); }
+            50% { background: rgba(220, 38, 38, 0.3); }
+        }
+        
+        .security-badge[data-level="2"] { 
+            color: var(--defcon2); 
+            border: 1px solid var(--defcon2);
+            box-shadow: 0 0 10px rgba(234, 88, 12, 0.3);
+        }
+        
+        .security-badge[data-level="3"] { 
+            color: var(--defcon3); 
+            border: 1px solid var(--defcon3); 
+        }
+        
+        .security-badge[data-level="4"] { 
+            color: var(--defcon4); 
+            border: 1px solid var(--defcon4);
+            animation: badge-float 3s ease-in-out infinite;
+        }
+        
+        @keyframes badge-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        
+        .security-badge[data-level="5"] { 
+            color: var(--defcon5); 
+            border: 1px solid var(--defcon5);
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1));
+        }
         
         /* Connection State Indicator */
         .connection-state {
@@ -283,6 +710,173 @@
             background: var(--bg-tertiary);
             transform: none;
             box-shadow: none;
+        }
+        
+        /* Input and Button Behaviors by DEFCON Level */
+        
+        /* DEFCON 1 Inputs - Maximum Security */
+        body[data-defcon="1"] input,
+        body[data-defcon="1"] textarea {
+            background: var(--void);
+            border: 1px solid var(--blood);
+            caret-color: var(--danger);
+        }
+        
+        body[data-defcon="1"] input:focus,
+        body[data-defcon="1"] textarea:focus {
+            box-shadow: 0 0 20px var(--blood), inset 0 0 10px var(--pulse);
+            animation: input-secure 1s infinite;
+        }
+        
+        @keyframes input-secure {
+            0%, 100% { border-color: var(--blood); }
+            50% { border-color: var(--danger); }
+        }
+        
+        body[data-defcon="1"] button {
+            background: var(--blood);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 900;
+        }
+        
+        body[data-defcon="1"] button:hover:not(:disabled) {
+            background: var(--danger);
+            box-shadow: 0 0 30px var(--blood);
+            animation: button-critical 0.3s ease-in-out;
+        }
+        
+        @keyframes button-critical {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* DEFCON 2 Inputs - High Security */
+        body[data-defcon="2"] input:focus,
+        body[data-defcon="2"] textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 
+                0 0 0 3px var(--orange-glow),
+                0 0 20px var(--orange-glow);
+            animation: password-secure 2s ease-in-out infinite;
+        }
+        
+        @keyframes password-secure {
+            0%, 100% { 
+                box-shadow: 0 0 0 3px var(--orange-glow), 0 0 20px var(--orange-glow);
+            }
+            50% { 
+                box-shadow: 0 0 0 3px var(--accent), 0 0 40px var(--accent);
+            }
+        }
+        
+        /* DEFCON 3 Inputs - Moderate */
+        body[data-defcon="3"] input,
+        body[data-defcon="3"] textarea {
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        body[data-defcon="3"] input:focus,
+        body[data-defcon="3"] textarea:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--yellow-dim);
+        }
+        
+        /* DEFCON 4 Inputs - Playful */
+        body[data-defcon="4"] input:focus,
+        body[data-defcon="4"] textarea:focus {
+            border-color: var(--accent);
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05));
+            animation: input-rainbow 3s ease-in-out infinite;
+        }
+        
+        @keyframes input-rainbow {
+            0%, 100% { border-left-color: var(--accent); }
+            25% { border-left-color: #06B6D4; }
+            50% { border-left-color: #8B5CF6; }
+            75% { border-left-color: #EC4899; }
+        }
+        
+        body[data-defcon="4"] button {
+            background: linear-gradient(135deg, var(--accent), #06B6D4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        body[data-defcon="4"] button::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        body[data-defcon="4"] button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        /* DEFCON 5 Inputs - Open */
+        body[data-defcon="5"] {
+            color: var(--text-primary);
+        }
+        
+        body[data-defcon="5"] input,
+        body[data-defcon="5"] textarea {
+            background: white;
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        body[data-defcon="5"] input:focus,
+        body[data-defcon="5"] textarea:focus {
+            border-color: var(--accent);
+            animation: focus-ring 2s ease-in-out infinite;
+        }
+        
+        @keyframes focus-ring {
+            0%, 100% { 
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1);
+            }
+        }
+        
+        body[data-defcon="5"] button {
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            animation: button-wave 3s ease-in-out infinite;
+        }
+        
+        @keyframes button-wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-1deg); }
+            75% { transform: rotate(1deg); }
+        }
+        
+        /* Message animations by DEFCON level */
+        body[data-defcon="1"] .message {
+            border-left: 2px solid transparent;
+            animation: message-scan 2s ease-in-out;
+        }
+        
+        @keyframes message-scan {
+            0% { border-left-color: var(--danger); background: var(--pulse); }
+            100% { border-left-color: transparent; background: transparent; }
+        }
+        
+        body[data-defcon="5"] .message {
+            transition: all 0.3s ease;
+        }
+        
+        body[data-defcon="5"] .message:hover {
+            transform: translateX(5px);
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
         }
 
         .info-box {
@@ -1821,8 +2415,14 @@
                     return;
                 }
                 
+                // Track readyState
+                this.debug(`📊 Data channel initial state: ${dc.readyState}`, 'info');
+                
                 dc.onopen = () => {
                     this.debug(`✅ Data channel OPEN with ${peer.name}`, 'success');
+                    this.debug(`📊 Data channel readyState: ${dc.readyState}`, 'info');
+                    this.debug(`📊 Data channel bufferedAmount: ${dc.bufferedAmount}`, 'info');
+                    
                     this.connectionStates.set(peer.id, 'connected');
                     this.showConnectionState('connected', `Connected to ${peer.name}`);
                     
@@ -1839,29 +2439,45 @@
                     // Update UI
                     this.updateMembersList();
                     
-                    // Send initial sync
-                    const syncData = {
-                        type: 'sync',
-                        userId: this.userId,
-                        userName: this.userName,
-                        securityLevel: this.securityLevel,
-                        channels: Object.keys(this.channels),
-                        messages: this.getAllMessages()
-                    };
-                    
-                    this.debug(`📤 Sending sync data to ${peer.name}`);
-                    dc.send(JSON.stringify(syncData));
+                    // Delay sync slightly to ensure channel is fully ready
+                    setTimeout(() => {
+                        if (dc.readyState === 'open') {
+                            // Send initial sync
+                            const syncData = {
+                                type: 'sync',
+                                userId: this.userId,
+                                userName: this.userName,
+                                securityLevel: this.securityLevel,
+                                channels: Object.keys(this.channels),
+                                messages: this.getAllMessages()
+                            };
+                            
+                            try {
+                                const message = JSON.stringify(syncData);
+                                this.debug(`📤 Sending sync data to ${peer.name} (${message.length} bytes)`, 'info');
+                                dc.send(message);
+                                this.debug(`✅ Sync sent successfully`, 'success');
+                            } catch (error) {
+                                this.debug(`❌ Error sending sync: ${error}`, 'error');
+                            }
+                        } else {
+                            this.debug(`⚠️ Data channel not ready for sync`, 'warn');
+                        }
+                    }, 100);
                     
                     // Show system message
                     this.addSystemMessage(`${peer.name} joined the workspace`);
                 };
                 
                 dc.onmessage = (event) => {
+                    this.debug(`📨 Received message from ${peer.name}: ${event.data.substring(0, 100)}...`, 'info');
                     try {
                         const data = JSON.parse(event.data);
+                        this.debug(`📦 Parsed message type: ${data.type}`, 'info');
                         this.handlePeerMessage(peer, data);
                     } catch (error) {
                         this.debug(`❌ Error parsing message: ${error}`, 'error');
+                        this.debug(`Raw message: ${event.data}`, 'error');
                     }
                 };
                 
@@ -1885,37 +2501,79 @@
                     this.peers.delete(peer.id);
                     this.connectionStates.delete(peer.id);
                 };
+                
+                // Monitor buffered amount
+                dc.onbufferedamountlow = () => {
+                    this.debug(`📉 Buffered amount low for ${peer.name}`, 'info');
+                };
             }
             
             handlePeerMessage(peer, data) {
+                this.debug(`🔧 Handling ${data.type} message from ${peer.name}`, 'info');
+                
                 switch (data.type) {
                     case 'sync':
-                        // Sync channels and messages
-                        data.messages.forEach(msg => {
-                            if (!this.messageExists(msg)) {
-                                if (!this.channels[msg.channel]) {
-                                    this.channels[msg.channel] = { messages: [] };
-                                }
-                                this.channels[msg.channel].messages.push(msg);
-                            }
-                        });
+                        this.debug(`📥 Syncing data from ${peer.name}`, 'info');
                         
-                        // Refresh current channel
+                        // Sync messages
+                        let synced = 0;
+                        if (data.messages && Array.isArray(data.messages)) {
+                            data.messages.forEach(msg => {
+                                if (!this.messageExists(msg)) {
+                                    // Ensure channel exists
+                                    if (!this.channels[msg.channel]) {
+                                        this.channels[msg.channel] = { 
+                                            name: msg.channel,
+                                            messages: [] 
+                                        };
+                                        this.debug(`Created channel: ${msg.channel}`, 'info');
+                                    }
+                                    // Add message
+                                    this.channels[msg.channel].messages.push(msg);
+                                    synced++;
+                                }
+                            });
+                            this.debug(`📥 Synced ${synced} new messages from ${peer.name}`, 'success');
+                        }
+                        
+                        // Refresh current channel display
                         this.displayChannelMessages(this.currentChannel);
-                        this.debug(`📥 Synced ${data.messages.length} messages from ${peer.name}`);
                         break;
                         
                     case 'message':
-                        // Add message to channel
-                        const msg = data.message;
-                        if (!this.channels[msg.channel]) {
-                            this.channels[msg.channel] = { messages: [] };
+                        // Ensure we have the message object
+                        if (!data.message) {
+                            this.debug(`⚠️ Message data missing from ${peer.name}`, 'warn');
+                            return;
                         }
-                        this.channels[msg.channel].messages.push(msg);
                         
-                        // Display if current channel
-                        if (msg.channel === this.currentChannel) {
-                            this.addMessageToUI(msg);
+                        const msg = data.message;
+                        this.debug(`📬 New message from ${msg.userName} in #${msg.channel}: ${msg.text}`, 'info');
+                        
+                        // Ensure channel exists
+                        if (!this.channels[msg.channel]) {
+                            this.channels[msg.channel] = { 
+                                name: msg.channel,
+                                messages: [] 
+                            };
+                            this.debug(`Created channel for message: ${msg.channel}`, 'info');
+                        }
+                        
+                        // Check if message already exists (avoid duplicates)
+                        if (!this.messageExists(msg)) {
+                            // Add message to channel
+                            this.channels[msg.channel].messages.push(msg);
+                            this.debug(`✅ Added message to #${msg.channel}`, 'success');
+                            
+                            // Display if current channel
+                            if (msg.channel === this.currentChannel) {
+                                this.addMessageToUI(msg);
+                                this.debug(`✅ Displayed message in UI`, 'success');
+                            } else {
+                                this.debug(`💬 Message is for #${msg.channel}, current channel is #${this.currentChannel}`, 'info');
+                            }
+                        } else {
+                            this.debug(`⚠️ Duplicate message ignored`, 'warn');
                         }
                         break;
                         
@@ -1931,29 +2589,71 @@
                         break;
                         
                     case 'channel_created':
-                        // Add new channel
+                        // Add new channel if it doesn't exist
                         if (!this.channels[data.channel]) {
-                            this.channels[data.channel] = { messages: [] };
-                            // Update UI...
+                            this.channels[data.channel] = { 
+                                name: data.channel,
+                                messages: [] 
+                            };
+                            this.debug(`📁 New channel created: ${data.channel}`, 'info');
+                            
+                            // Add to UI
+                            const channelEl = document.createElement('div');
+                            channelEl.className = 'channel-item';
+                            channelEl.dataset.channel = data.channel;
+                            channelEl.innerHTML = `<span class="channel-prefix">#</span> ${data.channel}`;
+                            channelEl.onclick = () => this.switchChannel(data.channel);
+                            document.getElementById('channels-list').appendChild(channelEl);
                         }
                         break;
+                        
+                    default:
+                        this.debug(`⚠️ Unknown message type: ${data.type}`, 'warn');
                 }
             }
             
             broadcastToPeers(data) {
+                this.debug(`📢 Attempting to broadcast to ${this.peers.size} peers: ${data.type}`, 'info');
+                
+                if (this.peers.size === 0) {
+                    this.debug('⚠️ No peers connected to broadcast to', 'warn');
+                    return;
+                }
+                
                 let sent = 0;
+                let failed = 0;
+                
                 this.peers.forEach((peer, peerId) => {
-                    if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
+                    this.debug(`Checking peer ${peer.name} (${peerId})...`, 'info');
+                    
+                    if (!peer.dataChannel) {
+                        this.debug(`❌ No data channel for ${peer.name}`, 'error');
+                        failed++;
+                        return;
+                    }
+                    
+                    const state = peer.dataChannel.readyState;
+                    this.debug(`📊 Data channel state for ${peer.name}: ${state}`, 'info');
+                    
+                    if (state === 'open') {
                         try {
-                            peer.dataChannel.send(JSON.stringify(data));
+                            const message = JSON.stringify(data);
+                            this.debug(`📤 Sending to ${peer.name}: ${message.substring(0, 100)}...`, 'info');
+                            peer.dataChannel.send(message);
                             sent++;
+                            this.debug(`✅ Sent to ${peer.name}`, 'success');
                         } catch (error) {
                             this.debug(`❌ Failed to send to ${peer.name}: ${error}`, 'error');
+                            failed++;
                         }
+                    } else {
+                        this.debug(`⚠️ Channel not open with ${peer.name}, state: ${state}`, 'warn');
+                        failed++;
                     }
                 });
                 
-                this.debug(`📊 Broadcast to ${sent}/${this.peers.size} peers`);
+                this.debug(`📊 Broadcast complete: ${sent}/${this.peers.size} successful, ${failed} failed`, 
+                    sent > 0 ? 'success' : 'error');
             }
             
             // Utilities
