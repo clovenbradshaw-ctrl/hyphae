@@ -14,164 +14,98 @@
         }
 
         :root {
-            --bg-primary: #0f0f23;
-            --bg-secondary: #1a1a2e;
-            --bg-tertiary: #16213e;
-            --text-primary: #e4e4e7;
-            --text-secondary: #a1a1aa;
-            --text-muted: #71717a;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --border: #27272a;
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #252839;
+            --bg-tertiary: #2d3142;
+            --sidebar-bg: #19171d;
+            --text-primary: #d1d2d3;
+            --text-secondary: #ababad;
+            --text-muted: #565856;
+            --accent: #4a154b;
+            --accent-hover: #611f69;
+            --online: #2bac76;
+            --away: #f9a23e;
+            --offline: #565856;
+            --border: #35373b;
+            --channel-hover: rgba(255, 255, 255, 0.04);
+            --message-hover: rgba(255, 255, 255, 0.02);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .hidden {
             display: none !important;
         }
 
-        /* Layout */
-        .app-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Header */
-        .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 1rem;
+        /* Onboarding Screens */
+        .onboarding-container {
+            min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg-tertiary);
-            border-radius: 20px;
-            font-size: 0.875rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-muted);
-        }
-
-        .status-dot.connected {
-            background: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.connecting {
-            background: var(--warning);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Main content */
-        .main-content {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .workspace-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .messages-container {
-            flex: 1;
-            overflow-y: auto;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             padding: 1rem;
         }
 
-        .message {
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            animation: slideIn 0.3s;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message-author {
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 0.25rem;
-        }
-
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-left: 0.5rem;
-        }
-
-        .message-input-container {
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-        }
-
-        .message-input-wrapper {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        /* Forms */
         .card {
-            background: var(--bg-secondary);
+            background: rgba(37, 40, 57, 0.95);
+            backdrop-filter: blur(10px);
             border-radius: 12px;
-            padding: 2rem;
+            padding: 2.5rem;
             width: 100%;
             max-width: 420px;
             border: 1px solid var(--border);
-            margin: 2rem auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
-            font-size: 1.875rem;
+            font-size: 2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
             text-align: center;
         }
 
-        h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
+        .tagline {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(74, 21, 75, 0.2);
         }
 
         button {
@@ -179,16 +113,18 @@
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 1rem;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            width: 100%;
         }
 
         button:hover:not(:disabled) {
             background: var(--accent-hover);
             transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 21, 75, 0.3);
         }
 
         button:disabled {
@@ -204,39 +140,402 @@
 
         button.secondary:hover:not(:disabled) {
             background: var(--bg-tertiary);
+            transform: none;
+            box-shadow: none;
         }
 
-        input, textarea {
-            width: 100%;
-            padding: 0.75rem;
+        .info-box {
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-family: inherit;
-        }
-
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .input-group {
-            margin-bottom: 1.25rem;
-        }
-
-        label {
-            display: block;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
             font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
             color: var(--text-secondary);
         }
 
-        /* Verification UI */
-        .verification-modal {
+        .success-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: rgba(43, 172, 118, 0.1);
+            border: 1px solid var(--online);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            color: var(--online);
+        }
+
+        /* Workspace Layout */
+        .workspace-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-primary);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+
+        .workspace-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .workspace-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .workspace-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--online);
+        }
+
+        /* Channels */
+        .channels-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 0;
+        }
+
+        .section-header {
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .add-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .add-button:hover {
+            background: var(--channel-hover);
+            color: var(--text-primary);
+        }
+
+        .channel-item, .dm-item {
+            padding: 0.375rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.1s;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+
+        .channel-item:hover, .dm-item:hover {
+            background: var(--channel-hover);
+            color: var(--text-primary);
+        }
+
+        .channel-item.active, .dm-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .channel-prefix {
+            opacity: 0.5;
+            font-weight: 400;
+        }
+
+        .user-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: auto;
+        }
+
+        .user-status.online {
+            background: var(--online);
+        }
+
+        .user-status.away {
+            background: var(--away);
+        }
+
+        .user-status.offline {
+            background: var(--offline);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Channel Header */
+        .channel-header {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-secondary);
+        }
+
+        .channel-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        .channel-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-left: 1rem;
+        }
+
+        .channel-members {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            transition: background 0.1s;
+            border-radius: 4px;
+        }
+
+        .message:hover {
+            background: var(--message-hover);
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-author {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .message-text {
+            color: var(--text-primary);
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .typing-indicator {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.875rem;
+            padding: 0.5rem 0;
+        }
+
+        /* Message Input */
+        .message-input-container {
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .message-input-wrapper {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .message-input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .send-button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        /* Right Sidebar - Members */
+        .members-sidebar {
+            width: 240px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .members-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: background 0.1s;
+            cursor: pointer;
+        }
+
+        .member-item:hover {
+            background: var(--channel-hover);
+        }
+
+        .member-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            position: relative;
+        }
+
+        .member-status-dot {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        .member-status-dot.online {
+            background: var(--online);
+        }
+
+        .member-status-dot.away {
+            background: var(--away);
+        }
+
+        .member-status-dot.offline {
+            background: var(--offline);
+        }
+
+        .member-name {
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        /* Verification Modal */
+        .modal-overlay {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.8);
@@ -247,19 +546,20 @@
             padding: 1rem;
         }
 
-        .verification-card {
+        .modal-card {
             background: var(--bg-secondary);
             border-radius: 12px;
             padding: 2rem;
             max-width: 400px;
             width: 100%;
+            border: 1px solid var(--border);
         }
 
         .fingerprint-display {
             background: var(--bg-primary);
             padding: 1.5rem;
             border-radius: 8px;
-            font-family: monospace;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
             font-size: 2rem;
             text-align: center;
             margin: 1.5rem 0;
@@ -268,7 +568,7 @@
         }
 
         .emoji-display {
-            font-size: 3rem;
+            font-size: 2.5rem;
             text-align: center;
             padding: 1rem;
             background: var(--bg-primary);
@@ -277,330 +577,329 @@
             letter-spacing: 0.5em;
         }
 
-        .trust-indicator {
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .trust-new {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--accent);
-        }
-
-        .trust-verified {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--success);
-            color: var(--success);
-        }
-
-        .trust-warning {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-        }
-
-        .peer-list {
-            padding: 1rem;
-            border-left: 1px solid var(--border);
-            width: 250px;
-            background: var(--bg-secondary);
-        }
-
-        .peer-item {
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            background: var(--bg-tertiary);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .peer-status {
-            width: 6px;
-            height: 6px;
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
             border-radius: 50%;
-            background: var(--success);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
+    <!-- Onboarding Screens -->
+    <div id="onboarding" class="onboarding-container">
         <!-- Landing Screen -->
-        <div id="landing-screen" class="screen">
-            <div class="card">
-                <h1>Secure P2P Workspace</h1>
-                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
-                    End-to-end encrypted • Peer-to-peer • No servers
-                </p>
-                
-                <button onclick="app.showCreateScreen()" style="width: 100%; margin-bottom: 1rem;">
-                    Create New Workspace
-                </button>
-                
-                <button class="secondary" onclick="app.showJoinScreen()" style="width: 100%;">
-                    Join with Invite Link
-                </button>
+        <div id="landing-screen" class="card screen">
+            <h1>🔒 Secure Workspace</h1>
+            <p class="tagline">End-to-end encrypted team communication</p>
+            
+            <button onclick="app.showCreateScreen()">
+                Create New Workspace
+            </button>
+            
+            <div style="margin: 1.5rem 0; text-align: center; color: var(--text-muted);">
+                — or —
             </div>
+            
+            <button class="secondary" onclick="app.showJoinScreen()">
+                Join with Invite Link
+            </button>
         </div>
 
         <!-- Create Screen -->
-        <div id="create-screen" class="screen hidden">
-            <div class="card">
-                <h1>Create Workspace</h1>
-                
-                <div class="input-group">
-                    <label>Workspace ID</label>
-                    <input type="text" id="workspace-id" readonly style="font-family: monospace;">
-                </div>
-                
-                <div class="input-group">
-                    <label>Your Name</label>
-                    <input type="text" id="creator-name" placeholder="Enter your display name">
-                </div>
-                
-                <button onclick="app.createWorkspace()" style="width: 100%;">
-                    Create Workspace
-                </button>
-                
-                <button class="secondary" onclick="app.showLandingScreen()" style="width: 100%; margin-top: 0.5rem;">
-                    Back
-                </button>
-            </div>
-        </div>
-
-        <!-- Join Screen -->
-        <div id="join-screen" class="screen hidden">
-            <div class="card">
-                <h1>Join Workspace</h1>
-                
-                <div class="input-group">
-                    <label>Your Name</label>
-                    <input type="text" id="joiner-name" placeholder="Enter your display name">
-                </div>
-                
-                <button onclick="app.joinWorkspace()" style="width: 100%;">
-                    Join Workspace
-                </button>
-                
-                <button class="secondary" onclick="app.showLandingScreen()" style="width: 100%; margin-top: 0.5rem;">
-                    Back
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Workspace -->
-        <div id="workspace-screen" class="screen hidden">
-            <div class="header">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <h2 id="workspace-title">Workspace</h2>
-                    <button class="secondary" onclick="app.copyInviteLink()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                        Copy Invite
-                    </button>
-                </div>
-                <div class="connection-status">
-                    <div class="status-dot" id="status-dot"></div>
-                    <span id="connection-status">Disconnected</span>
+        <div id="create-screen" class="card screen hidden">
+            <h1>Create Workspace</h1>
+            
+            <div class="info-box">
+                <strong>Workspace ID:</strong>
+                <div style="margin-top: 0.5rem; font-family: monospace; font-size: 1.1rem;">
+                    <span id="workspace-id">generating...</span>
                 </div>
             </div>
             
-            <div class="main-content">
-                <div class="workspace-area">
-                    <div class="messages-container" id="messages-container"></div>
-                    
-                    <div class="message-input-container">
-                        <div class="message-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="message-input" 
-                                placeholder="Type a message..."
-                                onkeydown="if(event.key === 'Enter') app.sendMessage()"
-                            >
-                            <button onclick="app.sendMessage()">Send</button>
-                        </div>
+            <div class="input-group">
+                <label>Your Display Name</label>
+                <input type="text" id="creator-name" placeholder="Enter your name" maxlength="32">
+            </div>
+            
+            <button onclick="app.createWorkspace()">
+                Create Workspace
+            </button>
+            
+            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.5rem;">
+                Back
+            </button>
+        </div>
+
+        <!-- Join Screen -->
+        <div id="join-screen" class="card screen hidden">
+            <h1>Join Workspace</h1>
+            
+            <div id="invite-status" class="success-indicator hidden">
+                ✓ Valid invite found!
+            </div>
+            
+            <div class="input-group">
+                <label>Your Display Name</label>
+                <input type="text" id="joiner-name" placeholder="Enter your name" maxlength="32">
+            </div>
+            
+            <button onclick="app.joinWorkspace()">
+                Join Workspace
+            </button>
+            
+            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.5rem;">
+                Back
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div id="workspace" class="workspace-container hidden">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="workspace-header">
+                <div class="workspace-name">
+                    <span id="workspace-title">Workspace</span>
+                    <button class="add-button" onclick="app.copyInviteLink()" title="Copy Invite Link">
+                        📋
+                    </button>
+                </div>
+                <div class="workspace-status">
+                    <div class="status-indicator"></div>
+                    <span id="connection-count">1 connected</span>
+                </div>
+            </div>
+            
+            <div class="channels-section">
+                <!-- Channels -->
+                <div class="section-header">
+                    <span>Channels</span>
+                    <button class="add-button" onclick="app.createChannel()">+</button>
+                </div>
+                <div id="channels-list">
+                    <div class="channel-item active" data-channel="general">
+                        <span class="channel-prefix">#</span> general
+                    </div>
+                    <div class="channel-item" data-channel="random">
+                        <span class="channel-prefix">#</span> random
                     </div>
                 </div>
                 
-                <div class="peer-list">
-                    <h3 style="margin-bottom: 1rem;">Connected Peers</h3>
-                    <div id="peer-list"></div>
+                <!-- Direct Messages -->
+                <div class="section-header" style="margin-top: 1rem;">
+                    <span>Direct Messages</span>
+                </div>
+                <div id="dm-list"></div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Channel Header -->
+            <div class="channel-header">
+                <div style="display: flex; align-items: center;">
+                    <div class="channel-title">
+                        <span id="current-channel-name"># general</span>
+                    </div>
+                    <div class="channel-description" id="channel-description">
+                        Company-wide announcements and updates
+                    </div>
+                </div>
+                <div class="channel-members">
+                    <span id="member-count">2 members</span>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="messages-container" id="messages-container">
+                <!-- Messages will be added here -->
+            </div>
+            
+            <!-- Typing Indicators -->
+            <div id="typing-indicators" class="hidden" style="padding: 0 1.5rem;">
+                <div class="typing-indicator">
+                    <span id="typing-text"></span> is typing...
+                </div>
+            </div>
+            
+            <!-- Message Input -->
+            <div class="message-input-container">
+                <div class="message-input-wrapper">
+                    <input 
+                        type="text" 
+                        class="message-input" 
+                        id="message-input"
+                        placeholder="Message #general"
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); app.sendMessage(); }"
+                        oninput="app.handleTyping()"
+                    >
+                    <button class="send-button" onclick="app.sendMessage()">Send</button>
                 </div>
             </div>
         </div>
+        
+        <!-- Right Sidebar - Members -->
+        <div class="members-sidebar">
+            <div class="members-header">Members</div>
+            <div id="members-list">
+                <!-- Members will be added here -->
+            </div>
+        </div>
+    </div>
 
-        <!-- Verification Modal -->
-        <div id="verification-modal" class="verification-modal hidden">
-            <div class="verification-card">
-                <h2>Verify Connection</h2>
-                <div id="trust-status" class="trust-indicator trust-new">
-                    New connection
-                </div>
-                
-                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
-                    Compare this code with your peer:
-                </p>
-                
-                <div class="fingerprint-display" id="verification-code">0000</div>
-                
-                <div class="emoji-display" id="verification-emoji">🔒 🔒 🔒</div>
-                
-                <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">
-                    Ask: "Is your code <span id="code-spoken">zero-zero-zero-zero</span>?"
-                </p>
-                
-                <div style="display: flex; gap: 0.5rem;">
-                    <button onclick="app.acceptVerification()" style="flex: 1;">
-                        Codes Match ✓
-                    </button>
-                    <button class="secondary" onclick="app.rejectVerification()" style="flex: 1;">
-                        No Match ✗
-                    </button>
-                </div>
+    <!-- Verification Modal -->
+    <div id="verification-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2 style="margin-bottom: 1rem;">Verify Connection</h2>
+            
+            <div class="info-box" id="verification-info">
+                New connection with <span id="peer-name">User</span>
+            </div>
+            
+            <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                Compare this security code:
+            </p>
+            
+            <div class="fingerprint-display" id="verification-code">0000</div>
+            
+            <div class="emoji-display" id="verification-emoji">🔒 🔒 🔒</div>
+            
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Ask them: "What's your security code?"
+            </p>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="app.acceptVerification()">
+                    ✓ Codes Match
+                </button>
+                <button class="secondary" onclick="app.rejectVerification()">
+                    ✗ Different
+                </button>
             </div>
         </div>
     </div>
 
     <script>
         // Main Application
-        class P2PWorkspaceApp {
+        class SecureWorkspaceApp {
             constructor() {
+                // Core state
                 this.workspaceId = null;
                 this.userName = null;
+                this.userId = null;
                 this.workspaceKey = null;
-                this.peers = new Map();
-                this.messages = [];
-                this.eventLog = [];
-                this.trustedFingerprints = new Map();
-                this.signaler = null;
                 this.isHost = false;
                 
+                // Channels and messages
+                this.currentChannel = 'general';
+                this.channels = {
+                    general: { name: 'general', description: 'Company-wide announcements and updates', messages: [] },
+                    random: { name: 'random', description: 'Random conversations and watercooler chat', messages: [] }
+                };
+                
+                // P2P state
+                this.peers = new Map();
+                this.members = new Map();
+                this.typingTimers = new Map();
+                
+                // Event log for sync
+                this.eventLog = [];
+                
                 // Initialize
-                this.initializeApp();
+                this.init();
             }
-
-            initializeApp() {
-                // Check for invite hash
+            
+            init() {
+                // Generate user ID
+                this.userId = 'U' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                
+                // Check for invite in URL
                 const hash = window.location.hash.slice(1);
                 if (hash) {
                     this.showJoinScreen();
                     this.parseInvite(hash);
                 }
                 
-                // Initialize local storage
-                this.loadLocalData();
+                // Load saved workspace
+                this.loadSavedWorkspace();
             }
-
-            // Storage
-            async loadLocalData() {
-                const stored = localStorage.getItem('workspace');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    this.workspaceId = data.workspaceId;
-                    this.userName = data.userName;
-                    this.workspaceKey = data.workspaceKey;
-                    this.isHost = data.isHost;
-                    
-                    // Load trusted fingerprints
-                    const trusted = localStorage.getItem('trustedFingerprints');
-                    if (trusted) {
-                        this.trustedFingerprints = new Map(JSON.parse(trusted));
-                    }
-                    
-                    // Load event log
-                    const events = localStorage.getItem('eventLog');
-                    if (events) {
-                        this.eventLog = JSON.parse(events);
-                    }
-                }
-            }
-
-            saveLocalData() {
-                localStorage.setItem('workspace', JSON.stringify({
-                    workspaceId: this.workspaceId,
-                    userName: this.userName,
-                    workspaceKey: this.workspaceKey,
-                    isHost: this.isHost,
-                    timestamp: Date.now()
-                }));
-                
-                localStorage.setItem('trustedFingerprints', 
-                    JSON.stringify([...this.trustedFingerprints])
-                );
-                
-                localStorage.setItem('eventLog', JSON.stringify(this.eventLog));
-            }
-
-            // Event Sourcing
-            appendEvent(event) {
-                const e = {
-                    id: `E/${this.generateId()}`,
-                    s: event.subject,
-                    p: event.predicate,
-                    o: event.object,
-                    at: new Date().toISOString(),
-                    recorded_at: new Date().toISOString(),
-                    meta: event.meta || {}
-                };
-                
-                this.eventLog.push(e);
-                this.saveLocalData();
-                
-                // Broadcast to peers
-                this.broadcastEvent(e);
-                
-                return e;
-            }
-
-            broadcastEvent(event) {
-                this.peers.forEach(peer => {
-                    if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
-                        peer.dataChannel.send(JSON.stringify({
-                            type: 'event',
-                            event: event
-                        }));
-                    }
-                });
-            }
-
-            // UI Navigation
+            
+            // Navigation
             showLandingScreen() {
-                this.hideAllScreens();
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('landing-screen').classList.remove('hidden');
             }
-
+            
             showCreateScreen() {
-                this.hideAllScreens();
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('create-screen').classList.remove('hidden');
                 
                 // Generate workspace ID
                 const id = this.generateWorkspaceName();
-                document.getElementById('workspace-id').value = id;
+                document.getElementById('workspace-id').textContent = id;
                 this.workspaceId = id;
             }
-
+            
             showJoinScreen() {
-                this.hideAllScreens();
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('join-screen').classList.remove('hidden');
             }
-
-            showWorkspaceScreen() {
-                this.hideAllScreens();
-                document.getElementById('workspace-screen').classList.remove('hidden');
-                document.getElementById('workspace-title').textContent = this.workspaceId;
+            
+            showWorkspace() {
+                document.getElementById('onboarding').classList.add('hidden');
+                document.getElementById('workspace').classList.remove('hidden');
                 
-                // Start signaling
+                // Update UI
+                document.getElementById('workspace-title').textContent = this.workspaceId;
+                document.getElementById('message-input').placeholder = `Message #${this.currentChannel}`;
+                
+                // Add self to members
+                this.members.set(this.userId, {
+                    id: this.userId,
+                    name: this.userName,
+                    status: 'online',
+                    isLocal: true
+                });
+                
+                // Start P2P signaling
                 this.startSignaling();
+                
+                // Update member list
+                this.updateMembersList();
+                
+                // Add welcome message
+                this.addSystemMessage(`Welcome to ${this.workspaceId}! Share the invite link to add team members.`);
             }
-
-            hideAllScreens() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            }
-
-            // Workspace Creation
+            
+            // Workspace Management
             async createWorkspace() {
                 const name = document.getElementById('creator-name').value.trim();
                 if (!name) {
@@ -612,21 +911,24 @@
                 this.isHost = true;
                 this.workspaceKey = this.generateKey();
                 
-                // Create genesis event
+                // Save workspace
+                this.saveWorkspace();
+                
+                // Log creation event
                 this.appendEvent({
-                    subject: this.userName,
-                    predicate: 'created',
-                    object: this.workspaceId,
-                    meta: { host: true }
+                    type: 'workspace_created',
+                    userId: this.userId,
+                    userName: this.userName,
+                    workspaceId: this.workspaceId
                 });
                 
-                this.saveLocalData();
-                this.showWorkspaceScreen();
+                // Show workspace
+                this.showWorkspace();
                 
-                // Copy invite link
-                this.copyInviteLink();
+                // Auto-copy invite
+                setTimeout(() => this.copyInviteLink(), 500);
             }
-
+            
             async joinWorkspace() {
                 const name = document.getElementById('joiner-name').value.trim();
                 if (!name) {
@@ -637,112 +939,436 @@
                 this.userName = name;
                 this.isHost = false;
                 
-                // Join event
+                // Save workspace
+                this.saveWorkspace();
+                
+                // Log join event
                 this.appendEvent({
-                    subject: this.userName,
-                    predicate: 'joined',
-                    object: this.workspaceId
+                    type: 'user_joined',
+                    userId: this.userId,
+                    userName: this.userName
                 });
                 
-                this.saveLocalData();
-                this.showWorkspaceScreen();
+                // Show workspace
+                this.showWorkspace();
             }
-
-            // Invite Management
-            generateInviteLink() {
-                const inviteData = {
-                    workspaceId: this.workspaceId,
-                    key: this.workspaceKey,
-                    signal: window.location.origin // In production, use actual signal server
+            
+            // Channel Management
+            switchChannel(channelName) {
+                // Update active state
+                document.querySelectorAll('.channel-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.channel === channelName);
+                });
+                
+                this.currentChannel = channelName;
+                const channel = this.channels[channelName];
+                
+                // Update header
+                document.getElementById('current-channel-name').textContent = `# ${channelName}`;
+                document.getElementById('channel-description').textContent = channel.description || '';
+                document.getElementById('message-input').placeholder = `Message #${channelName}`;
+                
+                // Display messages
+                this.displayChannelMessages(channelName);
+            }
+            
+            createChannel() {
+                const name = prompt('Channel name (lowercase, no spaces):');
+                if (!name) return;
+                
+                const channelId = name.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                if (this.channels[channelId]) {
+                    alert('Channel already exists');
+                    return;
+                }
+                
+                // Add channel
+                this.channels[channelId] = {
+                    name: channelId,
+                    description: '',
+                    messages: []
                 };
                 
-                const encoded = btoa(JSON.stringify(inviteData));
-                return `${window.location.origin}${window.location.pathname}#${encoded}`;
+                // Add to UI
+                const channelEl = document.createElement('div');
+                channelEl.className = 'channel-item';
+                channelEl.dataset.channel = channelId;
+                channelEl.innerHTML = `<span class="channel-prefix">#</span> ${channelId}`;
+                channelEl.onclick = () => this.switchChannel(channelId);
+                document.getElementById('channels-list').appendChild(channelEl);
+                
+                // Broadcast channel creation
+                this.broadcastToPeers({
+                    type: 'channel_created',
+                    channel: channelId
+                });
+                
+                // Switch to new channel
+                this.switchChannel(channelId);
             }
-
-            parseInvite(hash) {
-                try {
-                    const decoded = atob(hash);
-                    const inviteData = JSON.parse(decoded);
-                    this.workspaceId = inviteData.workspaceId;
-                    this.workspaceKey = inviteData.key;
-                    return inviteData;
-                } catch (e) {
-                    console.error('Invalid invite link');
-                    return null;
+            
+            // Messaging
+            sendMessage() {
+                const input = document.getElementById('message-input');
+                const text = input.value.trim();
+                if (!text) return;
+                
+                const message = {
+                    id: 'M' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+                    channel: this.currentChannel,
+                    userId: this.userId,
+                    userName: this.userName,
+                    text: text,
+                    timestamp: Date.now()
+                };
+                
+                // Add to channel
+                this.channels[this.currentChannel].messages.push(message);
+                
+                // Display
+                this.addMessageToUI(message);
+                
+                // Clear input
+                input.value = '';
+                
+                // Broadcast to peers
+                this.broadcastToPeers({
+                    type: 'message',
+                    message: message
+                });
+                
+                // Log event
+                this.appendEvent({
+                    type: 'message_sent',
+                    channel: this.currentChannel,
+                    message: message
+                });
+            }
+            
+            addMessageToUI(message) {
+                const container = document.getElementById('messages-container');
+                
+                const messageEl = document.createElement('div');
+                messageEl.className = 'message';
+                
+                const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                
+                const initials = message.userName.split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+                
+                messageEl.innerHTML = `
+                    <div class="message-avatar">${initials}</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-author">${message.userName}</span>
+                            <span class="message-time">${time}</span>
+                        </div>
+                        <div class="message-text">${this.escapeHtml(message.text)}</div>
+                    </div>
+                `;
+                
+                container.appendChild(messageEl);
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            addSystemMessage(text) {
+                const container = document.getElementById('messages-container');
+                
+                const messageEl = document.createElement('div');
+                messageEl.className = 'message';
+                messageEl.style.fontStyle = 'italic';
+                messageEl.style.color = 'var(--text-secondary)';
+                messageEl.innerHTML = `
+                    <div style="padding: 0.5rem 0;">${text}</div>
+                `;
+                
+                container.appendChild(messageEl);
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            displayChannelMessages(channelName) {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                
+                const messages = this.channels[channelName].messages;
+                messages.forEach(msg => this.addMessageToUI(msg));
+            }
+            
+            // Typing Indicators
+            handleTyping() {
+                // Clear existing timer
+                if (this.typingTimers.has(this.userId)) {
+                    clearTimeout(this.typingTimers.get(this.userId));
+                }
+                
+                // Broadcast typing
+                this.broadcastToPeers({
+                    type: 'typing',
+                    userId: this.userId,
+                    userName: this.userName,
+                    channel: this.currentChannel
+                });
+                
+                // Set timer to stop
+                const timer = setTimeout(() => {
+                    this.broadcastToPeers({
+                        type: 'stopped_typing',
+                        userId: this.userId
+                    });
+                }, 1000);
+                
+                this.typingTimers.set(this.userId, timer);
+            }
+            
+            showTypingIndicator(userName) {
+                const indicator = document.getElementById('typing-indicators');
+                const text = document.getElementById('typing-text');
+                text.textContent = userName;
+                indicator.classList.remove('hidden');
+                
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    indicator.classList.add('hidden');
+                }, 3000);
+            }
+            
+            // Members Management
+            updateMembersList() {
+                const container = document.getElementById('members-list');
+                container.innerHTML = '';
+                
+                const dmList = document.getElementById('dm-list');
+                dmList.innerHTML = '';
+                
+                let onlineCount = 0;
+                
+                this.members.forEach(member => {
+                    // Update member count
+                    if (member.status === 'online') onlineCount++;
+                    
+                    // Add to members sidebar
+                    const memberEl = document.createElement('div');
+                    memberEl.className = 'member-item';
+                    
+                    const initials = member.name.split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2);
+                    
+                    memberEl.innerHTML = `
+                        <div class="member-avatar">
+                            ${initials}
+                            <div class="member-status-dot ${member.status}"></div>
+                        </div>
+                        <div class="member-name">${member.name} ${member.isLocal ? '(you)' : ''}</div>
+                    `;
+                    container.appendChild(memberEl);
+                    
+                    // Add to DM list (if not self)
+                    if (!member.isLocal) {
+                        const dmEl = document.createElement('div');
+                        dmEl.className = 'dm-item';
+                        dmEl.innerHTML = `
+                            <div class="user-avatar">${initials}</div>
+                            <span>${member.name}</span>
+                            <div class="user-status ${member.status}"></div>
+                        `;
+                        dmList.appendChild(dmEl);
+                    }
+                });
+                
+                // Update counts
+                document.getElementById('member-count').textContent = `${this.members.size} member${this.members.size !== 1 ? 's' : ''}`;
+                document.getElementById('connection-count').textContent = `${onlineCount} connected`;
+            }
+            
+            // P2P Communication
+            startSignaling() {
+                // Use BroadcastChannel for local testing
+                this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
+                
+                this.signaler.onmessage = async (event) => {
+                    const { from, to, data } = event.data;
+                    
+                    // Ignore own messages
+                    if (from === this.userId) return;
+                    
+                    // Handle broadcasts or targeted messages
+                    if (to !== this.userId && to !== '*') return;
+                    
+                    await this.handleSignal(from, data);
+                };
+                
+                // Announce presence
+                this.broadcastSignal('*', {
+                    type: 'announce',
+                    userId: this.userId,
+                    userName: this.userName
+                });
+            }
+            
+            async handleSignal(from, data) {
+                switch (data.type) {
+                    case 'announce':
+                        // New peer joined
+                        if (this.isHost || this.peers.has(from)) {
+                            await this.connectToPeer(from, data.userName);
+                        }
+                        break;
+                        
+                    case 'offer':
+                        await this.handleOffer(from, data.offer, data.userName);
+                        break;
+                        
+                    case 'answer':
+                        await this.handleAnswer(from, data.answer);
+                        break;
+                        
+                    case 'ice':
+                        await this.handleIceCandidate(from, data.candidate);
+                        break;
                 }
             }
-
-            copyInviteLink() {
-                const link = this.generateInviteLink();
-                navigator.clipboard.writeText(link).then(() => {
-                    alert('Invite link copied to clipboard!');
-                });
+            
+            broadcastSignal(to, data) {
+                if (this.signaler) {
+                    this.signaler.postMessage({
+                        from: this.userId,
+                        to: to,
+                        data: data
+                    });
+                }
             }
-
-            // WebRTC Connection
-            async createPeerConnection(peerId) {
-                const config = {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' }
-                    ]
-                };
+            
+            async connectToPeer(peerId, peerName) {
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
                 
-                const pc = new RTCPeerConnection(config);
                 const peer = {
                     id: peerId,
+                    name: peerName,
                     connection: pc,
-                    dataChannel: null,
-                    fingerprint: null,
-                    verified: false
+                    dataChannel: null
                 };
                 
-                // Set up data channel
-                if (this.isHost) {
-                    peer.dataChannel = pc.createDataChannel('data');
-                    this.setupDataChannel(peer);
-                } else {
-                    pc.ondatachannel = (event) => {
-                        peer.dataChannel = event.channel;
-                        this.setupDataChannel(peer);
-                    };
-                }
+                // Create data channel
+                peer.dataChannel = pc.createDataChannel('data');
+                this.setupDataChannel(peer);
                 
-                // Handle ICE candidates
+                // Setup ICE handling
                 pc.onicecandidate = (event) => {
                     if (event.candidate) {
-                        this.sendSignal(peerId, {
+                        this.broadcastSignal(peerId, {
                             type: 'ice',
                             candidate: event.candidate
                         });
                     }
                 };
                 
-                // Monitor connection state
-                pc.onconnectionstatechange = () => {
-                    this.updateConnectionStatus();
-                    if (pc.connectionState === 'connected') {
-                        this.verifyPeer(peer);
+                // Create offer
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                this.peers.set(peerId, peer);
+                
+                this.broadcastSignal(peerId, {
+                    type: 'offer',
+                    offer: offer,
+                    userName: this.userName
+                });
+            }
+            
+            async handleOffer(from, offer, peerName) {
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                const peer = {
+                    id: from,
+                    name: peerName,
+                    connection: pc,
+                    dataChannel: null
+                };
+                
+                // Setup data channel
+                pc.ondatachannel = (event) => {
+                    peer.dataChannel = event.channel;
+                    this.setupDataChannel(peer);
+                };
+                
+                // Setup ICE handling
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        this.broadcastSignal(from, {
+                            type: 'ice',
+                            candidate: event.candidate
+                        });
                     }
                 };
                 
-                this.peers.set(peerId, peer);
-                return peer;
+                // Set remote description and create answer
+                await pc.setRemoteDescription(offer);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                
+                this.peers.set(from, peer);
+                
+                this.broadcastSignal(from, {
+                    type: 'answer',
+                    answer: answer
+                });
             }
-
+            
+            async handleAnswer(from, answer) {
+                const peer = this.peers.get(from);
+                if (peer) {
+                    await peer.connection.setRemoteDescription(answer);
+                }
+            }
+            
+            async handleIceCandidate(from, candidate) {
+                const peer = this.peers.get(from);
+                if (peer) {
+                    await peer.connection.addIceCandidate(candidate);
+                }
+            }
+            
             setupDataChannel(peer) {
                 const dc = peer.dataChannel;
                 
                 dc.onopen = () => {
-                    console.log('Data channel opened with', peer.id);
-                    this.updatePeerList();
+                    console.log('Connected to', peer.name);
+                    
+                    // Add to members
+                    this.members.set(peer.id, {
+                        id: peer.id,
+                        name: peer.name,
+                        status: 'online'
+                    });
+                    
+                    // Update UI
+                    this.updateMembersList();
                     
                     // Send initial sync
                     dc.send(JSON.stringify({
                         type: 'sync',
+                        userId: this.userId,
                         userName: this.userName,
-                        eventLog: this.eventLog
+                        channels: Object.keys(this.channels),
+                        messages: this.getAllMessages()
                     }));
+                    
+                    // Show verification (simplified for demo)
+                    this.addSystemMessage(`${peer.name} joined the workspace`);
                 };
                 
                 dc.onmessage = (event) => {
@@ -750,388 +1376,198 @@
                 };
                 
                 dc.onclose = () => {
-                    console.log('Data channel closed with', peer.id);
-                    this.updatePeerList();
+                    console.log('Disconnected from', peer.name);
+                    
+                    // Update member status
+                    const member = this.members.get(peer.id);
+                    if (member) {
+                        member.status = 'offline';
+                        this.updateMembersList();
+                    }
+                    
+                    this.addSystemMessage(`${peer.name} left the workspace`);
                 };
             }
-
-            handlePeerMessage(peer, message) {
-                switch (message.type) {
+            
+            handlePeerMessage(peer, data) {
+                switch (data.type) {
                     case 'sync':
-                        this.syncEvents(message.eventLog);
-                        if (!this.peers.get(peer.id).userName) {
-                            this.peers.get(peer.id).userName = message.userName;
-                            this.updatePeerList();
-                        }
-                        break;
+                        // Sync channels and messages
+                        data.messages.forEach(msg => {
+                            if (!this.messageExists(msg)) {
+                                if (!this.channels[msg.channel]) {
+                                    this.channels[msg.channel] = { messages: [] };
+                                }
+                                this.channels[msg.channel].messages.push(msg);
+                            }
+                        });
                         
-                    case 'event':
-                        this.receiveEvent(message.event);
+                        // Refresh current channel
+                        this.displayChannelMessages(this.currentChannel);
                         break;
                         
                     case 'message':
-                        this.receiveMessage(message);
+                        // Add message to channel
+                        const msg = data.message;
+                        if (!this.channels[msg.channel]) {
+                            this.channels[msg.channel] = { messages: [] };
+                        }
+                        this.channels[msg.channel].messages.push(msg);
+                        
+                        // Display if current channel
+                        if (msg.channel === this.currentChannel) {
+                            this.addMessageToUI(msg);
+                        }
+                        break;
+                        
+                    case 'typing':
+                        if (data.channel === this.currentChannel) {
+                            this.showTypingIndicator(data.userName);
+                        }
+                        break;
+                        
+                    case 'stopped_typing':
+                        // Hide typing indicator
+                        document.getElementById('typing-indicators').classList.add('hidden');
+                        break;
+                        
+                    case 'channel_created':
+                        // Add new channel
+                        if (!this.channels[data.channel]) {
+                            this.channels[data.channel] = { messages: [] };
+                            // Update UI...
+                        }
                         break;
                 }
             }
-
-            syncEvents(remoteEvents) {
-                // Merge remote events with local
-                const localIds = new Set(this.eventLog.map(e => e.id));
-                const newEvents = remoteEvents.filter(e => !localIds.has(e.id));
-                
-                this.eventLog.push(...newEvents);
-                this.eventLog.sort((a, b) => a.at.localeCompare(b.at));
-                this.saveLocalData();
-                
-                // Process events to rebuild state
-                this.rebuildStateFromEvents();
-            }
-
-            receiveEvent(event) {
-                if (!this.eventLog.find(e => e.id === event.id)) {
-                    this.eventLog.push(event);
-                    this.saveLocalData();
-                    this.processEvent(event);
-                }
-            }
-
-            processEvent(event) {
-                // Handle different event types
-                if (event.p === 'sent_message') {
-                    this.displayMessage({
-                        author: event.s,
-                        text: event.meta.text,
-                        timestamp: event.at
-                    });
-                }
-            }
-
-            rebuildStateFromEvents() {
-                // Clear current state
-                document.getElementById('messages-container').innerHTML = '';
-                
-                // Replay all events
-                this.eventLog.forEach(event => {
-                    this.processEvent(event);
-                });
-            }
-
-            // Verification
-            async verifyPeer(peer) {
-                const stats = await peer.connection.getStats();
-                let localFp, remoteFp;
-                
-                stats.forEach(stat => {
-                    if (stat.type === 'certificate' && stat.fingerprint) {
-                        localFp = stat.fingerprint;
-                    }
-                });
-                
-                // For demo, generate simple fingerprint
-                const combined = this.workspaceKey + peer.id;
-                const hash = await this.hashString(combined);
-                const code = this.generateVerificationCode(hash);
-                
-                peer.fingerprint = code.hex;
-                
-                // Check trust
-                const trusted = this.trustedFingerprints.get(peer.id);
-                let trustStatus = 'new';
-                
-                if (trusted === peer.fingerprint) {
-                    trustStatus = 'verified';
-                    peer.verified = true;
-                } else if (trusted && trusted !== peer.fingerprint) {
-                    trustStatus = 'warning';
-                }
-                
-                // Show verification UI
-                if (trustStatus !== 'verified') {
-                    this.showVerification(peer, code, trustStatus);
-                }
-            }
-
-            showVerification(peer, code, trustStatus) {
-                const modal = document.getElementById('verification-modal');
-                modal.classList.remove('hidden');
-                
-                // Update UI
-                document.getElementById('verification-code').textContent = code.number;
-                document.getElementById('verification-emoji').textContent = code.emoji;
-                document.getElementById('code-spoken').textContent = code.spoken;
-                
-                // Update trust indicator
-                const indicator = document.getElementById('trust-status');
-                indicator.className = `trust-indicator trust-${trustStatus}`;
-                indicator.textContent = trustStatus === 'new' ? 
-                    `New connection with ${peer.userName || 'peer'}` :
-                    `⚠️ Fingerprint changed for ${peer.userName || 'peer'}!`;
-                
-                // Store current verification
-                this.currentVerification = { peer, code };
-            }
-
-            acceptVerification() {
-                const { peer } = this.currentVerification;
-                peer.verified = true;
-                this.trustedFingerprints.set(peer.id, peer.fingerprint);
-                this.saveLocalData();
-                
-                document.getElementById('verification-modal').classList.add('hidden');
-                this.currentVerification = null;
-            }
-
-            rejectVerification() {
-                const { peer } = this.currentVerification;
-                peer.connection.close();
-                this.peers.delete(peer.id);
-                
-                document.getElementById('verification-modal').classList.add('hidden');
-                this.currentVerification = null;
-                
-                alert('Connection rejected due to verification failure');
-            }
-
-            // Messaging
-            sendMessage() {
-                const input = document.getElementById('message-input');
-                const text = input.value.trim();
-                
-                if (!text) return;
-                
-                // Create message event
-                const event = this.appendEvent({
-                    subject: this.userName,
-                    predicate: 'sent_message',
-                    object: this.workspaceId,
-                    meta: { text }
-                });
-                
-                // Display locally
-                this.displayMessage({
-                    author: this.userName,
-                    text,
-                    timestamp: event.at
-                });
-                
-                // Clear input
-                input.value = '';
-            }
-
-            receiveMessage(message) {
-                this.displayMessage(message);
-            }
-
-            displayMessage(message) {
-                const container = document.getElementById('messages-container');
-                const messageEl = document.createElement('div');
-                messageEl.className = 'message';
-                
-                const time = new Date(message.timestamp).toLocaleTimeString();
-                
-                messageEl.innerHTML = `
-                    <div class="message-author">
-                        ${message.author}
-                        <span class="message-time">${time}</span>
-                    </div>
-                    <div>${message.text}</div>
-                `;
-                
-                container.appendChild(messageEl);
-                container.scrollTop = container.scrollHeight;
-            }
-
-            // UI Updates
-            updateConnectionStatus() {
-                const connected = [...this.peers.values()].some(p => 
-                    p.connection.connectionState === 'connected'
-                );
-                
-                const statusDot = document.getElementById('status-dot');
-                const statusText = document.getElementById('connection-status');
-                
-                if (connected) {
-                    statusDot.className = 'status-dot connected';
-                    statusText.textContent = 'Connected';
-                } else if ([...this.peers.values()].some(p => 
-                    p.connection.connectionState === 'connecting')) {
-                    statusDot.className = 'status-dot connecting';
-                    statusText.textContent = 'Connecting...';
-                } else {
-                    statusDot.className = 'status-dot';
-                    statusText.textContent = 'Disconnected';
-                }
-            }
-
-            updatePeerList() {
-                const container = document.getElementById('peer-list');
-                container.innerHTML = '';
-                
+            
+            broadcastToPeers(data) {
                 this.peers.forEach(peer => {
-                    if (peer.connection.connectionState === 'connected') {
-                        const peerEl = document.createElement('div');
-                        peerEl.className = 'peer-item';
-                        peerEl.innerHTML = `
-                            <div class="peer-status"></div>
-                            <div>${peer.userName || 'Connecting...'}</div>
-                            ${peer.verified ? '✓' : ''}
-                        `;
-                        container.appendChild(peerEl);
+                    if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
+                        peer.dataChannel.send(JSON.stringify(data));
                     }
                 });
             }
-
-            // Signaling (simplified - use WebSocket in production)
-            startSignaling() {
-                // For demo, use BroadcastChannel for local testing
-                this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
-                
-                this.signaler.onmessage = async (event) => {
-                    const { from, to, data } = event.data;
-                    
-                    if (to !== this.userName && to !== '*') return;
-                    if (from === this.userName) return;
-                    
-                    switch (data.type) {
-                        case 'announce':
-                            // Someone joined, connect to them
-                            if (this.isHost) {
-                                this.connectToPeer(from);
-                            }
-                            break;
-                            
-                        case 'offer':
-                            await this.handleOffer(from, data.offer);
-                            break;
-                            
-                        case 'answer':
-                            await this.handleAnswer(from, data.answer);
-                            break;
-                            
-                        case 'ice':
-                            await this.handleIceCandidate(from, data.candidate);
-                            break;
-                    }
-                };
-                
-                // Announce presence
-                this.sendSignal('*', { type: 'announce' });
-            }
-
-            sendSignal(to, data) {
-                if (this.signaler) {
-                    this.signaler.postMessage({
-                        from: this.userName,
-                        to,
-                        data
-                    });
-                }
-            }
-
-            async connectToPeer(peerId) {
-                const peer = await this.createPeerConnection(peerId);
-                const offer = await peer.connection.createOffer();
-                await peer.connection.setLocalDescription(offer);
-                
-                this.sendSignal(peerId, {
-                    type: 'offer',
-                    offer
-                });
-            }
-
-            async handleOffer(from, offer) {
-                const peer = await this.createPeerConnection(from);
-                await peer.connection.setRemoteDescription(offer);
-                
-                const answer = await peer.connection.createAnswer();
-                await peer.connection.setLocalDescription(answer);
-                
-                this.sendSignal(from, {
-                    type: 'answer',
-                    answer
-                });
-            }
-
-            async handleAnswer(from, answer) {
-                const peer = this.peers.get(from);
-                if (peer) {
-                    await peer.connection.setRemoteDescription(answer);
-                }
-            }
-
-            async handleIceCandidate(from, candidate) {
-                const peer = this.peers.get(from);
-                if (peer) {
-                    await peer.connection.addIceCandidate(candidate);
-                }
-            }
-
+            
             // Utilities
+            getAllMessages() {
+                const messages = [];
+                Object.entries(this.channels).forEach(([channel, data]) => {
+                    messages.push(...data.messages);
+                });
+                return messages;
+            }
+            
+            messageExists(message) {
+                const channel = this.channels[message.channel];
+                return channel && channel.messages.some(m => m.id === message.id);
+            }
+            
             generateWorkspaceName() {
-                const adjectives = ['quantum', 'stellar', 'crystal', 'nebula'];
-                const nouns = ['nexus', 'prism', 'cipher', 'beacon'];
+                const adjectives = ['stellar', 'quantum', 'crystal', 'neon', 'cyber'];
+                const nouns = ['nexus', 'hub', 'base', 'sync', 'link'];
                 const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
                 const noun = nouns[Math.floor(Math.random() * nouns.length)];
                 const num = Math.floor(Math.random() * 9000) + 1000;
                 return `${adj}-${noun}-${num}`;
             }
-
+            
             generateKey() {
                 const array = new Uint8Array(32);
                 crypto.getRandomValues(array);
-                return btoa(String.fromCharCode(...array));
+                return btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '');
             }
-
-            generateId() {
-                return Date.now().toString(36) + Math.random().toString(36).substr(2);
-            }
-
-            async hashString(str) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(str);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                return new Uint8Array(hashBuffer);
-            }
-
-            generateVerificationCode(hash) {
-                const bytes = Array.from(hash);
-                
-                // 4-digit number
-                const number = ((bytes[0] << 8) | bytes[1]) % 10000;
-                const numberStr = number.toString().padStart(4, '0');
-                
-                // Spoken version
-                const spoken = numberStr.split('').map(d => {
-                    const words = ['zero', 'one', 'two', 'three', 'four', 
-                                  'five', 'six', 'seven', 'eight', 'nine'];
-                    return words[parseInt(d)];
-                }).join('-');
-                
-                // Emoji version
-                const emojis = ['🔒', '🔑', '🛡️', '⚡', '🌟', '🎯', '🚀', '💎'];
-                const emojiCode = [
-                    emojis[bytes[0] % 8],
-                    emojis[bytes[1] % 8],
-                    emojis[bytes[2] % 8]
-                ].join(' ');
-                
-                // Hex version
-                const hex = bytes.slice(0, 4)
-                    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
-                    .join(':');
-                
-                return {
-                    number: numberStr,
-                    spoken,
-                    emoji: emojiCode,
-                    hex
+            
+            generateInviteLink() {
+                const data = {
+                    workspaceId: this.workspaceId,
+                    key: this.workspaceKey
                 };
+                const encoded = btoa(JSON.stringify(data));
+                return `${window.location.origin}${window.location.pathname}#${encoded}`;
+            }
+            
+            parseInvite(hash) {
+                try {
+                    const data = JSON.parse(atob(hash));
+                    this.workspaceId = data.workspaceId;
+                    this.workspaceKey = data.key;
+                    document.getElementById('invite-status').classList.remove('hidden');
+                    return true;
+                } catch (e) {
+                    console.error('Invalid invite');
+                    return false;
+                }
+            }
+            
+            copyInviteLink() {
+                const link = this.generateInviteLink();
+                navigator.clipboard.writeText(link).then(() => {
+                    alert('Invite link copied! Share it with your team.');
+                });
+            }
+            
+            saveWorkspace() {
+                localStorage.setItem('workspace', JSON.stringify({
+                    workspaceId: this.workspaceId,
+                    userName: this.userName,
+                    userId: this.userId,
+                    workspaceKey: this.workspaceKey,
+                    isHost: this.isHost
+                }));
+            }
+            
+            loadSavedWorkspace() {
+                const saved = localStorage.getItem('workspace');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.workspaceId = data.workspaceId;
+                    this.userName = data.userName;
+                    this.userId = data.userId;
+                    this.workspaceKey = data.workspaceKey;
+                    this.isHost = data.isHost;
+                    
+                    // Auto-enter workspace if saved
+                    // this.showWorkspace();
+                }
+            }
+            
+            appendEvent(event) {
+                const e = {
+                    id: 'E/' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+                    timestamp: Date.now(),
+                    ...event
+                };
+                this.eventLog.push(e);
+                return e;
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // Verification
+            acceptVerification() {
+                document.getElementById('verification-modal').classList.add('hidden');
+            }
+            
+            rejectVerification() {
+                document.getElementById('verification-modal').classList.add('hidden');
+                alert('Connection rejected');
             }
         }
-
-        // Initialize app
-        const app = new P2PWorkspaceApp();
+        
+        // Initialize app and attach event listeners
+        const app = new SecureWorkspaceApp();
+        
+        // Setup channel switching
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.channel-item').forEach(item => {
+                item.onclick = () => app.switchChannel(item.dataset.channel);
+            });
+        });
     </script>
 </body>
 </html>
