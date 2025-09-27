@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a1a2e">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Secure P2P Workspace</title>
+    <meta name="theme-color" content="#2A222E">
+    <title>Secure Workspace</title>
     <style>
         * {
             margin: 0;
@@ -14,423 +13,155 @@
         }
 
         :root {
-            --bg-primary: #1a1a2e;
-            --bg-secondary: #252839;
-            --bg-tertiary: #2d3142;
-            --sidebar-bg: #19171d;
-            --text-primary: #d1d2d3;
-            --text-secondary: #ababad;
-            --text-muted: #565856;
-            --accent: #4a154b;
-            --accent-hover: #611f69;
-            --online: #2bac76;
-            --away: #f9a23e;
-            --offline: #565856;
-            --border: #35373b;
-            --channel-hover: rgba(255, 255, 255, 0.04);
-            --message-hover: rgba(255, 255, 255, 0.02);
+            /* Warm base palette */
+            --bg-primary: #2A222E;
+            --bg-secondary: #342838;
+            --bg-tertiary: #3E2F42;
+            --bg-surface: #453548;
             
-            /* DEFCON level colors */
+            --text-primary: #F4F2F7;
+            --text-secondary: #C4B5CE;
+            --text-muted: #8B7A96;
+            
+            /* Security level colors */
             --defcon1: #DC2626;
             --defcon2: #EA580C;
             --defcon3: #FCD34D;
             --defcon4: #10B981;
             --defcon5: #3B82F6;
-        }
-        
-        /* ==================== DEFCON 1: MAXIMUM INTENSITY ==================== */
-        body[data-defcon="1"] {
-            --bg-primary: #0A0A0B;
-            --bg-secondary: #141418;
-            --bg-tertiary: #1a1a1e;
-            --accent: #DC2626;
-            --accent-hover: #991B1B;
-            --border: rgba(220, 38, 38, 0.2);
-            --blood: #DC2626;
-            --void: #000000;
-            --ash: #171717;
-            --danger: #FF0000;
-            --pulse: #FF000040;
-        }
-        
-        /* Intense scanner overlay for DEFCON 1 */
-        body[data-defcon="1"]::before {
-            content: "";
-            position: fixed;
-            top: -100%;
-            left: 0;
-            right: 0;
-            height: 200%;
-            background: linear-gradient(
-                0deg,
-                transparent 0%,
-                var(--pulse) 50%,
-                transparent 100%
-            );
-            animation: scanner 4s linear infinite;
-            pointer-events: none;
-            mix-blend-mode: hard-light;
-            z-index: 9998;
-        }
-        
-        @keyframes scanner {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        
-        /* Glitch effect for DEFCON 1 headers */
-        body[data-defcon="1"] h1,
-        body[data-defcon="1"] .workspace-name {
-            animation: glitch 2s infinite;
-        }
-        
-        @keyframes glitch {
-            0%, 100% { 
-                text-shadow: 0.05em 0 0 var(--danger), -0.025em -0.05em 0 #00FF00, 0.025em 0.05em 0 #0000FF; 
-            }
-            25% { 
-                text-shadow: -0.05em -0.025em 0 var(--danger), 0.025em 0.025em 0 #00FF00, -0.05em -0.05em 0 #0000FF; 
-            }
-            50% { 
-                text-shadow: 0.025em 0.05em 0 var(--danger), 0.05em 0 0 #00FF00, 0 -0.05em 0 #0000FF; 
-            }
-            75% { 
-                text-shadow: -0.025em 0 0 var(--danger), -0.025em -0.025em 0 #00FF00, -0.025em -0.05em 0 #0000FF; 
-            }
-        }
-        
-        /* Static noise for DEFCON 1 messages */
-        body[data-defcon="1"] .messages-container {
-            background-image: 
-                repeating-linear-gradient(
-                    0deg,
-                    var(--ash) 0px,
-                    transparent 1px,
-                    transparent 2px,
-                    var(--ash) 3px
-                );
-            animation: static-shift 0.5s steps(10) infinite;
-        }
-        
-        @keyframes static-shift {
-            0% { background-position: 0 0; }
-            100% { background-position: 3px 3px; }
-        }
-        
-        /* Red alert pulsing borders for DEFCON 1 */
-        body[data-defcon="1"] .workspace-container {
-            border: 2px solid var(--blood);
-            animation: alert-pulse 1s ease-in-out infinite;
-        }
-        
-        @keyframes alert-pulse {
-            0%, 100% { 
-                border-color: var(--blood);
-                box-shadow: inset 0 0 20px var(--pulse);
-            }
-            50% { 
-                border-color: var(--danger);
-                box-shadow: inset 0 0 40px var(--blood);
-            }
-        }
-        
-        /* No smooth transitions in DEFCON 1 */
-        body[data-defcon="1"] * {
-            transition-duration: 0s !important;
-            animation-timing-function: step-end !important;
-        }
-        
-        /* Countdown timer for DEFCON 1 */
-        body[data-defcon="1"] .security-badge::after {
-            content: " ⚠ 5:00";
-            color: var(--danger);
-            animation: blink 1s step-end infinite;
-            font-family: monospace;
-        }
-        
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        
-        /* ==================== DEFCON 2: HIGH INTENSITY ==================== */
-        body[data-defcon="2"] {
-            --bg-primary: #18181B;
-            --bg-secondary: #27272A;
-            --bg-tertiary: #2d2f3a;
-            --accent: #EA580C;
-            --accent-hover: #C2410C;
-            --orange-glow: #EA580C40;
-        }
-        
-        /* Sophisticated scanner for DEFCON 2 */
-        body[data-defcon="2"]::after {
-            content: "";
-            position: fixed;
-            left: 0;
-            right: 0;
-            top: 0;
-            height: 100px;
-            background: linear-gradient(180deg, 
-                transparent 0%, 
-                var(--orange-glow) 50%, 
-                transparent 100%);
-            animation: scan 8s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 9998;
-        }
-        
-        @keyframes scan {
-            0%, 100% { transform: translateY(-100px); }
-            50% { transform: translateY(calc(100vh + 100px)); }
-        }
-        
-        /* Glass morphism for DEFCON 2 panels */
-        body[data-defcon="2"] .card,
-        body[data-defcon="2"] .modal-card,
-        body[data-defcon="2"] .workspace-header {
-            background: linear-gradient(
-                135deg,
-                rgba(234, 88, 12, 0.1) 0%,
-                rgba(234, 88, 12, 0.05) 100%
-            ) !important;
-            backdrop-filter: blur(10px) saturate(180%);
-            -webkit-backdrop-filter: blur(10px) saturate(180%);
-            box-shadow: 
-                0 8px 32px rgba(234, 88, 12, 0.1),
-                inset 0 2px 0 rgba(255, 255, 255, 0.05);
-        }
-        
-        /* Verification badge rotation for DEFCON 2 */
-        body[data-defcon="2"] .member-avatar::after {
-            content: "⚜";
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            color: var(--accent);
-            font-size: 12px;
-            animation: badge-rotate 20s linear infinite;
-            filter: drop-shadow(0 2px 4px rgba(234, 88, 12, 0.4));
-        }
-        
-        @keyframes badge-rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Encryption animation for DEFCON 2 messages */
-        body[data-defcon="2"] .message {
-            animation: encrypt-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        @keyframes encrypt-in {
-            0% { 
-                transform: scaleX(0) rotateY(90deg);
-                filter: blur(10px);
-                opacity: 0;
-            }
-            50% {
-                transform: scaleX(0.5) rotateY(45deg);
-                filter: blur(5px);
-            }
-            100% { 
-                transform: scaleX(1) rotateY(0deg);
-                filter: blur(0);
-                opacity: 1;
-            }
-        }
-        
-        /* ==================== DEFCON 3: MODERATE INTENSITY ==================== */
-        body[data-defcon="3"] {
-            --bg-primary: #1F2028;
-            --bg-secondary: #2A2B36;
-            --bg-tertiary: #32334a;
-            --accent: #FCD34D;
-            --accent-hover: #FDE047;
-            --text-primary: #FFFFFF;
-            --yellow-dim: #FCD34D20;
-        }
-        
-        /* Subtle gradient animation for DEFCON 3 */
-        body[data-defcon="3"] .workspace-container {
-            background: 
-                linear-gradient(135deg, var(--bg-primary) 0%, #16161D 100%),
-                radial-gradient(circle at 20% 80%, var(--yellow-dim) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, #FCD34D10 0%, transparent 50%);
-            background-blend-mode: normal, screen, screen;
-            animation: subtle-shift 30s ease-in-out infinite;
-        }
-        
-        @keyframes subtle-shift {
-            0%, 100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
-            33% { background-position: 100% 100%, 100% 0%, 0% 100%; }
-            66% { background-position: 0% 100%, 0% 100%, 100% 0%; }
-        }
-        
-        /* Trust indicators for DEFCON 3 */
-        body[data-defcon="3"] .member-status-dot.online {
-            animation: trust-pulse 3s ease-in-out infinite;
-        }
-        
-        @keyframes trust-pulse {
-            0%, 100% { 
-                box-shadow: 0 0 0 0 var(--yellow-dim);
-                transform: scale(1);
-            }
-            50% { 
-                box-shadow: 0 0 0 8px transparent;
-                transform: scale(1.2);
-            }
-        }
-        
-        /* Spring physics buttons for DEFCON 3 */
-        body[data-defcon="3"] button {
-            transition: all 0.3s cubic-bezier(0.68, -0.6, 0.32, 1.6);
-        }
-        
-        body[data-defcon="3"] button:active {
-            transform: scale(0.95);
-        }
-        
-        /* ==================== DEFCON 4: LOW INTENSITY ==================== */
-        body[data-defcon="4"] {
-            --bg-primary: #1A1F2E;
-            --bg-secondary: #242B3D;
-            --bg-tertiary: #2e3548;
-            --accent: #10B981;
-            --accent-hover: #059669;
-            --gradient: linear-gradient(135deg, #10B981, #06B6D4, #8B5CF6, #EC4899);
-        }
-        
-        /* Animated gradient background for DEFCON 4 */
-        body[data-defcon="4"] .onboarding-container {
-            background: var(--gradient);
-            background-size: 400% 400%;
-            animation: gradient-shift 15s ease infinite;
-        }
-        
-        @keyframes gradient-shift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        /* Floating animation for DEFCON 4 */
-        body[data-defcon="4"] .card {
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-        
-        /* Confetti on button click for DEFCON 4 */
-        body[data-defcon="4"] button:active::after {
-            content: "🎉";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            animation: confetti-burst 1s ease-out;
-            pointer-events: none;
-        }
-        
-        @keyframes confetti-burst {
-            0% { 
-                transform: translate(-50%, -50%) scale(0) rotate(0deg);
-                opacity: 0;
-            }
-            50% { 
-                transform: translate(-50%, -50%) scale(2) rotate(180deg);
-                opacity: 1;
-            }
-            100% { 
-                transform: translate(-50%, -150%) scale(0) rotate(360deg);
-                opacity: 0;
-            }
-        }
-        
-        /* Morphing shapes for DEFCON 4 */
-        body[data-defcon="4"] .security-badge {
-            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-            animation: morph 8s ease-in-out infinite;
-        }
-        
-        @keyframes morph {
-            0%, 100% {
-                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-            }
-            33% {
-                border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
-            }
-            66% {
-                border-radius: 30% 70% 30% 70% / 50% 60% 40% 60%;
-            }
-        }
-        
-        /* ==================== DEFCON 5: ZERO INTENSITY ==================== */
-        body[data-defcon="5"] {
-            --bg-primary: #FFFFFF;
-            --bg-secondary: #F8FAFC;
-            --bg-tertiary: #F1F5F9;
-            --accent: #3B82F6;
-            --accent-hover: #2563EB;
-            --text-primary: #0F172A;
-            --text-secondary: #64748B;
-            --border: #E2E8F0;
-        }
-        
-        /* Rainbow animation for DEFCON 5 */
-        body[data-defcon="5"] .workspace-container {
-            animation: rainbow-bg 10s ease-in-out infinite;
-        }
-        
-        @keyframes rainbow-bg {
-            0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-            25% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-            50% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-            75% { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        }
-        
-        /* Party mode for DEFCON 5 */
-        body[data-defcon="5"] .message:hover {
-            animation: party-mode 2s linear infinite;
-        }
-        
-        @keyframes party-mode {
-            0% { filter: hue-rotate(0deg); transform: scale(1); }
-            50% { filter: hue-rotate(180deg); transform: scale(1.05); }
-            100% { filter: hue-rotate(360deg); transform: scale(1); }
-        }
-        
-        /* Floating emojis for DEFCON 5 */
-        body[data-defcon="5"] .message::after {
-            content: "✨";
-            position: absolute;
-            right: -20px;
-            animation: float-emoji 3s ease-in-out infinite;
-        }
-        
-        @keyframes float-emoji {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(180deg); }
+            
+            /* Warm accent colors */
+            --accent-primary: #FF6B35;
+            --accent-secondary: #A84376;
+            --accent-trust: #007ACC;
+            --accent-success: #2BAC76;
+            
+            /* Gradient colors */
+            --gradient-start: #6940A5;
+            --gradient-end: #A84376;
+            
+            --border: rgba(196, 181, 206, 0.1);
+            --border-subtle: rgba(196, 181, 206, 0.05);
+            
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
+            
+            /* Animation timings */
+            --anim-fast: 200ms;
+            --anim-normal: 300ms;
+            --anim-slow: 500ms;
+            --anim-curve: cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1F1A24 100%);
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
+            position: relative;
+        }
+        
+        /* Ambient background animation */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, 
+                rgba(168, 67, 118, 0.03) 0%, 
+                transparent 50%);
+            animation: ambient 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes ambient {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-5%, 5%) scale(1.1); }
+            66% { transform: translate(5%, -5%) scale(0.95); }
         }
 
+        /* Typography */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Utility classes */
         .hidden {
             display: none !important;
         }
 
-        /* Security Level Selector */
+        /* Card styles */
+        .card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 480px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--anim-normal) var(--anim-curve);
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 107, 53, 0.3), 
+                transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+
+        /* Landing container */
+        .landing-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Tagline */
+        .tagline {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        /* Security level selector */
         .security-selector {
             margin-bottom: 2rem;
         }
@@ -443,81 +174,44 @@
         
         .security-option {
             padding: 1rem;
-            background: var(--bg-tertiary);
+            background: var(--bg-primary);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--anim-fast) var(--anim-curve);
             position: relative;
             overflow: hidden;
         }
         
-        .security-option::before {
-            content: "";
+        .security-option::after {
+            content: '';
             position: absolute;
-            top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.6s;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--border);
+            transition: background var(--anim-fast);
         }
         
-        .security-option:hover::before {
-            transform: translateX(100%);
-        }
+        .security-option[data-level="1"]::after { background: var(--defcon1); }
+        .security-option[data-level="2"]::after { background: var(--defcon2); }
+        .security-option[data-level="3"]::after { background: var(--defcon3); }
+        .security-option[data-level="4"]::after { background: var(--defcon4); }
+        .security-option[data-level="5"]::after { background: var(--defcon5); }
         
         .security-option:hover {
             transform: translateX(4px);
+            background: var(--bg-tertiary);
         }
         
         .security-option.selected {
-            border-color: var(--accent);
-            background: rgba(74, 21, 75, 0.1);
-        }
-        
-        .security-option[data-level="1"] { 
-            border-left: 4px solid var(--defcon1);
-            animation: defcon1-intensity 2s ease-in-out infinite;
-        }
-        
-        @keyframes defcon1-intensity {
-            0%, 100% { box-shadow: inset 0 0 0 rgba(220, 38, 38, 0); }
-            50% { box-shadow: inset 0 0 30px rgba(220, 38, 38, 0.3); }
-        }
-        
-        .security-option[data-level="2"] { 
-            border-left: 4px solid var(--defcon2); 
-        }
-        
-        .security-option[data-level="3"] { 
-            border-left: 4px solid var(--defcon3); 
-        }
-        
-        .security-option[data-level="4"] { 
-            border-left: 4px solid var(--defcon4);
-            animation: defcon4-bounce 3s ease-in-out infinite;
-        }
-        
-        @keyframes defcon4-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-2px); }
-        }
-        
-        .security-option[data-level="5"] { 
-            border-left: 4px solid var(--defcon5);
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
-            animation: defcon5-rainbow 5s ease-in-out infinite;
-        }
-        
-        @keyframes defcon5-rainbow {
-            0%, 100% { filter: hue-rotate(0deg); }
-            50% { filter: hue-rotate(30deg); }
+            background: var(--bg-surface);
+            border-color: var(--accent-primary);
         }
         
         .security-level-title {
-            font-weight: 700;
+            font-weight: 600;
             margin-bottom: 0.25rem;
             display: flex;
             align-items: center;
@@ -526,126 +220,46 @@
         
         .security-level-desc {
             font-size: 0.875rem;
-            color: var(--text-secondary);
+            color: var(--text-muted);
         }
         
-        /* Security Badge */
+        /* Security badge */
         .security-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            background: var(--bg-tertiary);
-            border-radius: 20px;
-            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-primary);
+            border-radius: 100px;
+            font-size: 0.875rem;
             font-weight: 600;
             position: relative;
+            border: 1px solid var(--border);
+            transition: all var(--anim-fast);
         }
         
         .security-badge[data-level="1"] { 
-            color: var(--defcon1); 
-            border: 1px solid var(--defcon1);
-            animation: critical-flash 1s ease-in-out infinite;
-        }
-        
-        @keyframes critical-flash {
-            0%, 100% { background: rgba(220, 38, 38, 0.1); }
-            50% { background: rgba(220, 38, 38, 0.3); }
-        }
-        
-        .security-badge[data-level="2"] { 
-            color: var(--defcon2); 
-            border: 1px solid var(--defcon2);
-            box-shadow: 0 0 10px rgba(234, 88, 12, 0.3);
-        }
-        
-        .security-badge[data-level="3"] { 
-            color: var(--defcon3); 
-            border: 1px solid var(--defcon3); 
-        }
-        
-        .security-badge[data-level="4"] { 
-            color: var(--defcon4); 
-            border: 1px solid var(--defcon4);
-            animation: badge-float 3s ease-in-out infinite;
-        }
-        
-        @keyframes badge-float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-        
-        .security-badge[data-level="5"] { 
-            color: var(--defcon5); 
-            border: 1px solid var(--defcon5);
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1));
-        }
-        
-        /* Connection State Indicator */
-        .connection-state {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            z-index: 1000;
-        }
-        
-        .connection-state.connecting {
-            border: 1px solid var(--away);
-            color: var(--away);
-        }
-        
-        .connection-state.connected {
-            border: 1px solid var(--online);
-            color: var(--online);
-        }
-        
-        .connection-state.failed {
-            border: 1px solid var(--defcon1);
+            border-color: var(--defcon1);
             color: var(--defcon1);
         }
-
-        /* Onboarding Screens */
-        .onboarding-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            padding: 1rem;
+        .security-badge[data-level="2"] { 
+            border-color: var(--defcon2);
+            color: var(--defcon2);
+        }
+        .security-badge[data-level="3"] { 
+            border-color: var(--defcon3);
+            color: var(--defcon3);
+        }
+        .security-badge[data-level="4"] { 
+            border-color: var(--defcon4);
+            color: var(--defcon4);
+        }
+        .security-badge[data-level="5"] { 
+            border-color: var(--defcon5);
+            color: var(--defcon5);
         }
 
-        .card {
-            background: rgba(37, 40, 57, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 520px;
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            text-align: center;
-        }
-
-        .tagline {
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
-        }
-
+        /* Input styling */
         .input-group {
             margin-bottom: 1.5rem;
         }
@@ -656,43 +270,78 @@
             font-weight: 500;
             margin-bottom: 0.5rem;
             color: var(--text-secondary);
+            transition: color var(--anim-fast) var(--anim-curve);
+        }
+        
+        .input-group:focus-within label {
+            color: var(--accent-primary);
         }
 
         input, textarea {
             width: 100%;
-            padding: 0.75rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
             color: var(--text-primary);
             font-size: 1rem;
             font-family: inherit;
-            transition: all 0.2s;
+            transition: all var(--anim-fast) var(--anim-curve);
         }
 
         input:focus, textarea:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(74, 21, 75, 0.2);
+            border-color: var(--accent-primary);
+            background: rgba(255, 107, 53, 0.02);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
         }
 
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Button styling */
         button {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
+            padding: 1rem 2rem;
+            border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--anim-fast) var(--anim-curve);
             width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width var(--anim-slow), height var(--anim-slow);
+        }
+        
+        button:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         button:hover:not(:disabled) {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(74, 21, 75, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 67, 118, 0.3);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
         }
 
         button:disabled {
@@ -702,574 +351,63 @@
 
         button.secondary {
             background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-primary);
+            border: 2px solid var(--border);
+            color: var(--text-secondary);
         }
 
         button.secondary:hover:not(:disabled) {
             background: var(--bg-tertiary);
-            transform: none;
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
             box-shadow: none;
         }
-        
-        /* Input and Button Behaviors by DEFCON Level */
-        
-        /* DEFCON 1 Inputs - Maximum Security */
-        body[data-defcon="1"] input,
-        body[data-defcon="1"] textarea {
-            background: var(--void);
-            border: 1px solid var(--blood);
-            caret-color: var(--danger);
+
+        /* Success indicator */
+        .success-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, 
+                rgba(43, 172, 118, 0.1) 0%, 
+                rgba(43, 172, 118, 0.05) 100%);
+            border: 1px solid var(--accent-success);
+            border-radius: 100px;
+            color: var(--accent-success);
+            font-size: 0.875rem;
+            font-weight: 500;
+            animation: fadeIn var(--anim-normal) var(--anim-curve);
         }
         
-        body[data-defcon="1"] input:focus,
-        body[data-defcon="1"] textarea:focus {
-            box-shadow: 0 0 20px var(--blood), inset 0 0 10px var(--pulse);
-            animation: input-secure 1s infinite;
-        }
-        
-        @keyframes input-secure {
-            0%, 100% { border-color: var(--blood); }
-            50% { border-color: var(--danger); }
-        }
-        
-        body[data-defcon="1"] button {
-            background: var(--blood);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: 900;
-        }
-        
-        body[data-defcon="1"] button:hover:not(:disabled) {
-            background: var(--danger);
-            box-shadow: 0 0 30px var(--blood);
-            animation: button-critical 0.3s ease-in-out;
-        }
-        
-        @keyframes button-critical {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        /* DEFCON 2 Inputs - High Security */
-        body[data-defcon="2"] input:focus,
-        body[data-defcon="2"] textarea:focus {
-            border-color: var(--accent);
-            box-shadow: 
-                0 0 0 3px var(--orange-glow),
-                0 0 20px var(--orange-glow);
-            animation: password-secure 2s ease-in-out infinite;
-        }
-        
-        @keyframes password-secure {
-            0%, 100% { 
-                box-shadow: 0 0 0 3px var(--orange-glow), 0 0 20px var(--orange-glow);
-            }
-            50% { 
-                box-shadow: 0 0 0 3px var(--accent), 0 0 40px var(--accent);
-            }
-        }
-        
-        /* DEFCON 3 Inputs - Moderate */
-        body[data-defcon="3"] input,
-        body[data-defcon="3"] textarea {
-            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-        
-        body[data-defcon="3"] input:focus,
-        body[data-defcon="3"] textarea:focus {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--yellow-dim);
-        }
-        
-        /* DEFCON 4 Inputs - Playful */
-        body[data-defcon="4"] input:focus,
-        body[data-defcon="4"] textarea:focus {
-            border-color: var(--accent);
-            background: linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05));
-            animation: input-rainbow 3s ease-in-out infinite;
-        }
-        
-        @keyframes input-rainbow {
-            0%, 100% { border-left-color: var(--accent); }
-            25% { border-left-color: #06B6D4; }
-            50% { border-left-color: #8B5CF6; }
-            75% { border-left-color: #EC4899; }
-        }
-        
-        body[data-defcon="4"] button {
-            background: linear-gradient(135deg, var(--accent), #06B6D4);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        body[data-defcon="4"] button::before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        body[data-defcon="4"] button:active::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        /* DEFCON 5 Inputs - Open */
-        body[data-defcon="5"] {
-            color: var(--text-primary);
-        }
-        
-        body[data-defcon="5"] input,
-        body[data-defcon="5"] textarea {
-            background: white;
-            border: 2px solid var(--border);
-            color: var(--text-primary);
-        }
-        
-        body[data-defcon="5"] input:focus,
-        body[data-defcon="5"] textarea:focus {
-            border-color: var(--accent);
-            animation: focus-ring 2s ease-in-out infinite;
-        }
-        
-        @keyframes focus-ring {
-            0%, 100% { 
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            }
-            50% { 
-                box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1);
-            }
-        }
-        
-        body[data-defcon="5"] button {
-            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-            animation: button-wave 3s ease-in-out infinite;
-        }
-        
-        @keyframes button-wave {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-1deg); }
-            75% { transform: rotate(1deg); }
-        }
-        
-        /* Message animations by DEFCON level */
-        body[data-defcon="1"] .message {
-            border-left: 2px solid transparent;
-            animation: message-scan 2s ease-in-out;
-        }
-        
-        @keyframes message-scan {
-            0% { border-left-color: var(--danger); background: var(--pulse); }
-            100% { border-left-color: transparent; background: transparent; }
-        }
-        
-        body[data-defcon="5"] .message {
-            transition: all 0.3s ease;
-        }
-        
-        body[data-defcon="5"] .message:hover {
-            transform: translateX(5px);
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Info box */
         .info-box {
-            background: var(--bg-tertiary);
+            background: var(--bg-surface);
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 12px;
             padding: 1rem;
             margin-bottom: 1.5rem;
             font-size: 0.875rem;
             color: var(--text-secondary);
-        }
-
-        .success-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1rem;
-            background: rgba(43, 172, 118, 0.1);
-            border: 1px solid var(--online);
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            color: var(--online);
-        }
-
-        /* Workspace Layout */
-        .workspace-container {
-            display: flex;
-            height: 100vh;
-            background: var(--bg-primary);
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 260px;
-            background: var(--sidebar-bg);
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-        }
-
-        .workspace-header {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .workspace-name {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .workspace-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--online);
-        }
-
-        /* Channels */
-        .channels-section {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0.5rem 0;
-        }
-
-        .section-header {
-            padding: 0.5rem 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .add-button {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .add-button:hover {
-            background: var(--channel-hover);
-            color: var(--text-primary);
-        }
-
-        .channel-item, .dm-item {
-            padding: 0.375rem 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: background 0.1s;
-            color: var(--text-secondary);
-            font-size: 0.9375rem;
-        }
-
-        .channel-item:hover, .dm-item:hover {
-            background: var(--channel-hover);
-            color: var(--text-primary);
-        }
-
-        .channel-item.active, .dm-item.active {
-            background: var(--accent);
-            color: white;
-        }
-
-        .channel-prefix {
-            opacity: 0.5;
-            font-weight: 400;
-        }
-
-        .user-avatar {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.625rem;
-            font-weight: 600;
-            color: white;
-        }
-
-        .user-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-left: auto;
-        }
-
-        .user-status.online {
-            background: var(--online);
-        }
-
-        .user-status.away {
-            background: var(--away);
-        }
-
-        .user-status.offline {
-            background: var(--offline);
-        }
-
-        /* Main Content Area */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Channel Header */
-        .channel-header {
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--bg-secondary);
-        }
-
-        .channel-title {
-            font-size: 1.125rem;
-            font-weight: 700;
-        }
-
-        .channel-description {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-left: 1rem;
-        }
-
-        .channel-members {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        /* Messages Area */
-        .messages-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem 1.5rem;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message {
-            display: flex;
-            gap: 0.75rem;
-            padding: 0.5rem 0;
-            transition: background 0.1s;
-            border-radius: 4px;
-        }
-
-        .message:hover {
-            background: var(--message-hover);
-        }
-
-        .message-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 6px;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .message-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .message-header {
-            display: flex;
-            align-items: baseline;
-            gap: 0.5rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .message-author {
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .message-text {
-            color: var(--text-primary);
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-
-        .typing-indicator {
-            color: var(--text-muted);
-            font-style: italic;
-            font-size: 0.875rem;
-            padding: 0.5rem 0;
-        }
-
-        /* Message Input */
-        .message-input-container {
-            padding: 1rem 1.5rem;
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-        }
-
-        .message-input-wrapper {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.5rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .message-input {
-            flex: 1;
-            background: none;
-            border: none;
-            padding: 0.5rem;
-            color: var(--text-primary);
-            font-size: 0.9375rem;
-        }
-
-        .message-input:focus {
-            outline: none;
-            box-shadow: none;
-        }
-
-        .send-button {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: auto;
-        }
-
-        .send-button:hover:not(:disabled) {
-            background: var(--accent-hover);
-        }
-
-        /* Right Sidebar - Members */
-        .members-sidebar {
-            width: 240px;
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
-            padding: 1rem;
-            overflow-y: auto;
-        }
-
-        .members-header {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-        }
-
-        .member-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem;
-            border-radius: 6px;
-            transition: background 0.1s;
-            cursor: pointer;
-        }
-
-        .member-item:hover {
-            background: var(--channel-hover);
-        }
-
-        .member-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
             position: relative;
+            overflow: hidden;
         }
-
-        .member-status-dot {
+        
+        .info-box::before {
+            content: '🔒';
             position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 2px solid var(--bg-secondary);
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            opacity: 0.3;
         }
-
-        .member-status-dot.online {
-            background: var(--online);
-        }
-
-        .member-status-dot.away {
-            background: var(--away);
-        }
-
-        .member-status-dot.offline {
-            background: var(--offline);
-        }
-
-        .member-name {
-            color: var(--text-primary);
-            font-size: 0.9375rem;
-        }
-
-        /* Verification Modal */
+        
+        /* Verification modal */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1280,119 +418,377 @@
             z-index: 1000;
             padding: 1rem;
         }
-
+        
         .modal-card {
             background: var(--bg-secondary);
-            border-radius: 12px;
+            border-radius: 20px;
             padding: 2rem;
             max-width: 400px;
             width: 100%;
             border: 1px solid var(--border);
         }
-
-        .fingerprint-display {
+        
+        .verification-display {
             background: var(--bg-primary);
             padding: 1.5rem;
-            border-radius: 8px;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-            font-size: 2rem;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 1.5rem;
             text-align: center;
             margin: 1.5rem 0;
             letter-spacing: 0.2em;
-            border: 2px solid var(--accent);
+            border: 2px solid var(--accent-trust);
         }
-
+        
         .emoji-display {
-            font-size: 2.5rem;
+            font-size: 2rem;
             text-align: center;
             padding: 1rem;
             background: var(--bg-primary);
-            border-radius: 8px;
+            border-radius: 12px;
             margin: 1rem 0;
             letter-spacing: 0.5em;
         }
 
+        /* Workspace styles */
+        .workspace-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-primary);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+
+        .workspace-header {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .workspace-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .copy-button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 6px;
+            transition: all var(--anim-fast);
+            width: auto;
+        }
+        
+        .copy-button:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Channels */
+        .channels-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .section-title {
+            padding: 0 1rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .channel-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all var(--anim-fast) var(--anim-curve);
+            color: var(--text-secondary);
+            position: relative;
+        }
+
+        .channel-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding-left: 1.25rem;
+        }
+
+        .channel-item.active {
+            background: var(--bg-surface);
+            color: var(--accent-primary);
+        }
+        
+        .channel-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent-primary);
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        /* Messages */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            animation: slideIn var(--anim-normal) var(--anim-curve);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .message-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .system-message {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-style: italic;
+            padding: 1rem;
+            animation: fadeIn var(--anim-slow) var(--anim-curve);
+        }
+        
+        .message.ephemeral {
+            opacity: 0.5;
+            font-style: italic;
+        }
+        
+        /* Message input */
+        .message-input-container {
+            padding: 1.5rem 2rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .message-input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 0.5rem;
+            transition: all var(--anim-fast) var(--anim-curve);
+        }
+        
+        .message-input-wrapper:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .message-input:focus {
+            outline: none;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--anim-fast) var(--anim-curve);
+            width: auto;
+        }
+
+        /* Connection toast */
+        .connection-toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight var(--anim-normal) var(--anim-curve);
+            z-index: 1000;
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .connection-toast.success {
+            border-color: var(--accent-success);
+        }
+        
+        .connection-toast.error {
+            border-color: var(--accent-primary);
+        }
+        
         /* Loading spinner */
         .spinner {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
+            border: 2px solid var(--border);
+            border-top-color: var(--accent-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* Scrollbar styling */
+        /* Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 10px;
         }
 
         ::-webkit-scrollbar-track {
-            background: transparent;
+            background: var(--bg-primary);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
+            background: var(--bg-surface);
+            border-radius: 5px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
-        }
-        
-        /* Debug Panel */
-        .debug-panel {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            background: rgba(0, 0, 0, 0.9);
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 0.75rem;
-            padding: 1rem;
-            border-radius: 8px;
-            max-width: 400px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 9999;
-        }
-        
-        .debug-line {
-            margin-bottom: 0.25rem;
+            background: var(--bg-tertiary);
         }
     </style>
 </head>
 <body>
-    <!-- Connection State Indicator -->
-    <div id="connection-state" class="connection-state hidden">
-        <span class="spinner"></span>
-        <span id="connection-text">Connecting...</span>
-    </div>
-    
-    <!-- Debug Panel -->
-    <div id="debug-panel" class="debug-panel hidden">
-        <div id="debug-content"></div>
+    <!-- Connection Toast -->
+    <div id="connection-toast" class="connection-toast hidden">
+        <span id="toast-icon"></span>
+        <span id="toast-text"></span>
     </div>
 
-    <!-- Onboarding Screens -->
-    <div id="onboarding" class="onboarding-container">
-        <!-- Landing Screen -->
+    <!-- Landing Screen -->
+    <div id="landing" class="landing-container">
         <div id="landing-screen" class="card screen">
-            <h1>🔒 Secure Workspace</h1>
-            <p class="tagline">End-to-end encrypted team communication</p>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1>Secure Workspace</h1>
+                <p class="tagline">
+                    Private conversations that feel like home.<br>
+                    No servers, no tracking, just your team.
+                </p>
+            </div>
             
             <button onclick="app.showCreateScreen()">
-                Create New Workspace
+                Create Your Workspace
             </button>
             
             <div style="margin: 1.5rem 0; text-align: center; color: var(--text-muted);">
-                — or —
+                or
             </div>
             
             <button class="secondary" onclick="app.showJoinScreen()">
@@ -1402,103 +798,98 @@
 
         <!-- Create Screen -->
         <div id="create-screen" class="card screen hidden">
-            <h1>Create Workspace</h1>
+            <h2 style="text-align: center;">Create Your Space</h2>
             
             <div class="info-box">
-                <strong>Workspace ID:</strong>
-                <div style="margin-top: 0.5rem; font-family: monospace; font-size: 1.1rem;">
+                <strong>Your workspace ID:</strong>
+                <div style="margin-top: 0.5rem; font-family: monospace; font-size: 1.1rem; color: var(--text-primary);">
                     <span id="workspace-id">generating...</span>
                 </div>
             </div>
             
             <!-- Security Level Selector -->
             <div class="security-selector">
-                <label style="margin-bottom: 1rem; display: block;">Choose your security level:</label>
+                <label style="margin-bottom: 1rem; display: block;">Choose security level:</label>
                 <div class="security-options">
                     <div class="security-option" data-level="1" onclick="app.selectSecurityLevel(1)">
-                        <div class="security-level-title">
-                            🔴 DEFCON 1 - Maximum Security
-                        </div>
-                        <div class="security-level-desc">
-                            Paranoid mode, everything encrypted, auto-delete
+                        <div>
+                            <div class="security-level-title">🔴 Maximum Security</div>
+                            <div class="security-level-desc">Password for everyone, messages auto-delete, verification required</div>
                         </div>
                     </div>
                     <div class="security-option" data-level="2" onclick="app.selectSecurityLevel(2)">
-                        <div class="security-level-title">
-                            🟠 DEFCON 2 - High Security
-                        </div>
-                        <div class="security-level-desc">
-                            Password protected, professional confidential
+                        <div>
+                            <div class="security-level-title">🟠 High Security</div>
+                            <div class="security-level-desc">Host password required, verification recommended</div>
                         </div>
                     </div>
                     <div class="security-option selected" data-level="3" onclick="app.selectSecurityLevel(3)">
-                        <div class="security-level-title">
-                            🟡 DEFCON 3 - Standard Security
-                        </div>
-                        <div class="security-level-desc">
-                            Balanced security and convenience
+                        <div>
+                            <div class="security-level-title">🟡 Standard Security</div>
+                            <div class="security-level-desc">Optional password, balanced security</div>
                         </div>
                     </div>
                     <div class="security-option" data-level="4" onclick="app.selectSecurityLevel(4)">
-                        <div class="security-level-title">
-                            🟢 DEFCON 4 - Easy Mode
-                        </div>
-                        <div class="security-level-desc">
-                            Quick setup, device-based security
+                        <div>
+                            <div class="security-level-title">🟢 Easy Mode</div>
+                            <div class="security-level-desc">No passwords, just device security</div>
                         </div>
                     </div>
                     <div class="security-option" data-level="5" onclick="app.selectSecurityLevel(5)">
-                        <div class="security-level-title">
-                            🔵 DEFCON 5 - Public Room
-                        </div>
-                        <div class="security-level-desc">
-                            Open to everyone, no friction
+                        <div>
+                            <div class="security-level-title">🔵 Open Room</div>
+                            <div class="security-level-desc">Anyone with link can join</div>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="input-group">
-                <label>Your Display Name</label>
-                <input type="text" id="creator-name" placeholder="Enter your name" maxlength="32">
+                <label>Your Name</label>
+                <input type="text" id="creator-name" placeholder="How should we call you?" maxlength="32">
             </div>
             
             <div id="password-group" class="input-group">
-                <label>Create Password</label>
-                <input type="password" id="creator-password" placeholder="Password to encrypt your local data">
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                    This encrypts your messages and will be required to rejoin
-                </div>
+                <label>Create Password <span id="password-requirement" style="color: var(--text-muted); font-weight: normal;">(optional)</span></label>
+                <input type="password" id="creator-password" placeholder="Encrypts your local data">
             </div>
             
             <button onclick="app.createWorkspace()">
-                Create Workspace
+                Start Secure Workspace
             </button>
             
-            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.5rem;">
+            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.75rem;">
                 Back
             </button>
         </div>
 
         <!-- Join Screen -->
         <div id="join-screen" class="card screen hidden">
-            <h1>Join Workspace</h1>
+            <h2 style="text-align: center;">Join Workspace</h2>
             
-            <div id="invite-status" class="success-indicator hidden">
-                ✓ Valid invite found!
-                <span id="security-level-info"></span>
+            <div id="invite-valid" class="success-badge hidden" style="margin-bottom: 1.5rem; justify-content: center;">
+                ✓ Valid invite to <span id="invite-workspace-name"></span>
+            </div>
+            
+            <div id="security-level-display" class="security-badge hidden" style="margin-bottom: 1.5rem; justify-content: center;">
+                <span id="security-level-text"></span>
             </div>
             
             <div class="input-group">
-                <label>Your Display Name</label>
-                <input type="text" id="joiner-name" placeholder="Enter your name" maxlength="32">
+                <label>Your Name</label>
+                <input type="text" id="joiner-name" placeholder="How should we call you?" maxlength="32">
+            </div>
+            
+            <div id="join-password-group" class="input-group hidden">
+                <label>Room Password</label>
+                <input type="password" id="joiner-password" placeholder="Required by room host">
             </div>
             
             <button onclick="app.joinWorkspace()">
                 Join Workspace
             </button>
             
-            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.5rem;">
+            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.75rem;">
                 Back
             </button>
         </div>
@@ -1506,125 +897,80 @@
 
     <!-- Main Workspace -->
     <div id="workspace" class="workspace-container hidden">
-        <!-- Left Sidebar -->
         <div class="sidebar">
             <div class="workspace-header">
                 <div class="workspace-name">
-                    <span id="workspace-title">Workspace</span>
-                    <button class="add-button" onclick="app.copyInviteLink()" title="Copy Invite Link">
+                    <span id="workspace-name">Loading...</span>
+                    <button class="copy-button" onclick="app.copyInviteLink()" title="Copy invite link">
                         📋
                     </button>
                 </div>
-                <div class="workspace-status">
-                    <div class="status-indicator"></div>
-                    <span id="connection-count">1 connected</span>
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span id="connection-count">Connecting...</span>
                 </div>
-                <div id="workspace-security" class="security-badge" style="margin-top: 0.5rem;">
+                <div id="workspace-security" class="security-badge" style="margin-top: 0.75rem;">
                     Security Level
                 </div>
             </div>
             
             <div class="channels-section">
-                <!-- Channels -->
-                <div class="section-header">
-                    <span>Channels</span>
-                    <button class="add-button" onclick="app.createChannel()">+</button>
-                </div>
+                <div class="section-title">Channels</div>
                 <div id="channels-list">
-                    <div class="channel-item active" data-channel="general">
-                        <span class="channel-prefix">#</span> general
+                    <div class="channel-item active" data-channel="general" onclick="app.switchChannel('general')">
+                        # general
                     </div>
-                    <div class="channel-item" data-channel="random">
-                        <span class="channel-prefix">#</span> random
+                    <div class="channel-item" data-channel="random" onclick="app.switchChannel('random')">
+                        # random
                     </div>
                 </div>
-                
-                <!-- Direct Messages -->
-                <div class="section-header" style="margin-top: 1rem;">
-                    <span>Direct Messages</span>
-                </div>
-                <div id="dm-list"></div>
             </div>
         </div>
         
-        <!-- Main Content -->
         <div class="main-content">
-            <!-- Channel Header -->
-            <div class="channel-header">
-                <div style="display: flex; align-items: center;">
-                    <div class="channel-title">
-                        <span id="current-channel-name"># general</span>
-                    </div>
-                    <div class="channel-description" id="channel-description">
-                        Company-wide announcements and updates
-                    </div>
-                </div>
-                <div class="channel-members">
-                    <span id="member-count">2 members</span>
-                </div>
-            </div>
-            
-            <!-- Messages -->
             <div class="messages-container" id="messages-container">
-                <!-- Messages will be added here -->
+                <!-- Messages appear here -->
             </div>
             
-            <!-- Typing Indicators -->
-            <div id="typing-indicators" class="hidden" style="padding: 0 1.5rem;">
-                <div class="typing-indicator">
-                    <span id="typing-text"></span> is typing...
-                </div>
-            </div>
-            
-            <!-- Message Input -->
             <div class="message-input-container">
                 <div class="message-input-wrapper">
                     <input 
                         type="text" 
                         class="message-input" 
                         id="message-input"
-                        placeholder="Message #general"
+                        placeholder="Type your message..."
                         onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); app.sendMessage(); }"
-                        oninput="app.handleTyping()"
                     >
                     <button class="send-button" onclick="app.sendMessage()">Send</button>
                 </div>
             </div>
         </div>
-        
-        <!-- Right Sidebar - Members -->
-        <div class="members-sidebar">
-            <div class="members-header">Members</div>
-            <div id="members-list">
-                <!-- Members will be added here -->
-            </div>
-        </div>
     </div>
-
+    
     <!-- Verification Modal -->
     <div id="verification-modal" class="modal-overlay hidden">
         <div class="modal-card">
-            <h2 style="margin-bottom: 1rem;">Verify Connection</h2>
+            <h2 style="margin-bottom: 1rem; text-align: center;">Verify Connection</h2>
             
-            <div class="info-box" id="verification-info">
-                New connection with <span id="peer-name">User</span>
+            <div class="info-box">
+                New connection with <strong id="peer-name">User</strong>
             </div>
             
-            <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); text-align: center;">
                 Compare this security code:
             </p>
             
-            <div class="fingerprint-display" id="verification-code">0000</div>
+            <div class="verification-display" id="verification-code">0000</div>
             
-            <div class="emoji-display" id="verification-emoji">🔒 🔒 🔒</div>
+            <div class="emoji-display" id="verification-emoji">🔒 🔒 🔒 🔒</div>
             
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">
-                Ask them: "What's your security code?"
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                Ask them: "What emojis do you see?"
             </p>
             
             <div style="display: flex; gap: 0.5rem;">
                 <button onclick="app.acceptVerification()">
-                    ✓ Codes Match
+                    ✓ They Match
                 </button>
                 <button class="secondary" onclick="app.rejectVerification()">
                     ✗ Different
@@ -1634,98 +980,176 @@
     </div>
 
     <script>
-        // Main Application
+        class CryptoManager {
+            constructor() {
+                this.seatKey = null;
+                this.salt = null;
+                this.currentKey = null;
+                this.messageCounter = 0;
+                this.epoch = 0;
+            }
+            
+            async generateSeat() {
+                const secret = crypto.getRandomValues(new Uint8Array(32));
+                const id = crypto.getRandomValues(new Uint8Array(16));
+                return { secret, id };
+            }
+            
+            async deriveSeatKey(secret, salt) {
+                const baseKey = await crypto.subtle.importKey(
+                    'raw', secret, 'HKDF', false, ['deriveKey']
+                );
+                
+                this.currentKey = await crypto.subtle.deriveKey(
+                    {
+                        name: 'HKDF',
+                        salt: salt,
+                        info: new TextEncoder().encode('seat-key-v1'),
+                        hash: 'SHA-256'
+                    },
+                    baseKey,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['encrypt', 'decrypt']
+                );
+                
+                this.salt = salt;
+                return this.currentKey;
+            }
+            
+            async encrypt(data) {
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const encrypted = await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    this.currentKey,
+                    new TextEncoder().encode(JSON.stringify(data))
+                );
+                
+                // Combine IV and ciphertext
+                const combined = new Uint8Array(iv.length + encrypted.byteLength);
+                combined.set(iv);
+                combined.set(new Uint8Array(encrypted), iv.length);
+                
+                return btoa(String.fromCharCode(...combined));
+            }
+            
+            async decrypt(encryptedData) {
+                const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+                const iv = combined.slice(0, 12);
+                const ciphertext = combined.slice(12);
+                
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv },
+                    this.currentKey,
+                    ciphertext
+                );
+                
+                return JSON.parse(new TextDecoder().decode(decrypted));
+            }
+            
+            generateFingerprint(key) {
+                // Generate visual fingerprint from key material
+                const keyStr = btoa(String.fromCharCode(...new Uint8Array(key)));
+                const hash = this.simpleHash(keyStr);
+                return hash.toString().padStart(4, '0').slice(0, 4);
+            }
+            
+            generateEmojiFingerprint(key) {
+                const emojis = ['🔒', '🔑', '🛡️', '✨', '🌟', '🔐', '🎯', '💎'];
+                const keyStr = btoa(String.fromCharCode(...new Uint8Array(key)));
+                const indices = [];
+                for (let i = 0; i < 4; i++) {
+                    indices.push(keyStr.charCodeAt(i) % emojis.length);
+                }
+                return indices.map(i => emojis[i]).join(' ');
+            }
+            
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                    hash = hash & hash;
+                }
+                return Math.abs(hash);
+            }
+        }
+        
         class SecureWorkspaceApp {
             constructor() {
                 // Core state
                 this.workspaceId = null;
                 this.userName = null;
-                this.userId = null;
-                this.workspaceKey = null;
+                this.userId = 'U' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
                 this.isHost = false;
-                this.securityLevel = 3; // Default to DEFCON 3
+                this.securityLevel = 3;
                 
-                // Channels and messages
+                // Crypto
+                this.crypto = new CryptoManager();
+                this.hostSeat = null;
+                this.guestSeat = null;
+                
+                // Workspace
                 this.currentChannel = 'general';
                 this.channels = {
-                    general: { name: 'general', description: 'Company-wide announcements and updates', messages: [] },
-                    random: { name: 'random', description: 'Random conversations and watercooler chat', messages: [] }
+                    general: { messages: [] },
+                    random: { messages: [] }
                 };
                 
-                // P2P state with proper connection tracking
+                // P2P
                 this.peers = new Map();
-                this.connectionStates = new Map(); // Track connection state per peer
-                this.members = new Map();
-                this.typingTimers = new Map();
+                this.pendingConnections = new Set();
+                this.pendingVerifications = new Map();
                 
-                // Event log for sync
-                this.eventLog = [];
+                // Security features
+                this.roomPassword = null;
+                this.messageAutoDelete = null;
                 
-                // Debug mode
-                this.debugMode = true;
-                
-                // Retry configuration
-                this.retryAttempts = new Map();
-                this.maxRetries = 3;
-                this.retryDelay = 2000;
-                
-                // Initialize
                 this.init();
             }
             
             init() {
-                // Generate user ID with timestamp for ordering
-                this.userId = 'U' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-                
-                this.debug(`Initialized with User ID: ${this.userId}`);
-                
-                // Check for invite in URL
                 const hash = window.location.hash.slice(1);
                 if (hash) {
                     this.showJoinScreen();
                     this.parseInvite(hash);
                 }
-                
-                // Load saved workspace
-                this.loadSavedWorkspace();
             }
             
-            // Debug helpers
-            debug(message, type = 'info') {
-                if (!this.debugMode) return;
-                
-                const timestamp = new Date().toTimeString().split(' ')[0];
-                const formattedMsg = `[${timestamp}] ${message}`;
-                
-                console.log(`%c${formattedMsg}`, 
-                    type === 'error' ? 'color: red' : 
-                    type === 'success' ? 'color: green' : 
-                    type === 'warn' ? 'color: orange' : 
-                    'color: cyan'
-                );
-                
-                // Also add to debug panel
-                const panel = document.getElementById('debug-content');
-                if (panel) {
-                    const line = document.createElement('div');
-                    line.className = 'debug-line';
-                    line.textContent = formattedMsg;
-                    panel.appendChild(line);
-                    panel.scrollTop = panel.scrollHeight;
-                }
+            // UI Navigation
+            showLandingScreen() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('landing-screen').classList.remove('hidden');
             }
             
-            showConnectionState(state, text) {
-                const stateEl = document.getElementById('connection-state');
-                const textEl = document.getElementById('connection-text');
+            showCreateScreen() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('create-screen').classList.remove('hidden');
+                this.workspaceId = this.generateWorkspaceName();
+                document.getElementById('workspace-id').textContent = this.workspaceId;
+            }
+            
+            showJoinScreen() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('join-screen').classList.remove('hidden');
+            }
+            
+            showWorkspace() {
+                document.getElementById('landing').classList.add('hidden');
+                document.getElementById('workspace').classList.remove('hidden');
+                document.getElementById('workspace-name').textContent = this.workspaceId;
                 
-                stateEl.className = `connection-state ${state}`;
-                stateEl.classList.remove('hidden');
-                textEl.textContent = text;
+                // Update security badge
+                const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
+                const badge = document.getElementById('workspace-security');
+                badge.textContent = levelInfo.emoji + ' ' + levelInfo.name;
+                badge.dataset.level = this.securityLevel;
                 
-                if (state === 'connected') {
-                    setTimeout(() => stateEl.classList.add('hidden'), 3000);
+                // Start auto-delete if DEFCON 1
+                if (this.securityLevel === 1) {
+                    this.startAutoDelete();
                 }
+                
+                this.startSignaling();
             }
             
             // Security Level Management
@@ -1737,220 +1161,417 @@
                     opt.classList.toggle('selected', opt.dataset.level == level);
                 });
                 
-                // Update body theme
-                document.body.dataset.defcon = level;
-                
-                // Show/hide password based on level
+                // Update password requirements
                 const passwordGroup = document.getElementById('password-group');
-                if (level >= 4) {
-                    passwordGroup.classList.add('hidden');
-                } else {
-                    passwordGroup.classList.remove('hidden');
-                }
+                const passwordReq = document.getElementById('password-requirement');
                 
-                this.debug(`Selected DEFCON ${level}`);
+                if (level === 1) {
+                    passwordReq.textContent = '(required for all users)';
+                    passwordGroup.classList.remove('hidden');
+                } else if (level === 2) {
+                    passwordReq.textContent = '(required)';
+                    passwordGroup.classList.remove('hidden');
+                } else if (level === 3) {
+                    passwordReq.textContent = '(optional)';
+                    passwordGroup.classList.remove('hidden');
+                } else {
+                    passwordGroup.classList.add('hidden');
+                }
             }
             
             getSecurityLevelInfo(level) {
                 const levels = {
-                    1: { emoji: '🔴', name: 'Maximum Security', color: 'var(--defcon1)' },
-                    2: { emoji: '🟠', name: 'High Security', color: 'var(--defcon2)' },
-                    3: { emoji: '🟡', name: 'Standard Security', color: 'var(--defcon3)' },
-                    4: { emoji: '🟢', name: 'Easy Mode', color: 'var(--defcon4)' },
-                    5: { emoji: '🔵', name: 'Public Room', color: 'var(--defcon5)' }
+                    1: { emoji: '🔴', name: 'Maximum', features: ['password', 'verify', 'autodelete'] },
+                    2: { emoji: '🟠', name: 'High', features: ['password', 'verify'] },
+                    3: { emoji: '🟡', name: 'Standard', features: [] },
+                    4: { emoji: '🟢', name: 'Easy', features: [] },
+                    5: { emoji: '🔵', name: 'Open', features: [] }
                 };
                 return levels[level] || levels[3];
             }
             
-            // Navigation
-            showLandingScreen() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('landing-screen').classList.remove('hidden');
-            }
-            
-            showCreateScreen() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('create-screen').classList.remove('hidden');
-                
-                // Generate workspace ID
-                const id = this.generateWorkspaceName();
-                document.getElementById('workspace-id').textContent = id;
-                this.workspaceId = id;
-            }
-            
-            showJoinScreen() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('join-screen').classList.remove('hidden');
-            }
-            
-            showWorkspace() {
-                document.getElementById('onboarding').classList.add('hidden');
-                document.getElementById('workspace').classList.remove('hidden');
-                
-                // Show debug panel
-                if (this.debugMode) {
-                    document.getElementById('debug-panel').classList.remove('hidden');
-                }
-                
-                // Update UI
-                document.getElementById('workspace-title').textContent = this.workspaceId;
-                document.getElementById('message-input').placeholder = `Message #${this.currentChannel}`;
-                
-                // Update security badge
-                const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
-                const badge = document.getElementById('workspace-security');
-                badge.textContent = `${levelInfo.emoji} ${levelInfo.name}`;
-                badge.dataset.level = this.securityLevel;
-                
-                // Set body theme
-                document.body.dataset.defcon = this.securityLevel;
-                
-                // Add self to members
-                this.members.set(this.userId, {
-                    id: this.userId,
-                    name: this.userName,
-                    status: 'online',
-                    isLocal: true
-                });
-                
-                // Start P2P signaling
-                this.startSignaling();
-                
-                // Update member list
-                this.updateMembersList();
-                
-                // Add welcome message
-                this.addSystemMessage(`Welcome to ${this.workspaceId}! Share the invite link to add team members.`);
-                
-                this.debug(`Entered workspace as ${this.userName} with DEFCON ${this.securityLevel}`);
-            }
-            
-            // Workspace Management
+            // Workspace Creation with Seats
             async createWorkspace() {
                 const name = document.getElementById('creator-name').value.trim();
                 if (!name) {
-                    alert('Please enter your name');
+                    this.showToast('Please enter your name', 'error');
                     return;
                 }
                 
-                // Check password for security levels 1-3
-                if (this.securityLevel <= 3) {
-                    const password = document.getElementById('creator-password').value;
-                    if (!password && this.securityLevel <= 2) {
-                        alert('Password required for this security level');
-                        return;
-                    }
+                const password = document.getElementById('creator-password').value;
+                
+                // Check password requirements based on security level
+                if (this.securityLevel <= 2 && !password) {
+                    this.showToast('Password required for this security level', 'error');
+                    return;
+                }
+                
+                // For DEFCON 1, this becomes the room password everyone needs
+                if (this.securityLevel === 1) {
+                    this.roomPassword = password;
                 }
                 
                 this.userName = name;
                 this.isHost = true;
-                this.workspaceKey = this.generateKey();
                 
-                // Save workspace
-                this.saveWorkspace();
+                // Generate cryptographic seats
+                this.hostSeat = await this.crypto.generateSeat();
+                this.guestSeat = await this.crypto.generateSeat();
                 
-                // Log creation event
-                this.appendEvent({
-                    type: 'workspace_created',
-                    userId: this.userId,
-                    userName: this.userName,
-                    workspaceId: this.workspaceId,
-                    securityLevel: this.securityLevel
-                });
+                // Derive initial key from guest seat (shared with joiners)
+                await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
                 
-                // Show workspace
                 this.showWorkspace();
+                this.addSystemMessage(`Welcome to ${this.workspaceId}! Share the invite link to add teammates.`);
                 
-                // Auto-copy invite
                 setTimeout(() => this.copyInviteLink(), 500);
             }
             
             async joinWorkspace() {
                 const name = document.getElementById('joiner-name').value.trim();
                 if (!name) {
-                    alert('Please enter your name');
+                    this.showToast('Please enter your name', 'error');
                     return;
+                }
+                
+                // Check room password for DEFCON 1
+                if (this.securityLevel === 1) {
+                    const password = document.getElementById('joiner-password').value;
+                    if (!password || password !== this.roomPassword) {
+                        this.showToast('Invalid room password', 'error');
+                        return;
+                    }
                 }
                 
                 this.userName = name;
                 this.isHost = false;
                 
-                // Save workspace
-                this.saveWorkspace();
-                
-                // Log join event
-                this.appendEvent({
-                    type: 'user_joined',
-                    userId: this.userId,
-                    userName: this.userName
-                });
-                
-                // Show workspace
                 this.showWorkspace();
             }
             
-            // Channel Management
-            switchChannel(channelName) {
-                // Update active state
-                document.querySelectorAll('.channel-item').forEach(item => {
-                    item.classList.toggle('active', item.dataset.channel === channelName);
-                });
+            // Generate invite with cryptographic material
+            generateInviteLink() {
+                const inviteData = {
+                    workspaceId: this.workspaceId,
+                    securityLevel: this.securityLevel,
+                    guestSeat: {
+                        secret: btoa(String.fromCharCode(...this.guestSeat.secret)),
+                        id: btoa(String.fromCharCode(...this.guestSeat.id))
+                    }
+                };
                 
-                this.currentChannel = channelName;
-                const channel = this.channels[channelName];
+                // Add room password hint for DEFCON 1
+                if (this.securityLevel === 1) {
+                    inviteData.needsPassword = true;
+                }
                 
-                // Update header
-                document.getElementById('current-channel-name').textContent = `# ${channelName}`;
-                document.getElementById('channel-description').textContent = channel.description || '';
-                document.getElementById('message-input').placeholder = `Message #${channelName}`;
-                
-                // Display messages
-                this.displayChannelMessages(channelName);
+                const encoded = btoa(JSON.stringify(inviteData));
+                return `${window.location.origin}${window.location.pathname}#${encoded}`;
             }
             
-            createChannel() {
-                const name = prompt('Channel name (lowercase, no spaces):');
-                if (!name) return;
+            async parseInvite(hash) {
+                try {
+                    const data = JSON.parse(atob(hash));
+                    this.workspaceId = data.workspaceId;
+                    this.securityLevel = data.securityLevel;
+                    
+                    // Extract guest seat
+                    if (data.guestSeat) {
+                        this.guestSeat = {
+                            secret: Uint8Array.from(atob(data.guestSeat.secret), c => c.charCodeAt(0)),
+                            id: Uint8Array.from(atob(data.guestSeat.id), c => c.charCodeAt(0))
+                        };
+                        
+                        // Derive shared key
+                        await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
+                    }
+                    
+                    // Show invite info
+                    document.getElementById('invite-valid').classList.remove('hidden');
+                    document.getElementById('invite-workspace-name').textContent = this.workspaceId;
+                    
+                    // Show security level
+                    const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
+                    const badge = document.getElementById('security-level-display');
+                    badge.classList.remove('hidden');
+                    badge.dataset.level = this.securityLevel;
+                    document.getElementById('security-level-text').textContent = 
+                        levelInfo.emoji + ' ' + levelInfo.name + ' Security';
+                    
+                    // Show password field if DEFCON 1
+                    if (data.needsPassword) {
+                        document.getElementById('join-password-group').classList.remove('hidden');
+                        this.roomPassword = true; // Flag that password is needed
+                    }
+                    
+                    return true;
+                } catch (e) {
+                    console.error('Invalid invite:', e);
+                    return false;
+                }
+            }
+            
+            // P2P Communication
+            startSignaling() {
+                console.log(`Starting signaling for ${this.userName} (${this.userId})`);
                 
-                const channelId = name.toLowerCase().replace(/[^a-z0-9-]/g, '');
-                if (this.channels[channelId]) {
-                    alert('Channel already exists');
+                this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
+                
+                this.signaler.onmessage = async (event) => {
+                    const { from, data } = event.data;
+                    if (from === this.userId) return;
+                    
+                    await this.handleSignal(from, data);
+                };
+                
+                // Announce with encryption capability
+                this.announcePresence();
+                setInterval(() => this.announcePresence(), 5000);
+            }
+            
+            announcePresence() {
+                this.signaler.postMessage({
+                    from: this.userId,
+                    data: {
+                        type: 'announce',
+                        userName: this.userName,
+                        timestamp: Date.now(),
+                        hasKey: !!this.crypto.currentKey
+                    }
+                });
+            }
+            
+            async handleSignal(from, data) {
+                switch (data.type) {
+                    case 'announce':
+                        if (!this.peers.has(from) && !this.pendingConnections.has(from)) {
+                            const shouldInitiate = data.timestamp > Date.now() - 1000;
+                            
+                            if (shouldInitiate || this.isHost) {
+                                console.log(`Initiating connection to ${data.userName}`);
+                                this.pendingConnections.add(from);
+                                await this.createConnection(from, data.userName, true);
+                            }
+                        }
+                        break;
+                        
+                    case 'offer':
+                        if (!this.peers.has(from) && !this.pendingConnections.has(from)) {
+                            console.log(`Accepting offer from ${data.userName}`);
+                            this.pendingConnections.add(from);
+                            await this.createConnection(from, data.userName, false);
+                            await this.peers.get(from)?.pc.setRemoteDescription(data.offer);
+                            const answer = await this.peers.get(from)?.pc.createAnswer();
+                            await this.peers.get(from)?.pc.setLocalDescription(answer);
+                            
+                            this.signaler.postMessage({
+                                from: this.userId,
+                                data: {
+                                    type: 'answer',
+                                    answer: answer,
+                                    target: from
+                                }
+                            });
+                        }
+                        break;
+                        
+                    case 'answer':
+                        if (data.target === this.userId) {
+                            const peer = this.peers.get(from);
+                            if (peer && peer.pc.signalingState === 'have-local-offer') {
+                                await peer.pc.setRemoteDescription(data.answer);
+                            }
+                        }
+                        break;
+                        
+                    case 'ice':
+                        if (data.target === this.userId) {
+                            const peer = this.peers.get(from);
+                            if (peer) {
+                                await peer.pc.addIceCandidate(data.candidate);
+                            }
+                        }
+                        break;
+                }
+            }
+            
+            async createConnection(peerId, peerName, createOffer) {
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                const peer = {
+                    id: peerId,
+                    name: peerName,
+                    pc: pc,
+                    channel: null,
+                    verified: false
+                };
+                
+                this.peers.set(peerId, peer);
+                
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        this.signaler.postMessage({
+                            from: this.userId,
+                            data: {
+                                type: 'ice',
+                                candidate: event.candidate,
+                                target: peerId
+                            }
+                        });
+                    }
+                };
+                
+                if (createOffer) {
+                    peer.channel = pc.createDataChannel('data');
+                    this.setupDataChannel(peer);
+                    
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    
+                    this.signaler.postMessage({
+                        from: this.userId,
+                        data: {
+                            type: 'offer',
+                            offer: offer,
+                            userName: this.userName
+                        }
+                    });
+                } else {
+                    pc.ondatachannel = (event) => {
+                        peer.channel = event.channel;
+                        this.setupDataChannel(peer);
+                    };
+                }
+                
+                pc.onconnectionstatechange = () => {
+                    console.log(`Connection state: ${pc.connectionState}`);
+                    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                        this.handleDisconnect(peerId, peerName);
+                    }
+                };
+            }
+            
+            setupDataChannel(peer) {
+                const channel = peer.channel;
+                
+                channel.onopen = async () => {
+                    console.log(`Connected to ${peer.name}`);
+                    this.pendingConnections.delete(peer.id);
+                    
+                    // Show verification for DEFCON 1-2
+                    if (this.securityLevel <= 2) {
+                        this.showVerification(peer);
+                    } else {
+                        peer.verified = true;
+                        this.onPeerConnected(peer);
+                    }
+                };
+                
+                channel.onmessage = async (event) => {
+                    try {
+                        // Decrypt if we have a key
+                        let data;
+                        if (this.crypto.currentKey) {
+                            data = await this.crypto.decrypt(event.data);
+                        } else {
+                            data = JSON.parse(event.data);
+                        }
+                        
+                        this.handlePeerMessage(peer, data);
+                    } catch (e) {
+                        console.error('Message handling error:', e);
+                    }
+                };
+                
+                channel.onclose = () => {
+                    this.handleDisconnect(peer.id, peer.name);
+                };
+            }
+            
+            async onPeerConnected(peer) {
+                this.showToast(`${peer.name} joined`, 'success');
+                this.updateConnectionCount();
+                
+                // Send encrypted sync data
+                setTimeout(async () => {
+                    const syncData = {
+                        type: 'sync',
+                        userName: this.userName,
+                        messages: this.getAllMessages()
+                    };
+                    
+                    if (this.crypto.currentKey) {
+                        const encrypted = await this.crypto.encrypt(syncData);
+                        peer.channel.send(encrypted);
+                    } else {
+                        peer.channel.send(JSON.stringify(syncData));
+                    }
+                }, 100);
+            }
+            
+            // Verification for high security levels
+            showVerification(peer) {
+                if (this.securityLevel > 2) {
+                    peer.verified = true;
+                    this.onPeerConnected(peer);
                     return;
                 }
                 
-                // Add channel
-                this.channels[channelId] = {
-                    name: channelId,
-                    description: '',
-                    messages: []
-                };
+                // Generate verification codes
+                const fingerprint = this.crypto.generateFingerprint(this.crypto.salt);
+                const emojis = this.crypto.generateEmojiFingerprint(this.crypto.salt);
                 
-                // Add to UI
-                const channelEl = document.createElement('div');
-                channelEl.className = 'channel-item';
-                channelEl.dataset.channel = channelId;
-                channelEl.innerHTML = `<span class="channel-prefix">#</span> ${channelId}`;
-                channelEl.onclick = () => this.switchChannel(channelId);
-                document.getElementById('channels-list').appendChild(channelEl);
+                this.pendingVerifications.set(peer.id, peer);
                 
-                // Broadcast channel creation
-                this.broadcastToPeers({
-                    type: 'channel_created',
-                    channel: channelId
-                });
+                document.getElementById('peer-name').textContent = peer.name;
+                document.getElementById('verification-code').textContent = fingerprint;
+                document.getElementById('verification-emoji').textContent = emojis;
+                document.getElementById('verification-modal').classList.remove('hidden');
                 
-                // Switch to new channel
-                this.switchChannel(channelId);
+                // Auto-accept for DEFCON 3+
+                if (this.securityLevel >= 3) {
+                    setTimeout(() => this.acceptVerification(), 3000);
+                }
             }
             
-            // Messaging
-            sendMessage() {
+            acceptVerification() {
+                document.getElementById('verification-modal').classList.add('hidden');
+                
+                // Get the pending peer
+                const peerId = Array.from(this.pendingVerifications.keys())[0];
+                const peer = this.pendingVerifications.get(peerId);
+                
+                if (peer) {
+                    peer.verified = true;
+                    this.pendingVerifications.delete(peerId);
+                    this.onPeerConnected(peer);
+                }
+            }
+            
+            rejectVerification() {
+                document.getElementById('verification-modal').classList.add('hidden');
+                
+                const peerId = Array.from(this.pendingVerifications.keys())[0];
+                const peer = this.pendingVerifications.get(peerId);
+                
+                if (peer) {
+                    this.pendingVerifications.delete(peerId);
+                    peer.pc.close();
+                    this.peers.delete(peerId);
+                    this.showToast('Connection rejected', 'error');
+                }
+            }
+            
+            // Message handling with encryption
+            async sendMessage() {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
                 if (!text) return;
                 
                 const message = {
-                    id: 'M' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+                    id: 'M' + Date.now() + Math.random().toString(36).substr(2, 5),
                     channel: this.currentChannel,
                     userId: this.userId,
                     userName: this.userName,
@@ -1958,39 +1579,87 @@
                     timestamp: Date.now()
                 };
                 
-                // Add to channel
                 this.channels[this.currentChannel].messages.push(message);
-                
-                // Display
                 this.addMessageToUI(message);
                 
-                // Clear input
                 input.value = '';
                 
-                // Broadcast to peers
-                this.broadcastToPeers({
-                    type: 'message',
-                    message: message
-                });
-                
-                // Log event
-                this.appendEvent({
-                    type: 'message_sent',
-                    channel: this.currentChannel,
-                    message: message
-                });
+                // Broadcast encrypted to all verified peers
+                for (const peer of this.peers.values()) {
+                    if (peer.channel?.readyState === 'open' && peer.verified) {
+                        const payload = {
+                            type: 'message',
+                            message: message
+                        };
+                        
+                        if (this.crypto.currentKey) {
+                            const encrypted = await this.crypto.encrypt(payload);
+                            peer.channel.send(encrypted);
+                        } else {
+                            peer.channel.send(JSON.stringify(payload));
+                        }
+                    }
+                }
             }
             
+            handlePeerMessage(peer, data) {
+                switch (data.type) {
+                    case 'sync':
+                        data.messages?.forEach(msg => {
+                            if (!this.messageExists(msg)) {
+                                this.channels[msg.channel].messages.push(msg);
+                                if (msg.channel === this.currentChannel) {
+                                    this.addMessageToUI(msg);
+                                }
+                            }
+                        });
+                        break;
+                        
+                    case 'message':
+                        const msg = data.message;
+                        if (!this.messageExists(msg)) {
+                            this.channels[msg.channel].messages.push(msg);
+                            if (msg.channel === this.currentChannel) {
+                                this.addMessageToUI(msg);
+                            }
+                        }
+                        break;
+                }
+            }
+            
+            // Auto-delete for DEFCON 1
+            startAutoDelete() {
+                if (this.securityLevel !== 1) return;
+                
+                setInterval(() => {
+                    const now = Date.now();
+                    const maxAge = 5 * 60 * 1000; // 5 minutes
+                    
+                    Object.values(this.channels).forEach(channel => {
+                        channel.messages = channel.messages.filter(msg => 
+                            now - msg.timestamp < maxAge
+                        );
+                    });
+                    
+                    // Update UI if in current channel
+                    this.displayChannelMessages(this.currentChannel);
+                }, 30000); // Check every 30 seconds
+            }
+            
+            // UI Methods
             addMessageToUI(message) {
                 const container = document.getElementById('messages-container');
-                
                 const messageEl = document.createElement('div');
                 messageEl.className = 'message';
                 
+                // Add ephemeral class for DEFCON 1
+                if (this.securityLevel === 1) {
+                    messageEl.classList.add('ephemeral');
+                }
+                
                 const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
                     hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
+                    minute: '2-digit'
                 });
                 
                 const initials = message.userName.split(' ')
@@ -2016,644 +1685,35 @@
             
             addSystemMessage(text) {
                 const container = document.getElementById('messages-container');
-                
                 const messageEl = document.createElement('div');
-                messageEl.className = 'message';
-                messageEl.style.fontStyle = 'italic';
-                messageEl.style.color = 'var(--text-secondary)';
-                messageEl.innerHTML = `
-                    <div style="padding: 0.5rem 0;">${text}</div>
-                `;
-                
+                messageEl.className = 'system-message';
+                messageEl.textContent = text;
                 container.appendChild(messageEl);
                 container.scrollTop = container.scrollHeight;
             }
             
-            displayChannelMessages(channelName) {
+            displayChannelMessages(channel) {
                 const container = document.getElementById('messages-container');
                 container.innerHTML = '';
-                
-                const messages = this.channels[channelName].messages;
-                messages.forEach(msg => this.addMessageToUI(msg));
+                this.channels[channel].messages.forEach(msg => this.addMessageToUI(msg));
             }
             
-            // Typing Indicators
-            handleTyping() {
-                // Clear existing timer
-                if (this.typingTimers.has(this.userId)) {
-                    clearTimeout(this.typingTimers.get(this.userId));
-                }
+            switchChannel(channel) {
+                this.currentChannel = channel;
                 
-                // Broadcast typing
-                this.broadcastToPeers({
-                    type: 'typing',
-                    userId: this.userId,
-                    userName: this.userName,
-                    channel: this.currentChannel
+                document.querySelectorAll('.channel-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.channel === channel);
                 });
                 
-                // Set timer to stop
-                const timer = setTimeout(() => {
-                    this.broadcastToPeers({
-                        type: 'stopped_typing',
-                        userId: this.userId
-                    });
-                }, 1000);
-                
-                this.typingTimers.set(this.userId, timer);
+                this.displayChannelMessages(channel);
             }
             
-            showTypingIndicator(userName) {
-                const indicator = document.getElementById('typing-indicators');
-                const text = document.getElementById('typing-text');
-                text.textContent = userName;
-                indicator.classList.remove('hidden');
-                
-                // Auto-hide after 3 seconds
-                setTimeout(() => {
-                    indicator.classList.add('hidden');
-                }, 3000);
-            }
-            
-            // Members Management
-            updateMembersList() {
-                const container = document.getElementById('members-list');
-                container.innerHTML = '';
-                
-                const dmList = document.getElementById('dm-list');
-                dmList.innerHTML = '';
-                
-                let onlineCount = 0;
-                
-                this.members.forEach(member => {
-                    // Update member count
-                    if (member.status === 'online') onlineCount++;
-                    
-                    // Add to members sidebar
-                    const memberEl = document.createElement('div');
-                    memberEl.className = 'member-item';
-                    
-                    const initials = member.name.split(' ')
-                        .map(n => n[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2);
-                    
-                    memberEl.innerHTML = `
-                        <div class="member-avatar">
-                            ${initials}
-                            <div class="member-status-dot ${member.status}"></div>
-                        </div>
-                        <div class="member-name">${member.name} ${member.isLocal ? '(you)' : ''}</div>
-                    `;
-                    container.appendChild(memberEl);
-                    
-                    // Add to DM list (if not self)
-                    if (!member.isLocal) {
-                        const dmEl = document.createElement('div');
-                        dmEl.className = 'dm-item';
-                        dmEl.innerHTML = `
-                            <div class="user-avatar">${initials}</div>
-                            <span>${member.name}</span>
-                            <div class="user-status ${member.status}"></div>
-                        `;
-                        dmList.appendChild(dmEl);
-                    }
-                });
-                
-                // Update counts
-                document.getElementById('member-count').textContent = `${this.members.size} member${this.members.size !== 1 ? 's' : ''}`;
-                document.getElementById('connection-count').textContent = `${onlineCount} connected`;
-            }
-            
-            // Fixed P2P Communication with proper offer/answer resolution
-            startSignaling() {
-                this.debug(`🚀 Starting signaling for ${this.userName} (ID: ${this.userId})`);
-                
-                // Use BroadcastChannel for local testing
-                this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
-                
-                this.signaler.onmessage = async (event) => {
-                    const { from, to, data } = event.data;
-                    
-                    // Ignore own messages
-                    if (from === this.userId) return;
-                    
-                    // Handle broadcasts or targeted messages
-                    if (to !== this.userId && to !== '*') return;
-                    
-                    this.debug(`📨 Received ${data.type} from ${from}`);
-                    await this.handleSignal(from, data);
-                };
-                
-                // Announce presence multiple times to ensure discovery
-                this.announcePresence();
-                
-                // Re-announce periodically
-                setInterval(() => {
-                    this.announcePresence();
-                }, 10000); // Every 10 seconds
-            }
-            
-            announcePresence() {
-                this.debug('📢 Announcing presence');
-                this.broadcastSignal('*', {
-                    type: 'announce',
-                    userId: this.userId,
-                    userName: this.userName,
-                    securityLevel: this.securityLevel
-                });
-            }
-            
-            async handleSignal(from, data) {
-                switch (data.type) {
-                    case 'announce':
-                        // Deterministic role assignment: lower ID initiates
-                        const shouldInitiate = this.userId.localeCompare(from) < 0;
-                        const connectionState = this.connectionStates.get(from);
-                        
-                        if (!this.peers.has(from) && connectionState !== 'connecting') {
-                            if (shouldInitiate) {
-                                this.debug(`👋 I should initiate connection to ${data.userName} (${from})`);
-                                await this.connectToPeer(from, data.userName);
-                            } else {
-                                this.debug(`⏳ Waiting for ${data.userName} (${from}) to connect to me`);
-                                // Mark that we're aware of this peer
-                                this.connectionStates.set(from, 'waiting');
-                            }
-                        } else {
-                            this.debug(`↩️ Already have connection/connecting to ${from}`);
-                        }
-                        break;
-                        
-                    case 'offer':
-                        // Accept offers regardless of who "should" initiate
-                        if (!this.peers.has(from) && this.connectionStates.get(from) !== 'connecting') {
-                            this.debug(`📥 Accepting offer from ${data.userName}`);
-                            await this.handleOffer(from, data.offer, data.userName);
-                        }
-                        break;
-                        
-                    case 'answer':
-                        await this.handleAnswer(from, data.answer);
-                        break;
-                        
-                    case 'ice':
-                        await this.handleIceCandidate(from, data.candidate);
-                        break;
-                }
-            }
-            
-            broadcastSignal(to, data) {
-                if (this.signaler && this.signaler.readyState !== 'closed') {
-                    const message = {
-                        from: this.userId,
-                        to: to,
-                        data: data
-                    };
-                    this.signaler.postMessage(message);
-                }
-            }
-            
-            async connectToPeer(peerId, peerName) {
-                // Prevent duplicate connections
-                if (this.peers.has(peerId) || this.connectionStates.get(peerId) === 'connecting') {
-                    this.debug(`⚠️ Already connecting/connected to ${peerId}`, 'warn');
-                    return;
-                }
-                
-                this.debug(`🤝 Initiating connection to ${peerName} (${peerId})`);
-                this.connectionStates.set(peerId, 'connecting');
-                this.showConnectionState('connecting', `Connecting to ${peerName}...`);
-                
-                const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                });
-                
-                const peer = {
-                    id: peerId,
-                    name: peerName,
-                    connection: pc,
-                    dataChannel: null
-                };
-                
-                // Store peer immediately
-                this.peers.set(peerId, peer);
-                
-                // Monitor connection state
-                pc.onconnectionstatechange = () => {
-                    this.debug(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
-                    
-                    if (pc.connectionState === 'failed') {
-                        this.handleConnectionFailure(peerId, peerName);
-                    }
-                };
-                
-                // Create data channel
-                peer.dataChannel = pc.createDataChannel('data', {
-                    ordered: true,
-                    reliable: true
-                });
-                this.setupDataChannel(peer);
-                
-                // Setup ICE handling
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        this.broadcastSignal(peerId, {
-                            type: 'ice',
-                            candidate: event.candidate
-                        });
-                    }
-                };
-                
-                // Create and send offer
-                try {
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-                    
-                    this.debug(`📤 Sending offer to ${peerName}`);
-                    this.broadcastSignal(peerId, {
-                        type: 'offer',
-                        offer: offer,
-                        userName: this.userName
-                    });
-                } catch (error) {
-                    this.debug(`❌ Error creating offer: ${error}`, 'error');
-                    this.connectionStates.delete(peerId);
-                    this.peers.delete(peerId);
-                }
-            }
-            
-            async handleOffer(from, offer, peerName) {
-                // Prevent duplicate connections
-                if (this.peers.has(from) || this.connectionStates.get(from) === 'connecting') {
-                    this.debug(`⚠️ Already handling connection from ${from}`, 'warn');
-                    return;
-                }
-                
-                this.debug(`📥 Handling offer from ${peerName} (${from})`);
-                this.connectionStates.set(from, 'connecting');
-                this.showConnectionState('connecting', `${peerName} is connecting...`);
-                
-                const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                });
-                
-                const peer = {
-                    id: from,
-                    name: peerName,
-                    connection: pc,
-                    dataChannel: null
-                };
-                
-                // Store peer immediately
-                this.peers.set(from, peer);
-                
-                // Monitor connection state
-                pc.onconnectionstatechange = () => {
-                    this.debug(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
-                    
-                    if (pc.connectionState === 'failed') {
-                        this.handleConnectionFailure(from, peerName);
-                    }
-                };
-                
-                // Setup data channel handler
-                pc.ondatachannel = (event) => {
-                    this.debug('📥 Data channel received');
-                    peer.dataChannel = event.channel;
-                    this.setupDataChannel(peer);
-                };
-                
-                // Setup ICE handling
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        this.broadcastSignal(from, {
-                            type: 'ice',
-                            candidate: event.candidate
-                        });
-                    }
-                };
-                
-                try {
-                    // Set remote description and create answer
-                    await pc.setRemoteDescription(offer);
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    
-                    this.debug(`📤 Sending answer to ${peerName}`);
-                    this.broadcastSignal(from, {
-                        type: 'answer',
-                        answer: answer
-                    });
-                } catch (error) {
-                    this.debug(`❌ Error handling offer: ${error}`, 'error');
-                    this.connectionStates.delete(from);
-                    this.peers.delete(from);
-                }
-            }
-            
-            async handleAnswer(from, answer) {
-                const peer = this.peers.get(from);
-                if (peer) {
-                    try {
-                        await peer.connection.setRemoteDescription(answer);
-                        this.debug(`✅ Answer set successfully from ${peer.name}`, 'success');
-                    } catch (error) {
-                        this.debug(`❌ Error setting answer: ${error}`, 'error');
-                    }
-                }
-            }
-            
-            async handleIceCandidate(from, candidate) {
-                const peer = this.peers.get(from);
-                if (peer && peer.connection) {
-                    try {
-                        await peer.connection.addIceCandidate(candidate);
-                    } catch (error) {
-                        this.debug(`❌ Error adding ICE candidate: ${error}`, 'error');
-                    }
-                }
-            }
-            
-            handleConnectionFailure(peerId, peerName) {
-                this.debug(`⚠️ Connection failed with ${peerName}`, 'warn');
-                
-                const attempts = this.retryAttempts.get(peerId) || 0;
-                if (attempts < this.maxRetries) {
-                    this.retryAttempts.set(peerId, attempts + 1);
-                    this.debug(`🔄 Retrying connection (attempt ${attempts + 1}/${this.maxRetries})`);
-                    
-                    // Clean up failed connection
-                    const peer = this.peers.get(peerId);
-                    if (peer) {
-                        peer.connection.close();
-                        this.peers.delete(peerId);
-                    }
-                    this.connectionStates.delete(peerId);
-                    
-                    // Retry after delay
-                    setTimeout(() => {
-                        this.announcePresence();
-                    }, this.retryDelay);
-                } else {
-                    this.debug(`❌ Max retries reached for ${peerName}`, 'error');
-                    this.showConnectionState('failed', `Failed to connect to ${peerName}`);
-                    
-                    // Clean up
-                    this.peers.delete(peerId);
-                    this.connectionStates.delete(peerId);
-                    this.retryAttempts.delete(peerId);
-                }
-            }
-            
-            setupDataChannel(peer) {
-                const dc = peer.dataChannel;
-                
-                if (!dc) {
-                    this.debug(`❌ No data channel for peer ${peer.id}`, 'error');
-                    return;
-                }
-                
-                // Track readyState
-                this.debug(`📊 Data channel initial state: ${dc.readyState}`, 'info');
-                
-                dc.onopen = () => {
-                    this.debug(`✅ Data channel OPEN with ${peer.name}`, 'success');
-                    this.debug(`📊 Data channel readyState: ${dc.readyState}`, 'info');
-                    this.debug(`📊 Data channel bufferedAmount: ${dc.bufferedAmount}`, 'info');
-                    
-                    this.connectionStates.set(peer.id, 'connected');
-                    this.showConnectionState('connected', `Connected to ${peer.name}`);
-                    
-                    // Clear retry attempts on successful connection
-                    this.retryAttempts.delete(peer.id);
-                    
-                    // Add to members
-                    this.members.set(peer.id, {
-                        id: peer.id,
-                        name: peer.name,
-                        status: 'online'
-                    });
-                    
-                    // Update UI
-                    this.updateMembersList();
-                    
-                    // Delay sync slightly to ensure channel is fully ready
-                    setTimeout(() => {
-                        if (dc.readyState === 'open') {
-                            // Send initial sync
-                            const syncData = {
-                                type: 'sync',
-                                userId: this.userId,
-                                userName: this.userName,
-                                securityLevel: this.securityLevel,
-                                channels: Object.keys(this.channels),
-                                messages: this.getAllMessages()
-                            };
-                            
-                            try {
-                                const message = JSON.stringify(syncData);
-                                this.debug(`📤 Sending sync data to ${peer.name} (${message.length} bytes)`, 'info');
-                                dc.send(message);
-                                this.debug(`✅ Sync sent successfully`, 'success');
-                            } catch (error) {
-                                this.debug(`❌ Error sending sync: ${error}`, 'error');
-                            }
-                        } else {
-                            this.debug(`⚠️ Data channel not ready for sync`, 'warn');
-                        }
-                    }, 100);
-                    
-                    // Show system message
-                    this.addSystemMessage(`${peer.name} joined the workspace`);
-                };
-                
-                dc.onmessage = (event) => {
-                    this.debug(`📨 Received message from ${peer.name}: ${event.data.substring(0, 100)}...`, 'info');
-                    try {
-                        const data = JSON.parse(event.data);
-                        this.debug(`📦 Parsed message type: ${data.type}`, 'info');
-                        this.handlePeerMessage(peer, data);
-                    } catch (error) {
-                        this.debug(`❌ Error parsing message: ${error}`, 'error');
-                        this.debug(`Raw message: ${event.data}`, 'error');
-                    }
-                };
-                
-                dc.onerror = (error) => {
-                    this.debug(`❌ Data channel error with ${peer.name}: ${error}`, 'error');
-                };
-                
-                dc.onclose = () => {
-                    this.debug(`📪 Data channel CLOSED with ${peer.name}`, 'warn');
-                    
-                    // Update member status
-                    const member = this.members.get(peer.id);
-                    if (member) {
-                        member.status = 'offline';
-                        this.updateMembersList();
-                    }
-                    
-                    this.addSystemMessage(`${peer.name} left the workspace`);
-                    
-                    // Clean up
-                    this.peers.delete(peer.id);
-                    this.connectionStates.delete(peer.id);
-                };
-                
-                // Monitor buffered amount
-                dc.onbufferedamountlow = () => {
-                    this.debug(`📉 Buffered amount low for ${peer.name}`, 'info');
-                };
-            }
-            
-            handlePeerMessage(peer, data) {
-                this.debug(`🔧 Handling ${data.type} message from ${peer.name}`, 'info');
-                
-                switch (data.type) {
-                    case 'sync':
-                        this.debug(`📥 Syncing data from ${peer.name}`, 'info');
-                        
-                        // Sync messages
-                        let synced = 0;
-                        if (data.messages && Array.isArray(data.messages)) {
-                            data.messages.forEach(msg => {
-                                if (!this.messageExists(msg)) {
-                                    // Ensure channel exists
-                                    if (!this.channels[msg.channel]) {
-                                        this.channels[msg.channel] = { 
-                                            name: msg.channel,
-                                            messages: [] 
-                                        };
-                                        this.debug(`Created channel: ${msg.channel}`, 'info');
-                                    }
-                                    // Add message
-                                    this.channels[msg.channel].messages.push(msg);
-                                    synced++;
-                                }
-                            });
-                            this.debug(`📥 Synced ${synced} new messages from ${peer.name}`, 'success');
-                        }
-                        
-                        // Refresh current channel display
-                        this.displayChannelMessages(this.currentChannel);
-                        break;
-                        
-                    case 'message':
-                        // Ensure we have the message object
-                        if (!data.message) {
-                            this.debug(`⚠️ Message data missing from ${peer.name}`, 'warn');
-                            return;
-                        }
-                        
-                        const msg = data.message;
-                        this.debug(`📬 New message from ${msg.userName} in #${msg.channel}: ${msg.text}`, 'info');
-                        
-                        // Ensure channel exists
-                        if (!this.channels[msg.channel]) {
-                            this.channels[msg.channel] = { 
-                                name: msg.channel,
-                                messages: [] 
-                            };
-                            this.debug(`Created channel for message: ${msg.channel}`, 'info');
-                        }
-                        
-                        // Check if message already exists (avoid duplicates)
-                        if (!this.messageExists(msg)) {
-                            // Add message to channel
-                            this.channels[msg.channel].messages.push(msg);
-                            this.debug(`✅ Added message to #${msg.channel}`, 'success');
-                            
-                            // Display if current channel
-                            if (msg.channel === this.currentChannel) {
-                                this.addMessageToUI(msg);
-                                this.debug(`✅ Displayed message in UI`, 'success');
-                            } else {
-                                this.debug(`💬 Message is for #${msg.channel}, current channel is #${this.currentChannel}`, 'info');
-                            }
-                        } else {
-                            this.debug(`⚠️ Duplicate message ignored`, 'warn');
-                        }
-                        break;
-                        
-                    case 'typing':
-                        if (data.channel === this.currentChannel) {
-                            this.showTypingIndicator(data.userName);
-                        }
-                        break;
-                        
-                    case 'stopped_typing':
-                        // Hide typing indicator
-                        document.getElementById('typing-indicators').classList.add('hidden');
-                        break;
-                        
-                    case 'channel_created':
-                        // Add new channel if it doesn't exist
-                        if (!this.channels[data.channel]) {
-                            this.channels[data.channel] = { 
-                                name: data.channel,
-                                messages: [] 
-                            };
-                            this.debug(`📁 New channel created: ${data.channel}`, 'info');
-                            
-                            // Add to UI
-                            const channelEl = document.createElement('div');
-                            channelEl.className = 'channel-item';
-                            channelEl.dataset.channel = data.channel;
-                            channelEl.innerHTML = `<span class="channel-prefix">#</span> ${data.channel}`;
-                            channelEl.onclick = () => this.switchChannel(data.channel);
-                            document.getElementById('channels-list').appendChild(channelEl);
-                        }
-                        break;
-                        
-                    default:
-                        this.debug(`⚠️ Unknown message type: ${data.type}`, 'warn');
-                }
-            }
-            
-            broadcastToPeers(data) {
-                this.debug(`📢 Attempting to broadcast to ${this.peers.size} peers: ${data.type}`, 'info');
-                
-                if (this.peers.size === 0) {
-                    this.debug('⚠️ No peers connected to broadcast to', 'warn');
-                    return;
-                }
-                
-                let sent = 0;
-                let failed = 0;
-                
-                this.peers.forEach((peer, peerId) => {
-                    this.debug(`Checking peer ${peer.name} (${peerId})...`, 'info');
-                    
-                    if (!peer.dataChannel) {
-                        this.debug(`❌ No data channel for ${peer.name}`, 'error');
-                        failed++;
-                        return;
-                    }
-                    
-                    const state = peer.dataChannel.readyState;
-                    this.debug(`📊 Data channel state for ${peer.name}: ${state}`, 'info');
-                    
-                    if (state === 'open') {
-                        try {
-                            const message = JSON.stringify(data);
-                            this.debug(`📤 Sending to ${peer.name}: ${message.substring(0, 100)}...`, 'info');
-                            peer.dataChannel.send(message);
-                            sent++;
-                            this.debug(`✅ Sent to ${peer.name}`, 'success');
-                        } catch (error) {
-                            this.debug(`❌ Failed to send to ${peer.name}: ${error}`, 'error');
-                            failed++;
-                        }
-                    } else {
-                        this.debug(`⚠️ Channel not open with ${peer.name}, state: ${state}`, 'warn');
-                        failed++;
-                    }
-                });
-                
-                this.debug(`📊 Broadcast complete: ${sent}/${this.peers.size} successful, ${failed} failed`, 
-                    sent > 0 ? 'success' : 'error');
+            handleDisconnect(peerId, peerName) {
+                this.peers.delete(peerId);
+                this.pendingConnections.delete(peerId);
+                this.pendingVerifications.delete(peerId);
+                this.showToast(`${peerName} disconnected`, 'error');
+                this.updateConnectionCount();
             }
             
             // Utilities
@@ -2666,98 +1726,43 @@
             }
             
             messageExists(message) {
-                const channel = this.channels[message.channel];
-                return channel && channel.messages.some(m => m.id === message.id);
+                return this.channels[message.channel].messages.some(m => m.id === message.id);
+            }
+            
+            updateConnectionCount() {
+                const count = this.peers.size + 1;
+                document.getElementById('connection-count').textContent = 
+                    `${count} ${count === 1 ? 'member' : 'members'} online`;
+            }
+            
+            showToast(text, type = 'success') {
+                const toast = document.getElementById('connection-toast');
+                const icon = document.getElementById('toast-icon');
+                const textEl = document.getElementById('toast-text');
+                
+                toast.className = `connection-toast ${type}`;
+                icon.textContent = type === 'success' ? '✓' : '⚠';
+                textEl.textContent = text;
+                
+                toast.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
             }
             
             generateWorkspaceName() {
-                const adjectives = ['stellar', 'quantum', 'crystal', 'neon', 'cyber'];
-                const nouns = ['nexus', 'hub', 'base', 'sync', 'link'];
-                const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-                const noun = nouns[Math.floor(Math.random() * nouns.length)];
+                const words = ['aurora', 'cascade', 'nebula', 'prism', 'zenith', 'cosmos', 'stellar'];
+                const word = words[Math.floor(Math.random() * words.length)];
                 const num = Math.floor(Math.random() * 9000) + 1000;
-                return `${adj}-${noun}-${num}`;
-            }
-            
-            generateKey() {
-                const array = new Uint8Array(32);
-                crypto.getRandomValues(array);
-                return btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '');
-            }
-            
-            generateInviteLink() {
-                const data = {
-                    workspaceId: this.workspaceId,
-                    key: this.workspaceKey,
-                    securityLevel: this.securityLevel
-                };
-                const encoded = btoa(JSON.stringify(data));
-                return `${window.location.origin}${window.location.pathname}#${encoded}`;
-            }
-            
-            parseInvite(hash) {
-                try {
-                    const data = JSON.parse(atob(hash));
-                    this.workspaceId = data.workspaceId;
-                    this.workspaceKey = data.key;
-                    this.securityLevel = data.securityLevel || 3;
-                    
-                    const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
-                    const statusEl = document.getElementById('invite-status');
-                    statusEl.classList.remove('hidden');
-                    const securityInfo = document.getElementById('security-level-info');
-                    securityInfo.textContent = `(${levelInfo.emoji} ${levelInfo.name})`;
-                    
-                    return true;
-                } catch (e) {
-                    console.error('Invalid invite');
-                    return false;
-                }
+                return `${word}-${num}`;
             }
             
             copyInviteLink() {
                 const link = this.generateInviteLink();
                 navigator.clipboard.writeText(link).then(() => {
-                    alert('Invite link copied! Share it with your team.');
-                    this.debug(`📋 Copied invite link to clipboard`);
+                    this.showToast('Invite link copied!', 'success');
                 });
-            }
-            
-            saveWorkspace() {
-                localStorage.setItem('workspace', JSON.stringify({
-                    workspaceId: this.workspaceId,
-                    userName: this.userName,
-                    userId: this.userId,
-                    workspaceKey: this.workspaceKey,
-                    isHost: this.isHost,
-                    securityLevel: this.securityLevel
-                }));
-            }
-            
-            loadSavedWorkspace() {
-                const saved = localStorage.getItem('workspace');
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    this.workspaceId = data.workspaceId;
-                    this.userName = data.userName;
-                    this.userId = data.userId;
-                    this.workspaceKey = data.workspaceKey;
-                    this.isHost = data.isHost;
-                    this.securityLevel = data.securityLevel || 3;
-                    
-                    // Auto-enter workspace if saved
-                    // this.showWorkspace();
-                }
-            }
-            
-            appendEvent(event) {
-                const e = {
-                    id: 'E/' + Date.now().toString(36) + Math.random().toString(36).substr(2),
-                    timestamp: Date.now(),
-                    ...event
-                };
-                this.eventLog.push(e);
-                return e;
             }
             
             escapeHtml(text) {
@@ -2765,27 +1770,9 @@
                 div.textContent = text;
                 return div.innerHTML;
             }
-            
-            // Verification (for DEFCON 1-2)
-            acceptVerification() {
-                document.getElementById('verification-modal').classList.add('hidden');
-            }
-            
-            rejectVerification() {
-                document.getElementById('verification-modal').classList.add('hidden');
-                alert('Connection rejected');
-            }
         }
         
-        // Initialize app and attach event listeners
         const app = new SecureWorkspaceApp();
-        
-        // Setup channel switching
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.channel-item').forEach(item => {
-                item.onclick = () => app.switchChannel(item.dataset.channel);
-            });
-        });
     </script>
 </body>
 </html>
