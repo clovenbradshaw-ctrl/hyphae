@@ -1192,63 +1192,97 @@
             
             // P2P Communication
             startSignaling() {
+                console.log('🚀 Starting signaling for', this.userName, 'ID:', this.userId);
+                
                 // Use BroadcastChannel for local testing
                 this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
                 
                 this.signaler.onmessage = async (event) => {
                     const { from, to, data } = event.data;
                     
+                    console.log(`📨 Signal received - From: ${from}, To: ${to}, Type: ${data.type}`);
+                    
                     // Ignore own messages
-                    if (from === this.userId) return;
+                    if (from === this.userId) {
+                        console.log('↩️ Ignoring own message');
+                        return;
+                    }
                     
                     // Handle broadcasts or targeted messages
-                    if (to !== this.userId && to !== '*') return;
+                    if (to !== this.userId && to !== '*') {
+                        console.log('⏭️ Message not for me');
+                        return;
+                    }
                     
                     await this.handleSignal(from, data);
                 };
                 
-                // Announce presence
-                this.broadcastSignal('*', {
-                    type: 'announce',
-                    userId: this.userId,
-                    userName: this.userName
-                });
+                // Announce presence after a short delay to ensure others are listening
+                setTimeout(() => {
+                    console.log('📢 Announcing presence');
+                    this.broadcastSignal('*', {
+                        type: 'announce',
+                        userId: this.userId,
+                        userName: this.userName
+                    });
+                }, 100);
             }
             
             async handleSignal(from, data) {
+                console.log(`🔧 Handling ${data.type} from ${from}`);
+                
                 switch (data.type) {
                     case 'announce':
-                        // New peer joined
-                        if (this.isHost || this.peers.has(from)) {
+                        // EVERYONE should try to connect to new peer
+                        // Not just the host!
+                        if (!this.peers.has(from)) {
+                            console.log('👋 New peer announced, connecting...');
                             await this.connectToPeer(from, data.userName);
                         }
                         break;
                         
                     case 'offer':
-                        await this.handleOffer(from, data.offer, data.userName);
+                        if (!this.peers.has(from)) {
+                            console.log('📥 Received offer, creating answer...');
+                            await this.handleOffer(from, data.offer, data.userName);
+                        }
                         break;
                         
                     case 'answer':
+                        console.log('📥 Received answer');
                         await this.handleAnswer(from, data.answer);
                         break;
                         
                     case 'ice':
+                        console.log('🧊 Received ICE candidate');
                         await this.handleIceCandidate(from, data.candidate);
                         break;
                 }
             }
             
             broadcastSignal(to, data) {
-                if (this.signaler) {
-                    this.signaler.postMessage({
+                if (this.signaler && this.signaler.readyState !== 'closed') {
+                    const message = {
                         from: this.userId,
                         to: to,
                         data: data
-                    });
+                    };
+                    console.log(`📡 Broadcasting signal to ${to}:`, data.type);
+                    this.signaler.postMessage(message);
+                } else {
+                    console.error('❌ Signaler not ready');
                 }
             }
             
             async connectToPeer(peerId, peerName) {
+                console.log(`🤝 Connecting to ${peerName} (${peerId})`);
+                
+                // Don't create duplicate connections
+                if (this.peers.has(peerId)) {
+                    console.log('⚠️ Connection already exists');
+                    return;
+                }
+                
                 const pc = new RTCPeerConnection({
                     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
                 });
@@ -1260,13 +1294,28 @@
                     dataChannel: null
                 };
                 
+                // Store peer immediately to prevent duplicates
+                this.peers.set(peerId, peer);
+                
+                // Monitor connection state
+                pc.onconnectionstatechange = () => {
+                    console.log(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
+                };
+                
+                pc.onicegatheringstatechange = () => {
+                    console.log(`🧊 ICE gathering state: ${pc.iceGatheringState}`);
+                };
+                
                 // Create data channel
-                peer.dataChannel = pc.createDataChannel('data');
+                peer.dataChannel = pc.createDataChannel('data', {
+                    ordered: true
+                });
                 this.setupDataChannel(peer);
                 
                 // Setup ICE handling
                 pc.onicecandidate = (event) => {
                     if (event.candidate) {
+                        console.log('🧊 Sending ICE candidate');
                         this.broadcastSignal(peerId, {
                             type: 'ice',
                             candidate: event.candidate
@@ -1275,19 +1324,31 @@
                 };
                 
                 // Create offer
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                
-                this.peers.set(peerId, peer);
-                
-                this.broadcastSignal(peerId, {
-                    type: 'offer',
-                    offer: offer,
-                    userName: this.userName
-                });
+                try {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    
+                    console.log('📤 Sending offer to', peerName);
+                    this.broadcastSignal(peerId, {
+                        type: 'offer',
+                        offer: offer,
+                        userName: this.userName
+                    });
+                } catch (error) {
+                    console.error('❌ Error creating offer:', error);
+                    this.peers.delete(peerId);
+                }
             }
             
             async handleOffer(from, offer, peerName) {
+                console.log(`🤝 Handling offer from ${peerName} (${from})`);
+                
+                // Don't create duplicate connections
+                if (this.peers.has(from)) {
+                    console.log('⚠️ Connection already exists');
+                    return;
+                }
+                
                 const pc = new RTCPeerConnection({
                     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
                 });
@@ -1299,8 +1360,17 @@
                     dataChannel: null
                 };
                 
-                // Setup data channel
+                // Store peer immediately
+                this.peers.set(from, peer);
+                
+                // Monitor connection state
+                pc.onconnectionstatechange = () => {
+                    console.log(`📶 Connection state with ${peerName}: ${pc.connectionState}`);
+                };
+                
+                // Setup data channel handler (receiving end)
                 pc.ondatachannel = (event) => {
+                    console.log('📥 Data channel received');
                     peer.dataChannel = event.channel;
                     this.setupDataChannel(peer);
                 };
@@ -1308,6 +1378,7 @@
                 // Setup ICE handling
                 pc.onicecandidate = (event) => {
                     if (event.candidate) {
+                        console.log('🧊 Sending ICE candidate');
                         this.broadcastSignal(from, {
                             type: 'ice',
                             candidate: event.candidate
@@ -1315,38 +1386,62 @@
                     }
                 };
                 
-                // Set remote description and create answer
-                await pc.setRemoteDescription(offer);
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                
-                this.peers.set(from, peer);
-                
-                this.broadcastSignal(from, {
-                    type: 'answer',
-                    answer: answer
-                });
+                try {
+                    // Set remote description and create answer
+                    await pc.setRemoteDescription(offer);
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    console.log('📤 Sending answer to', peerName);
+                    this.broadcastSignal(from, {
+                        type: 'answer',
+                        answer: answer
+                    });
+                } catch (error) {
+                    console.error('❌ Error handling offer:', error);
+                    this.peers.delete(from);
+                }
             }
             
             async handleAnswer(from, answer) {
+                console.log(`📥 Handling answer from ${from}`);
                 const peer = this.peers.get(from);
                 if (peer) {
-                    await peer.connection.setRemoteDescription(answer);
+                    try {
+                        await peer.connection.setRemoteDescription(answer);
+                        console.log('✅ Answer set successfully');
+                    } catch (error) {
+                        console.error('❌ Error setting answer:', error);
+                    }
+                } else {
+                    console.warn('⚠️ No peer found for answer from', from);
                 }
             }
             
             async handleIceCandidate(from, candidate) {
                 const peer = this.peers.get(from);
-                if (peer) {
-                    await peer.connection.addIceCandidate(candidate);
+                if (peer && peer.connection) {
+                    try {
+                        await peer.connection.addIceCandidate(candidate);
+                        console.log('✅ ICE candidate added');
+                    } catch (error) {
+                        console.error('❌ Error adding ICE candidate:', error);
+                    }
+                } else {
+                    console.warn('⚠️ No peer found for ICE from', from);
                 }
             }
             
             setupDataChannel(peer) {
                 const dc = peer.dataChannel;
                 
+                if (!dc) {
+                    console.error('❌ No data channel for peer', peer.id);
+                    return;
+                }
+                
                 dc.onopen = () => {
-                    console.log('Connected to', peer.name);
+                    console.log(`✅ Data channel OPEN with ${peer.name}`);
                     
                     // Add to members
                     this.members.set(peer.id, {
@@ -1359,24 +1454,37 @@
                     this.updateMembersList();
                     
                     // Send initial sync
-                    dc.send(JSON.stringify({
+                    const syncData = {
                         type: 'sync',
                         userId: this.userId,
                         userName: this.userName,
                         channels: Object.keys(this.channels),
                         messages: this.getAllMessages()
-                    }));
+                    };
                     
-                    // Show verification (simplified for demo)
+                    console.log('📤 Sending sync data:', syncData);
+                    dc.send(JSON.stringify(syncData));
+                    
+                    // Show system message
                     this.addSystemMessage(`${peer.name} joined the workspace`);
                 };
                 
                 dc.onmessage = (event) => {
-                    this.handlePeerMessage(peer, JSON.parse(event.data));
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log(`📨 Message from ${peer.name}:`, data);
+                        this.handlePeerMessage(peer, data);
+                    } catch (error) {
+                        console.error('❌ Error parsing message:', error);
+                    }
+                };
+                
+                dc.onerror = (error) => {
+                    console.error(`❌ Data channel error with ${peer.name}:`, error);
                 };
                 
                 dc.onclose = () => {
-                    console.log('Disconnected from', peer.name);
+                    console.log(`📪 Data channel CLOSED with ${peer.name}`);
                     
                     // Update member status
                     const member = this.members.get(peer.id);
@@ -1386,6 +1494,9 @@
                     }
                     
                     this.addSystemMessage(`${peer.name} left the workspace`);
+                    
+                    // Clean up peer
+                    this.peers.delete(peer.id);
                 };
             }
             
@@ -1442,11 +1553,24 @@
             }
             
             broadcastToPeers(data) {
-                this.peers.forEach(peer => {
+                console.log(`📢 Broadcasting to ${this.peers.size} peers:`, data);
+                
+                let sent = 0;
+                this.peers.forEach((peer, peerId) => {
                     if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
-                        peer.dataChannel.send(JSON.stringify(data));
+                        try {
+                            peer.dataChannel.send(JSON.stringify(data));
+                            sent++;
+                            console.log(`✅ Sent to ${peer.name}`);
+                        } catch (error) {
+                            console.error(`❌ Failed to send to ${peer.name}:`, error);
+                        }
+                    } else {
+                        console.warn(`⚠️ Channel not open with ${peer.name}, state: ${peer.dataChannel?.readyState}`);
                     }
                 });
+                
+                console.log(`📊 Broadcast complete: ${sent}/${this.peers.size} successful`);
             }
             
             // Utilities
