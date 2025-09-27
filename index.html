@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1a1a2e">
-    <title>Workspace - Secure P2P Communication</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Secure P2P Workspace</title>
     <style>
         * {
             margin: 0;
@@ -36,14 +37,121 @@
             flex-direction: column;
         }
 
-        .container {
+        .hidden {
+            display: none !important;
+        }
+
+        /* Layout */
+        .app-container {
             flex: 1;
             display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem;
+            display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connecting {
+            background: var(--warning);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .workspace-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
             padding: 1rem;
         }
 
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+
+        .message-input-container {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .message-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Forms */
         .card {
             background: var(--bg-secondary);
             border-radius: 12px;
@@ -51,6 +159,7 @@
             width: 100%;
             max-width: 420px;
             border: 1px solid var(--border);
+            margin: 2rem auto;
         }
 
         h1 {
@@ -60,49 +169,16 @@
             text-align: center;
         }
 
-        .tagline {
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 0.875rem;
-        }
-
-        .features {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .feature {
-            background: var(--bg-tertiary);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .feature::before {
-            content: '✓';
-            color: var(--success);
-            font-weight: bold;
-        }
-
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         button {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 0.875rem 1.5rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 8px;
             font-size: 1rem;
             font-weight: 500;
@@ -110,13 +186,14 @@
             transition: all 0.2s;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background: var(--accent-hover);
             transform: translateY(-1px);
         }
 
-        button:active {
-            transform: translateY(0);
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         button.secondary {
@@ -125,25 +202,25 @@
             color: var(--text-primary);
         }
 
-        button.secondary:hover {
+        button.secondary:hover:not(:disabled) {
             background: var(--bg-tertiary);
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin: 1.5rem 0;
-            color: var(--text-muted);
-            font-size: 0.875rem;
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
         }
 
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .input-group {
@@ -158,395 +235,903 @@
             color: var(--text-secondary);
         }
 
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        input:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .info-box {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin-bottom: 1.25rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .info-box.success {
-            border-color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .workspace-id {
-            font-family: 'Courier New', monospace;
-            background: var(--bg-primary);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            color: var(--text-primary);
-            word-break: break-all;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid var(--text-muted);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-right: 0.5rem;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .back-button {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            cursor: pointer;
-            margin-bottom: 1.5rem;
-            transition: color 0.2s;
-        }
-
-        .back-button:hover {
-            color: var(--text-primary);
-        }
-
-        .status {
+        /* Verification UI */
+        .verification-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem;
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
+            z-index: 1000;
+            padding: 1rem;
         }
 
-        .fingerprint {
-            font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
-            letter-spacing: 0.05em;
+        .verification-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .fingerprint-display {
+            background: var(--bg-primary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 2rem;
+            text-align: center;
+            margin: 1.5rem 0;
+            letter-spacing: 0.2em;
+            border: 2px solid var(--accent);
+        }
+
+        .emoji-display {
+            font-size: 3rem;
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin: 1rem 0;
+            letter-spacing: 0.5em;
+        }
+
+        .trust-indicator {
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .trust-new {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent);
+        }
+
+        .trust-verified {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .trust-warning {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .peer-list {
+            padding: 1rem;
+            border-left: 1px solid var(--border);
+            width: 250px;
+            background: var(--bg-secondary);
+        }
+
+        .peer-item {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .peer-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card" id="app">
-            <!-- Landing Screen -->
-            <div id="landing-screen" class="screen">
-                <h1>Secure Workspace</h1>
-                <p class="tagline">Private team coordination without servers</p>
+    <div class="app-container">
+        <!-- Landing Screen -->
+        <div id="landing-screen" class="screen">
+            <div class="card">
+                <h1>Secure P2P Workspace</h1>
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                    End-to-end encrypted • Peer-to-peer • No servers
+                </p>
                 
-                <div class="features">
-                    <div class="feature">End-to-end encrypted</div>
-                    <div class="feature">Peer-to-peer</div>
-                    <div class="feature">Offline first</div>
-                </div>
-
-                <div class="button-group">
-                    <button onclick="showCreateScreen()">Create New Workspace</button>
-                    <div class="divider">or</div>
-                    <button class="secondary" onclick="showJoinScreen()">Join with Invite Link</button>
-                </div>
-            </div>
-
-            <!-- Create Screen -->
-            <div id="create-screen" class="screen" style="display: none;">
-                <div class="back-button" onclick="showLandingScreen()">
-                    <span>←</span> Back
-                </div>
+                <button onclick="app.showCreateScreen()" style="width: 100%; margin-bottom: 1rem;">
+                    Create New Workspace
+                </button>
                 
-                <h1>Create Workspace</h1>
-                <p class="tagline">Set up your secure workspace</p>
-
-                <div class="info-box">
-                    <strong>Workspace ID:</strong>
-                    <div class="workspace-id" id="workspace-name">Generating...</div>
-                </div>
-
-                <div class="input-group">
-                    <label for="display-name">Your Display Name</label>
-                    <input 
-                        type="text" 
-                        id="display-name" 
-                        placeholder="Enter your name"
-                        maxlength="32"
-                    >
-                </div>
-
-                <div class="input-group">
-                    <label for="password">Workspace Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        placeholder="Create a strong password"
-                    >
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                        This encrypts your local data
-                    </div>
-                </div>
-
-                <button onclick="createWorkspace()">
-                    Create & Generate Invite Link
+                <button class="secondary" onclick="app.showJoinScreen()" style="width: 100%;">
+                    Join with Invite Link
                 </button>
             </div>
+        </div>
 
-            <!-- Join Screen -->
-            <div id="join-screen" class="screen" style="display: none;">
-                <div class="back-button" onclick="showLandingScreen()">
-                    <span>←</span> Back
+        <!-- Create Screen -->
+        <div id="create-screen" class="screen hidden">
+            <div class="card">
+                <h1>Create Workspace</h1>
+                
+                <div class="input-group">
+                    <label>Workspace ID</label>
+                    <input type="text" id="workspace-id" readonly style="font-family: monospace;">
                 </div>
                 
+                <div class="input-group">
+                    <label>Your Name</label>
+                    <input type="text" id="creator-name" placeholder="Enter your display name">
+                </div>
+                
+                <button onclick="app.createWorkspace()" style="width: 100%;">
+                    Create Workspace
+                </button>
+                
+                <button class="secondary" onclick="app.showLandingScreen()" style="width: 100%; margin-top: 0.5rem;">
+                    Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Join Screen -->
+        <div id="join-screen" class="screen hidden">
+            <div class="card">
                 <h1>Join Workspace</h1>
-                <p class="tagline" id="join-tagline">Enter your details to join</p>
-
-                <div class="status" id="join-status" style="display: none;">
-                    <span class="loading"></span>
-                    <span id="status-text">Verifying invite...</span>
-                </div>
-
+                
                 <div class="input-group">
-                    <label for="join-name">Your Display Name</label>
-                    <input 
-                        type="text" 
-                        id="join-name" 
-                        placeholder="Enter your name"
-                        maxlength="32"
-                    >
+                    <label>Your Name</label>
+                    <input type="text" id="joiner-name" placeholder="Enter your display name">
                 </div>
-
-                <div class="input-group">
-                    <label for="join-password">Create Your Password</label>
-                    <input 
-                        type="password" 
-                        id="join-password" 
-                        placeholder="Create a password for this workspace"
-                    >
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                        This will encrypt your local copy
-                    </div>
-                </div>
-
-                <button onclick="joinWorkspace()">
+                
+                <button onclick="app.joinWorkspace()" style="width: 100%;">
                     Join Workspace
                 </button>
+                
+                <button class="secondary" onclick="app.showLandingScreen()" style="width: 100%; margin-top: 0.5rem;">
+                    Back
+                </button>
             </div>
+        </div>
 
-            <!-- Success Screen -->
-            <div id="success-screen" class="screen" style="display: none;">
-                <h1>🎉 Workspace Ready!</h1>
-                <p class="tagline">Your secure workspace has been created</p>
-
-                <div class="info-box success">
-                    <strong>Invite Link Copied!</strong>
-                    <div style="margin-top: 0.5rem; word-break: break-all;">
-                        <span class="workspace-id" id="invite-link">...</span>
-                    </div>
-                    <div style="margin-top: 0.75rem; color: var(--text-secondary);">
-                        Share this link privately with team members. It contains the encryption key.
+        <!-- Main Workspace -->
+        <div id="workspace-screen" class="screen hidden">
+            <div class="header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 id="workspace-title">Workspace</h2>
+                    <button class="secondary" onclick="app.copyInviteLink()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                        Copy Invite
+                    </button>
+                </div>
+                <div class="connection-status">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="connection-status">Disconnected</span>
+                </div>
+            </div>
+            
+            <div class="main-content">
+                <div class="workspace-area">
+                    <div class="messages-container" id="messages-container"></div>
+                    
+                    <div class="message-input-container">
+                        <div class="message-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="message-input" 
+                                placeholder="Type a message..."
+                                onkeydown="if(event.key === 'Enter') app.sendMessage()"
+                            >
+                            <button onclick="app.sendMessage()">Send</button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="info-box">
-                    <strong>Security Fingerprint:</strong>
-                    <div class="fingerprint" id="fingerprint">...</div>
-                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
-                        Verify this matches with other members
-                    </div>
+                
+                <div class="peer-list">
+                    <h3 style="margin-bottom: 1rem;">Connected Peers</h3>
+                    <div id="peer-list"></div>
                 </div>
+            </div>
+        </div>
 
-                <div class="button-group">
-                    <button onclick="enterWorkspace()">Enter Workspace</button>
-                    <button class="secondary" onclick="copyInviteLink()">Copy Invite Again</button>
+        <!-- Verification Modal -->
+        <div id="verification-modal" class="verification-modal hidden">
+            <div class="verification-card">
+                <h2>Verify Connection</h2>
+                <div id="trust-status" class="trust-indicator trust-new">
+                    New connection
+                </div>
+                
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    Compare this code with your peer:
+                </p>
+                
+                <div class="fingerprint-display" id="verification-code">0000</div>
+                
+                <div class="emoji-display" id="verification-emoji">🔒 🔒 🔒</div>
+                
+                <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">
+                    Ask: "Is your code <span id="code-spoken">zero-zero-zero-zero</span>?"
+                </p>
+                
+                <div style="display: flex; gap: 0.5rem;">
+                    <button onclick="app.acceptVerification()" style="flex: 1;">
+                        Codes Match ✓
+                    </button>
+                    <button class="secondary" onclick="app.rejectVerification()" style="flex: 1;">
+                        No Match ✗
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Utility functions
-        function generateWorkspaceName() {
-            const adjectives = ['swift', 'bright', 'cosmic', 'crystal', 'stellar', 'quantum', 'nebula', 'aurora'];
-            const nouns = ['falcon', 'phoenix', 'comet', 'nexus', 'prism', 'beacon', 'cipher', 'vortex'];
-            const number = Math.floor(Math.random() * 9000) + 1000;
-            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-            const noun = nouns[Math.floor(Math.random() * nouns.length)];
-            return `${adj}-${noun}-${number}`;
-        }
+        // Main Application
+        class P2PWorkspaceApp {
+            constructor() {
+                this.workspaceId = null;
+                this.userName = null;
+                this.workspaceKey = null;
+                this.peers = new Map();
+                this.messages = [];
+                this.eventLog = [];
+                this.trustedFingerprints = new Map();
+                this.signaler = null;
+                this.isHost = false;
+                
+                // Initialize
+                this.initializeApp();
+            }
 
-        function generateKey() {
-            const array = new Uint8Array(32);
-            crypto.getRandomValues(array);
-            return btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '');
-        }
+            initializeApp() {
+                // Check for invite hash
+                const hash = window.location.hash.slice(1);
+                if (hash) {
+                    this.showJoinScreen();
+                    this.parseInvite(hash);
+                }
+                
+                // Initialize local storage
+                this.loadLocalData();
+            }
 
-        function generateFingerprint(key) {
-            // Simple fingerprint for demo - in production use proper crypto hash
-            const chunks = key.match(/.{1,4}/g).slice(0, 8);
-            return chunks.join(' ').toUpperCase();
-        }
+            // Storage
+            async loadLocalData() {
+                const stored = localStorage.getItem('workspace');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    this.workspaceId = data.workspaceId;
+                    this.userName = data.userName;
+                    this.workspaceKey = data.workspaceKey;
+                    this.isHost = data.isHost;
+                    
+                    // Load trusted fingerprints
+                    const trusted = localStorage.getItem('trustedFingerprints');
+                    if (trusted) {
+                        this.trustedFingerprints = new Map(JSON.parse(trusted));
+                    }
+                    
+                    // Load event log
+                    const events = localStorage.getItem('eventLog');
+                    if (events) {
+                        this.eventLog = JSON.parse(events);
+                    }
+                }
+            }
 
-        // Screen navigation
-        function showLandingScreen() {
-            hideAllScreens();
-            document.getElementById('landing-screen').style.display = 'block';
-        }
+            saveLocalData() {
+                localStorage.setItem('workspace', JSON.stringify({
+                    workspaceId: this.workspaceId,
+                    userName: this.userName,
+                    workspaceKey: this.workspaceKey,
+                    isHost: this.isHost,
+                    timestamp: Date.now()
+                }));
+                
+                localStorage.setItem('trustedFingerprints', 
+                    JSON.stringify([...this.trustedFingerprints])
+                );
+                
+                localStorage.setItem('eventLog', JSON.stringify(this.eventLog));
+            }
 
-        function showCreateScreen() {
-            hideAllScreens();
-            document.getElementById('create-screen').style.display = 'block';
-            
-            // Generate workspace name
-            const workspaceName = generateWorkspaceName();
-            document.getElementById('workspace-name').textContent = workspaceName;
-            window.currentWorkspace = { name: workspaceName };
-        }
+            // Event Sourcing
+            appendEvent(event) {
+                const e = {
+                    id: `E/${this.generateId()}`,
+                    s: event.subject,
+                    p: event.predicate,
+                    o: event.object,
+                    at: new Date().toISOString(),
+                    recorded_at: new Date().toISOString(),
+                    meta: event.meta || {}
+                };
+                
+                this.eventLog.push(e);
+                this.saveLocalData();
+                
+                // Broadcast to peers
+                this.broadcastEvent(e);
+                
+                return e;
+            }
 
-        function showJoinScreen() {
-            hideAllScreens();
-            document.getElementById('join-screen').style.display = 'block';
-            
-            // Check if we have an invite hash
-            const hash = window.location.hash.slice(1);
-            if (hash) {
-                document.getElementById('join-status').style.display = 'flex';
-                document.getElementById('status-text').textContent = 'Valid invite found!';
-                // In production, decrypt and verify the invite here
-                window.currentInvite = hash;
+            broadcastEvent(event) {
+                this.peers.forEach(peer => {
+                    if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
+                        peer.dataChannel.send(JSON.stringify({
+                            type: 'event',
+                            event: event
+                        }));
+                    }
+                });
+            }
+
+            // UI Navigation
+            showLandingScreen() {
+                this.hideAllScreens();
+                document.getElementById('landing-screen').classList.remove('hidden');
+            }
+
+            showCreateScreen() {
+                this.hideAllScreens();
+                document.getElementById('create-screen').classList.remove('hidden');
+                
+                // Generate workspace ID
+                const id = this.generateWorkspaceName();
+                document.getElementById('workspace-id').value = id;
+                this.workspaceId = id;
+            }
+
+            showJoinScreen() {
+                this.hideAllScreens();
+                document.getElementById('join-screen').classList.remove('hidden');
+            }
+
+            showWorkspaceScreen() {
+                this.hideAllScreens();
+                document.getElementById('workspace-screen').classList.remove('hidden');
+                document.getElementById('workspace-title').textContent = this.workspaceId;
+                
+                // Start signaling
+                this.startSignaling();
+            }
+
+            hideAllScreens() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            }
+
+            // Workspace Creation
+            async createWorkspace() {
+                const name = document.getElementById('creator-name').value.trim();
+                if (!name) {
+                    alert('Please enter your name');
+                    return;
+                }
+                
+                this.userName = name;
+                this.isHost = true;
+                this.workspaceKey = this.generateKey();
+                
+                // Create genesis event
+                this.appendEvent({
+                    subject: this.userName,
+                    predicate: 'created',
+                    object: this.workspaceId,
+                    meta: { host: true }
+                });
+                
+                this.saveLocalData();
+                this.showWorkspaceScreen();
+                
+                // Copy invite link
+                this.copyInviteLink();
+            }
+
+            async joinWorkspace() {
+                const name = document.getElementById('joiner-name').value.trim();
+                if (!name) {
+                    alert('Please enter your name');
+                    return;
+                }
+                
+                this.userName = name;
+                this.isHost = false;
+                
+                // Join event
+                this.appendEvent({
+                    subject: this.userName,
+                    predicate: 'joined',
+                    object: this.workspaceId
+                });
+                
+                this.saveLocalData();
+                this.showWorkspaceScreen();
+            }
+
+            // Invite Management
+            generateInviteLink() {
+                const inviteData = {
+                    workspaceId: this.workspaceId,
+                    key: this.workspaceKey,
+                    signal: window.location.origin // In production, use actual signal server
+                };
+                
+                const encoded = btoa(JSON.stringify(inviteData));
+                return `${window.location.origin}${window.location.pathname}#${encoded}`;
+            }
+
+            parseInvite(hash) {
+                try {
+                    const decoded = atob(hash);
+                    const inviteData = JSON.parse(decoded);
+                    this.workspaceId = inviteData.workspaceId;
+                    this.workspaceKey = inviteData.key;
+                    return inviteData;
+                } catch (e) {
+                    console.error('Invalid invite link');
+                    return null;
+                }
+            }
+
+            copyInviteLink() {
+                const link = this.generateInviteLink();
+                navigator.clipboard.writeText(link).then(() => {
+                    alert('Invite link copied to clipboard!');
+                });
+            }
+
+            // WebRTC Connection
+            async createPeerConnection(peerId) {
+                const config = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' }
+                    ]
+                };
+                
+                const pc = new RTCPeerConnection(config);
+                const peer = {
+                    id: peerId,
+                    connection: pc,
+                    dataChannel: null,
+                    fingerprint: null,
+                    verified: false
+                };
+                
+                // Set up data channel
+                if (this.isHost) {
+                    peer.dataChannel = pc.createDataChannel('data');
+                    this.setupDataChannel(peer);
+                } else {
+                    pc.ondatachannel = (event) => {
+                        peer.dataChannel = event.channel;
+                        this.setupDataChannel(peer);
+                    };
+                }
+                
+                // Handle ICE candidates
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        this.sendSignal(peerId, {
+                            type: 'ice',
+                            candidate: event.candidate
+                        });
+                    }
+                };
+                
+                // Monitor connection state
+                pc.onconnectionstatechange = () => {
+                    this.updateConnectionStatus();
+                    if (pc.connectionState === 'connected') {
+                        this.verifyPeer(peer);
+                    }
+                };
+                
+                this.peers.set(peerId, peer);
+                return peer;
+            }
+
+            setupDataChannel(peer) {
+                const dc = peer.dataChannel;
+                
+                dc.onopen = () => {
+                    console.log('Data channel opened with', peer.id);
+                    this.updatePeerList();
+                    
+                    // Send initial sync
+                    dc.send(JSON.stringify({
+                        type: 'sync',
+                        userName: this.userName,
+                        eventLog: this.eventLog
+                    }));
+                };
+                
+                dc.onmessage = (event) => {
+                    this.handlePeerMessage(peer, JSON.parse(event.data));
+                };
+                
+                dc.onclose = () => {
+                    console.log('Data channel closed with', peer.id);
+                    this.updatePeerList();
+                };
+            }
+
+            handlePeerMessage(peer, message) {
+                switch (message.type) {
+                    case 'sync':
+                        this.syncEvents(message.eventLog);
+                        if (!this.peers.get(peer.id).userName) {
+                            this.peers.get(peer.id).userName = message.userName;
+                            this.updatePeerList();
+                        }
+                        break;
+                        
+                    case 'event':
+                        this.receiveEvent(message.event);
+                        break;
+                        
+                    case 'message':
+                        this.receiveMessage(message);
+                        break;
+                }
+            }
+
+            syncEvents(remoteEvents) {
+                // Merge remote events with local
+                const localIds = new Set(this.eventLog.map(e => e.id));
+                const newEvents = remoteEvents.filter(e => !localIds.has(e.id));
+                
+                this.eventLog.push(...newEvents);
+                this.eventLog.sort((a, b) => a.at.localeCompare(b.at));
+                this.saveLocalData();
+                
+                // Process events to rebuild state
+                this.rebuildStateFromEvents();
+            }
+
+            receiveEvent(event) {
+                if (!this.eventLog.find(e => e.id === event.id)) {
+                    this.eventLog.push(event);
+                    this.saveLocalData();
+                    this.processEvent(event);
+                }
+            }
+
+            processEvent(event) {
+                // Handle different event types
+                if (event.p === 'sent_message') {
+                    this.displayMessage({
+                        author: event.s,
+                        text: event.meta.text,
+                        timestamp: event.at
+                    });
+                }
+            }
+
+            rebuildStateFromEvents() {
+                // Clear current state
+                document.getElementById('messages-container').innerHTML = '';
+                
+                // Replay all events
+                this.eventLog.forEach(event => {
+                    this.processEvent(event);
+                });
+            }
+
+            // Verification
+            async verifyPeer(peer) {
+                const stats = await peer.connection.getStats();
+                let localFp, remoteFp;
+                
+                stats.forEach(stat => {
+                    if (stat.type === 'certificate' && stat.fingerprint) {
+                        localFp = stat.fingerprint;
+                    }
+                });
+                
+                // For demo, generate simple fingerprint
+                const combined = this.workspaceKey + peer.id;
+                const hash = await this.hashString(combined);
+                const code = this.generateVerificationCode(hash);
+                
+                peer.fingerprint = code.hex;
+                
+                // Check trust
+                const trusted = this.trustedFingerprints.get(peer.id);
+                let trustStatus = 'new';
+                
+                if (trusted === peer.fingerprint) {
+                    trustStatus = 'verified';
+                    peer.verified = true;
+                } else if (trusted && trusted !== peer.fingerprint) {
+                    trustStatus = 'warning';
+                }
+                
+                // Show verification UI
+                if (trustStatus !== 'verified') {
+                    this.showVerification(peer, code, trustStatus);
+                }
+            }
+
+            showVerification(peer, code, trustStatus) {
+                const modal = document.getElementById('verification-modal');
+                modal.classList.remove('hidden');
+                
+                // Update UI
+                document.getElementById('verification-code').textContent = code.number;
+                document.getElementById('verification-emoji').textContent = code.emoji;
+                document.getElementById('code-spoken').textContent = code.spoken;
+                
+                // Update trust indicator
+                const indicator = document.getElementById('trust-status');
+                indicator.className = `trust-indicator trust-${trustStatus}`;
+                indicator.textContent = trustStatus === 'new' ? 
+                    `New connection with ${peer.userName || 'peer'}` :
+                    `⚠️ Fingerprint changed for ${peer.userName || 'peer'}!`;
+                
+                // Store current verification
+                this.currentVerification = { peer, code };
+            }
+
+            acceptVerification() {
+                const { peer } = this.currentVerification;
+                peer.verified = true;
+                this.trustedFingerprints.set(peer.id, peer.fingerprint);
+                this.saveLocalData();
+                
+                document.getElementById('verification-modal').classList.add('hidden');
+                this.currentVerification = null;
+            }
+
+            rejectVerification() {
+                const { peer } = this.currentVerification;
+                peer.connection.close();
+                this.peers.delete(peer.id);
+                
+                document.getElementById('verification-modal').classList.add('hidden');
+                this.currentVerification = null;
+                
+                alert('Connection rejected due to verification failure');
+            }
+
+            // Messaging
+            sendMessage() {
+                const input = document.getElementById('message-input');
+                const text = input.value.trim();
+                
+                if (!text) return;
+                
+                // Create message event
+                const event = this.appendEvent({
+                    subject: this.userName,
+                    predicate: 'sent_message',
+                    object: this.workspaceId,
+                    meta: { text }
+                });
+                
+                // Display locally
+                this.displayMessage({
+                    author: this.userName,
+                    text,
+                    timestamp: event.at
+                });
+                
+                // Clear input
+                input.value = '';
+            }
+
+            receiveMessage(message) {
+                this.displayMessage(message);
+            }
+
+            displayMessage(message) {
+                const container = document.getElementById('messages-container');
+                const messageEl = document.createElement('div');
+                messageEl.className = 'message';
+                
+                const time = new Date(message.timestamp).toLocaleTimeString();
+                
+                messageEl.innerHTML = `
+                    <div class="message-author">
+                        ${message.author}
+                        <span class="message-time">${time}</span>
+                    </div>
+                    <div>${message.text}</div>
+                `;
+                
+                container.appendChild(messageEl);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // UI Updates
+            updateConnectionStatus() {
+                const connected = [...this.peers.values()].some(p => 
+                    p.connection.connectionState === 'connected'
+                );
+                
+                const statusDot = document.getElementById('status-dot');
+                const statusText = document.getElementById('connection-status');
+                
+                if (connected) {
+                    statusDot.className = 'status-dot connected';
+                    statusText.textContent = 'Connected';
+                } else if ([...this.peers.values()].some(p => 
+                    p.connection.connectionState === 'connecting')) {
+                    statusDot.className = 'status-dot connecting';
+                    statusText.textContent = 'Connecting...';
+                } else {
+                    statusDot.className = 'status-dot';
+                    statusText.textContent = 'Disconnected';
+                }
+            }
+
+            updatePeerList() {
+                const container = document.getElementById('peer-list');
+                container.innerHTML = '';
+                
+                this.peers.forEach(peer => {
+                    if (peer.connection.connectionState === 'connected') {
+                        const peerEl = document.createElement('div');
+                        peerEl.className = 'peer-item';
+                        peerEl.innerHTML = `
+                            <div class="peer-status"></div>
+                            <div>${peer.userName || 'Connecting...'}</div>
+                            ${peer.verified ? '✓' : ''}
+                        `;
+                        container.appendChild(peerEl);
+                    }
+                });
+            }
+
+            // Signaling (simplified - use WebSocket in production)
+            startSignaling() {
+                // For demo, use BroadcastChannel for local testing
+                this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
+                
+                this.signaler.onmessage = async (event) => {
+                    const { from, to, data } = event.data;
+                    
+                    if (to !== this.userName && to !== '*') return;
+                    if (from === this.userName) return;
+                    
+                    switch (data.type) {
+                        case 'announce':
+                            // Someone joined, connect to them
+                            if (this.isHost) {
+                                this.connectToPeer(from);
+                            }
+                            break;
+                            
+                        case 'offer':
+                            await this.handleOffer(from, data.offer);
+                            break;
+                            
+                        case 'answer':
+                            await this.handleAnswer(from, data.answer);
+                            break;
+                            
+                        case 'ice':
+                            await this.handleIceCandidate(from, data.candidate);
+                            break;
+                    }
+                };
+                
+                // Announce presence
+                this.sendSignal('*', { type: 'announce' });
+            }
+
+            sendSignal(to, data) {
+                if (this.signaler) {
+                    this.signaler.postMessage({
+                        from: this.userName,
+                        to,
+                        data
+                    });
+                }
+            }
+
+            async connectToPeer(peerId) {
+                const peer = await this.createPeerConnection(peerId);
+                const offer = await peer.connection.createOffer();
+                await peer.connection.setLocalDescription(offer);
+                
+                this.sendSignal(peerId, {
+                    type: 'offer',
+                    offer
+                });
+            }
+
+            async handleOffer(from, offer) {
+                const peer = await this.createPeerConnection(from);
+                await peer.connection.setRemoteDescription(offer);
+                
+                const answer = await peer.connection.createAnswer();
+                await peer.connection.setLocalDescription(answer);
+                
+                this.sendSignal(from, {
+                    type: 'answer',
+                    answer
+                });
+            }
+
+            async handleAnswer(from, answer) {
+                const peer = this.peers.get(from);
+                if (peer) {
+                    await peer.connection.setRemoteDescription(answer);
+                }
+            }
+
+            async handleIceCandidate(from, candidate) {
+                const peer = this.peers.get(from);
+                if (peer) {
+                    await peer.connection.addIceCandidate(candidate);
+                }
+            }
+
+            // Utilities
+            generateWorkspaceName() {
+                const adjectives = ['quantum', 'stellar', 'crystal', 'nebula'];
+                const nouns = ['nexus', 'prism', 'cipher', 'beacon'];
+                const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                const noun = nouns[Math.floor(Math.random() * nouns.length)];
+                const num = Math.floor(Math.random() * 9000) + 1000;
+                return `${adj}-${noun}-${num}`;
+            }
+
+            generateKey() {
+                const array = new Uint8Array(32);
+                crypto.getRandomValues(array);
+                return btoa(String.fromCharCode(...array));
+            }
+
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            async hashString(str) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                return new Uint8Array(hashBuffer);
+            }
+
+            generateVerificationCode(hash) {
+                const bytes = Array.from(hash);
+                
+                // 4-digit number
+                const number = ((bytes[0] << 8) | bytes[1]) % 10000;
+                const numberStr = number.toString().padStart(4, '0');
+                
+                // Spoken version
+                const spoken = numberStr.split('').map(d => {
+                    const words = ['zero', 'one', 'two', 'three', 'four', 
+                                  'five', 'six', 'seven', 'eight', 'nine'];
+                    return words[parseInt(d)];
+                }).join('-');
+                
+                // Emoji version
+                const emojis = ['🔒', '🔑', '🛡️', '⚡', '🌟', '🎯', '🚀', '💎'];
+                const emojiCode = [
+                    emojis[bytes[0] % 8],
+                    emojis[bytes[1] % 8],
+                    emojis[bytes[2] % 8]
+                ].join(' ');
+                
+                // Hex version
+                const hex = bytes.slice(0, 4)
+                    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+                    .join(':');
+                
+                return {
+                    number: numberStr,
+                    spoken,
+                    emoji: emojiCode,
+                    hex
+                };
             }
         }
 
-        function hideAllScreens() {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.style.display = 'none';
-            });
-        }
-
-        // Workspace operations
-        async function createWorkspace() {
-            const displayName = document.getElementById('display-name').value.trim();
-            const password = document.getElementById('password').value;
-            
-            if (!displayName || !password) {
-                alert('Please fill in all fields');
-                return;
-            }
-            
-            if (password.length < 8) {
-                alert('Password must be at least 8 characters');
-                return;
-            }
-
-            // Generate encryption key
-            const encryptionKey = generateKey();
-            const fingerprint = generateFingerprint(encryptionKey);
-            
-            // Create invite link
-            const inviteData = {
-                workspace: window.currentWorkspace.name,
-                key: encryptionKey,
-                host: displayName,
-                timestamp: Date.now()
-            };
-            
-            const inviteHash = btoa(JSON.stringify(inviteData));
-            const inviteLink = `${window.location.origin}${window.location.pathname}#${inviteHash}`;
-            
-            // Store locally (in production, use IndexedDB)
-            localStorage.setItem('workspace', JSON.stringify({
-                name: window.currentWorkspace.name,
-                displayName,
-                encryptionKey,
-                fingerprint,
-                createdAt: Date.now(),
-                isHost: true
-            }));
-            
-            // Copy to clipboard
-            navigator.clipboard.writeText(inviteLink);
-            
-            // Show success
-            hideAllScreens();
-            document.getElementById('success-screen').style.display = 'block';
-            document.getElementById('invite-link').textContent = inviteLink;
-            document.getElementById('fingerprint').textContent = fingerprint;
-            
-            window.currentInviteLink = inviteLink;
-        }
-
-        async function joinWorkspace() {
-            const displayName = document.getElementById('join-name').value.trim();
-            const password = document.getElementById('join-password').value;
-            
-            if (!displayName || !password) {
-                alert('Please fill in all fields');
-                return;
-            }
-            
-            if (!window.currentInvite) {
-                alert('No valid invite found');
-                return;
-            }
-            
-            // Decode invite
-            const inviteData = JSON.parse(atob(window.currentInvite));
-            const fingerprint = generateFingerprint(inviteData.key);
-            
-            // Store locally
-            localStorage.setItem('workspace', JSON.stringify({
-                name: inviteData.workspace,
-                displayName,
-                encryptionKey: inviteData.key,
-                fingerprint,
-                joinedAt: Date.now(),
-                isHost: false,
-                hostName: inviteData.host
-            }));
-            
-            // Enter workspace (in production, establish P2P connection here)
-            enterWorkspace();
-        }
-
-        function copyInviteLink() {
-            navigator.clipboard.writeText(window.currentInviteLink);
-            alert('Invite link copied!');
-        }
-
-        function enterWorkspace() {
-            // In production, navigate to main app
-            alert('Entering workspace... (This would navigate to the main app)');
-        }
-
-        // Check for invite on load
-        window.addEventListener('load', () => {
-            const hash = window.location.hash.slice(1);
-            if (hash) {
-                showJoinScreen();
-            }
-        });
+        // Initialize app
+        const app = new P2PWorkspaceApp();
     </script>
 </body>
 </html>
