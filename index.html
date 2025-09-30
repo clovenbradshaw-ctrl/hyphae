@@ -3,1862 +3,1342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2A222E">
-    <title>Secure Workspace</title>
+    <title>Relay Mesh Chat - Fixed</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
-
-        :root {
-            /* Warm base palette */
-            --bg-primary: #2A222E;
-            --bg-secondary: #342838;
-            --bg-tertiary: #3E2F42;
-            --bg-surface: #453548;
-            
-            --text-primary: #F4F2F7;
-            --text-secondary: #C4B5CE;
-            --text-muted: #8B7A96;
-            
-            /* Security level colors */
-            --defcon1: #DC2626;
-            --defcon2: #EA580C;
-            --defcon3: #FCD34D;
-            --defcon4: #10B981;
-            --defcon5: #3B82F6;
-            
-            /* Warm accent colors */
-            --accent-primary: #FF6B35;
-            --accent-secondary: #A84376;
-            --accent-trust: #007ACC;
-            --accent-success: #2BAC76;
-            
-            /* Gradient colors */
-            --gradient-start: #6940A5;
-            --gradient-end: #A84376;
-            
-            --border: rgba(196, 181, 206, 0.1);
-            --border-subtle: rgba(196, 181, 206, 0.05);
-            
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
-            
-            /* Animation timings */
-            --anim-fast: 200ms;
-            --anim-normal: 300ms;
-            --anim-slow: 500ms;
-            --anim-curve: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
+        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, #1F1A24 100%);
-            color: var(--text-primary);
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        /* Ambient background animation */
-        body::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at center, 
-                rgba(168, 67, 118, 0.03) 0%, 
-                transparent 50%);
-            animation: ambient 20s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
-        @keyframes ambient {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(-5%, 5%) scale(1.1); }
-            66% { transform: translate(5%, -5%) scale(0.95); }
-        }
-
-        /* Typography */
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-        
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-
-        /* Utility classes */
-        .hidden {
-            display: none !important;
-        }
-
-        /* Card styles */
-        .card {
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 3rem;
-            width: 100%;
-            max-width: 480px;
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            overflow: hidden;
-            transition: transform var(--anim-normal) var(--anim-curve);
-        }
-        
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, 
-                transparent, 
-                rgba(255, 107, 53, 0.3), 
-                transparent);
-            animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        @keyframes shimmer {
-            0%, 100% { transform: translateX(-100%); }
-            50% { transform: translateX(100%); }
-        }
-
-        /* Landing container */
-        .landing-container {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            position: relative;
-            z-index: 1;
+            padding: 10px;
         }
         
-        /* Tagline */
-        .tagline {
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 2.5rem;
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-        
-        /* Security level selector */
-        .security-selector {
-            margin-bottom: 2rem;
-        }
-        
-        .security-options {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
-        .security-option {
-            padding: 1rem;
-            background: var(--bg-primary);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all var(--anim-fast) var(--anim-curve);
-            position: relative;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
         }
         
-        .security-option::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--border);
-            transition: background var(--anim-fast);
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
         }
         
-        .security-option[data-level="1"]::after { background: var(--defcon1); }
-        .security-option[data-level="2"]::after { background: var(--defcon2); }
-        .security-option[data-level="3"]::after { background: var(--defcon3); }
-        .security-option[data-level="4"]::after { background: var(--defcon4); }
-        .security-option[data-level="5"]::after { background: var(--defcon5); }
-        
-        .security-option:hover {
-            transform: translateX(4px);
-            background: var(--bg-tertiary);
-        }
-        
-        .security-option.selected {
-            background: var(--bg-surface);
-            border-color: var(--accent-primary);
-        }
-        
-        .security-level-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
+        .network-status {
             display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 0.5rem;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-top: 10px;
         }
         
-        .security-level-desc {
-            font-size: 0.875rem;
-            color: var(--text-muted);
+        .content {
+            padding: 20px;
         }
         
-        /* Security badge */
-        .security-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg-primary);
-            border-radius: 100px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            position: relative;
-            border: 1px solid var(--border);
-            transition: all var(--anim-fast);
+        .button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
         }
         
-        .security-badge[data-level="1"] { 
-            border-color: var(--defcon1);
-            color: var(--defcon1);
-        }
-        .security-badge[data-level="2"] { 
-            border-color: var(--defcon2);
-            color: var(--defcon2);
-        }
-        .security-badge[data-level="3"] { 
-            border-color: var(--defcon3);
-            color: var(--defcon3);
-        }
-        .security-badge[data-level="4"] { 
-            border-color: var(--defcon4);
-            color: var(--defcon4);
-        }
-        .security-badge[data-level="5"] { 
-            border-color: var(--defcon5);
-            color: var(--defcon5);
-        }
-
-        /* Input styling */
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: var(--text-secondary);
-            transition: color var(--anim-fast) var(--anim-curve);
+        .button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
         
-        .input-group:focus-within label {
-            color: var(--accent-primary);
+        .button.success {
+            background: #10b981;
+            color: white;
         }
-
+        
+        .button.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
         input, textarea {
             width: 100%;
-            padding: 1rem;
-            background: var(--bg-primary);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-family: inherit;
-            transition: all var(--anim-fast) var(--anim-curve);
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 1em;
         }
-
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            background: rgba(255, 107, 53, 0.02);
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-        }
-
-        input::placeholder,
-        textarea::placeholder {
-            color: var(--text-muted);
-        }
-
-        /* Button styling */
-        button {
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+        
+        .room-display {
+            background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
             color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--anim-fast) var(--anim-curve);
-            width: 100%;
-            position: relative;
-            overflow: hidden;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
         }
         
-        button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
+        .room-code {
+            font-size: 2.5em;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin: 10px 0;
+        }
+        
+        .connection-box {
+            background: #f9fafb;
+            border: 2px dashed #9ca3af;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .connection-code {
+            font-family: monospace;
+            font-size: 0.85em;
+            word-break: break-all;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .step {
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width var(--anim-slow), height var(--anim-slow);
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
         }
         
-        button:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(168, 67, 118, 0.3);
+        .peers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
         }
         
-        button:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        button.secondary {
-            background: transparent;
-            border: 2px solid var(--border);
-            color: var(--text-secondary);
-        }
-
-        button.secondary:hover:not(:disabled) {
-            background: var(--bg-tertiary);
-            border-color: var(--accent-primary);
-            color: var(--text-primary);
-            box-shadow: none;
-        }
-
-        /* Success indicator */
-        .success-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(135deg, 
-                rgba(43, 172, 118, 0.1) 0%, 
-                rgba(43, 172, 118, 0.05) 100%);
-            border: 1px solid var(--accent-success);
-            border-radius: 100px;
-            color: var(--accent-success);
-            font-size: 0.875rem;
-            font-weight: 500;
-            animation: fadeIn var(--anim-normal) var(--anim-curve);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Info box */
-        .info-box {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
+        .peer-card {
+            background: #f3f4f6;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
             position: relative;
-            overflow: hidden;
         }
         
-        .info-box::before {
-            content: '🔒';
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.5rem;
-            opacity: 0.3;
+        .peer-card.connected {
+            background: #d1fae5;
+            border: 2px solid #10b981;
         }
         
-        /* Verification modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.8);
+        .peer-card.pending {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
+        
+        .peer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            padding: 1rem;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0 auto 10px;
         }
         
-        .modal-card {
-            background: var(--bg-secondary);
-            border-radius: 20px;
-            padding: 2rem;
-            max-width: 400px;
-            width: 100%;
-            border: 1px solid var(--border);
+        .peer-name {
+            font-weight: bold;
+            color: #1f2937;
         }
         
-        .verification-display {
-            background: var(--bg-primary);
-            padding: 1.5rem;
-            border-radius: 12px;
-            font-family: monospace;
-            font-size: 1.5rem;
-            text-align: center;
-            margin: 1.5rem 0;
-            letter-spacing: 0.2em;
-            border: 2px solid var(--accent-trust);
+        .peer-status {
+            font-size: 0.85em;
+            color: #6b7280;
+            margin-top: 5px;
         }
         
-        .emoji-display {
-            font-size: 2rem;
-            text-align: center;
-            padding: 1rem;
-            background: var(--bg-primary);
-            border-radius: 12px;
-            margin: 1rem 0;
-            letter-spacing: 0.5em;
-        }
-
-        /* Workspace styles */
-        .workspace-container {
-            display: flex;
-            height: 100vh;
-            background: var(--bg-primary);
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 280px;
-            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-        }
-
-        .workspace-header {
-            padding: 1.5rem 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .workspace-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .copy-button {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 0.25rem;
-            border-radius: 6px;
-            transition: all var(--anim-fast);
-            width: auto;
-        }
-        
-        .copy-button:hover {
-            color: var(--text-primary);
-            background: var(--bg-tertiary);
-            transform: none;
-            box-shadow: none;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .connection-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: var(--accent-success);
-            animation: pulse 2s ease-in-out infinite;
+            background: #10b981;
+            animation: pulse 2s infinite;
         }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-
-        /* Channels */
-        .channels-section {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem 0;
-        }
-
-        .section-title {
-            padding: 0 1rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-        }
-
-        .channel-item {
-            padding: 0.5rem 1rem;
-            cursor: pointer;
+        
+        .chat-container {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            height: 400px;
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all var(--anim-fast) var(--anim-curve);
-            color: var(--text-secondary);
-            position: relative;
-        }
-
-        .channel-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            padding-left: 1.25rem;
-        }
-
-        .channel-item.active {
-            background: var(--bg-surface);
-            color: var(--accent-primary);
+            flex-direction: column;
+            margin: 20px 0;
         }
         
-        .channel-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--accent-primary);
-        }
-
-        /* Main content */
-        .main-content {
+        .chat-messages {
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-primary);
-        }
-
-        /* Messages */
-        .messages-container {
-            flex: 1;
+            padding: 15px;
             overflow-y: auto;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            background: white;
         }
-
+        
         .message {
-            display: flex;
-            gap: 1rem;
-            animation: slideIn var(--anim-normal) var(--anim-curve);
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
         }
         
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .message-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .message-content {
-            flex: 1;
-        }
-
-        .message-header {
-            display: flex;
-            align-items: baseline;
-            gap: 0.5rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .message-author {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .message-text {
-            color: var(--text-secondary);
-            line-height: 1.6;
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
         }
         
-        .system-message {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-style: italic;
-            padding: 1rem;
-            animation: fadeIn var(--anim-slow) var(--anim-curve);
-        }
-        
-        .message.ephemeral {
-            opacity: 0.5;
-            font-style: italic;
-        }
-        
-        /* Message input */
-        .message-input-container {
-            padding: 1.5rem 2rem;
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-        }
-
-        .message-input-wrapper {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            background: var(--bg-primary);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 0.5rem;
-            transition: all var(--anim-fast) var(--anim-curve);
-        }
-        
-        .message-input-wrapper:focus-within {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-        }
-
-        .message-input {
-            flex: 1;
-            background: none;
-            border: none;
-            padding: 0.5rem;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .message-input:focus {
-            outline: none;
-        }
-
-        .send-button {
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            color: white;
-            border: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--anim-fast) var(--anim-curve);
-            width: auto;
-        }
-
-        /* Connection toast */
-        .connection-toast {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            padding: 1rem 1.5rem;
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            box-shadow: var(--shadow-lg);
-            animation: slideInRight var(--anim-normal) var(--anim-curve);
-            z-index: 1000;
-        }
-        
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(100%); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .connection-toast.success {
-            border-color: var(--accent-success);
-        }
-        
-        .connection-toast.error {
-            border-color: var(--accent-primary);
-        }
-        
-        /* Loading spinner */
-        .spinner {
+        .message-bubble {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .message.own {
+            text-align: right;
         }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
+        
+        .message.own .message-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
         }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
+        
+        .message.peer .message-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
         }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-surface);
-            border-radius: 5px;
+        
+        .message.system {
+            text-align: center;
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9em;
         }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--bg-tertiary);
+        
+        .message-author {
+            font-size: 0.8em;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background: #f9fafb;
+            border-top: 2px solid #e5e7eb;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            margin: 0;
+        }
+        
+        .chat-input button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .info-box h4 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- Connection Toast -->
-    <div id="connection-toast" class="connection-toast hidden">
-        <span id="toast-icon"></span>
-        <span id="toast-text"></span>
-    </div>
-
-    <!-- Landing Screen -->
-    <div id="landing" class="landing-container">
-        <div id="landing-screen" class="card screen">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h1>Secure Workspace</h1>
-                <p class="tagline">
-                    Private conversations that feel like home.<br>
-                    No servers, no tracking, just your team.
-                </p>
-            </div>
-            
-            <button onclick="app.showCreateScreen()">
-                Create Your Workspace
-            </button>
-            
-            <div style="margin: 1.5rem 0; text-align: center; color: var(--text-muted);">
-                or
-            </div>
-            
-            <button class="secondary" onclick="app.showJoinScreen()">
-                Join with Invite Link
-            </button>
-        </div>
-
-        <!-- Create Screen -->
-        <div id="create-screen" class="card screen hidden">
-            <h2 style="text-align: center;">Create Your Space</h2>
-            
-            <div class="info-box">
-                <strong>Your workspace ID:</strong>
-                <div style="margin-top: 0.5rem; font-family: monospace; font-size: 1.1rem; color: var(--text-primary);">
-                    <span id="workspace-id">generating...</span>
-                </div>
-            </div>
-            
-            <!-- Security Level Selector -->
-            <div class="security-selector">
-                <label style="margin-bottom: 1rem; display: block;">Choose security level:</label>
-                <div class="security-options">
-                    <div class="security-option" data-level="1" onclick="app.selectSecurityLevel(1)">
-                        <div>
-                            <div class="security-level-title">🔴 Maximum Security</div>
-                            <div class="security-level-desc">Password for everyone, messages auto-delete, verification required</div>
-                        </div>
-                    </div>
-                    <div class="security-option" data-level="2" onclick="app.selectSecurityLevel(2)">
-                        <div>
-                            <div class="security-level-title">🟠 High Security</div>
-                            <div class="security-level-desc">Host password required, verification recommended</div>
-                        </div>
-                    </div>
-                    <div class="security-option selected" data-level="3" onclick="app.selectSecurityLevel(3)">
-                        <div>
-                            <div class="security-level-title">🟡 Standard Security</div>
-                            <div class="security-level-desc">Optional password, balanced security</div>
-                        </div>
-                    </div>
-                    <div class="security-option" data-level="4" onclick="app.selectSecurityLevel(4)">
-                        <div>
-                            <div class="security-level-title">🟢 Easy Mode</div>
-                            <div class="security-level-desc">No passwords, just device security</div>
-                        </div>
-                    </div>
-                    <div class="security-option" data-level="5" onclick="app.selectSecurityLevel(5)">
-                        <div>
-                            <div class="security-level-title">🔵 Open Room</div>
-                            <div class="security-level-desc">Anyone with link can join</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label>Your Name</label>
-                <input type="text" id="creator-name" placeholder="How should we call you?" maxlength="32">
-            </div>
-            
-            <div id="password-group" class="input-group">
-                <label>Create Password <span id="password-requirement" style="color: var(--text-muted); font-weight: normal;">(optional)</span></label>
-                <input type="password" id="creator-password" placeholder="Encrypts your local data">
-            </div>
-            
-            <button onclick="app.createWorkspace()">
-                Start Secure Workspace
-            </button>
-            
-            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.75rem;">
-                Back
-            </button>
-        </div>
-
-        <!-- Join Screen -->
-        <div id="join-screen" class="card screen hidden">
-            <h2 style="text-align: center;">Join Workspace</h2>
-            
-            <div id="invite-valid" class="success-badge hidden" style="margin-bottom: 1.5rem; justify-content: center;">
-                ✓ Valid invite to <span id="invite-workspace-name"></span>
-            </div>
-            
-            <div id="security-level-display" class="security-badge hidden" style="margin-bottom: 1.5rem; justify-content: center;">
-                <span id="security-level-text"></span>
-            </div>
-            
-            <div class="input-group">
-                <label>Your Name</label>
-                <input type="text" id="joiner-name" placeholder="How should we call you?" maxlength="32">
-            </div>
-            
-            <div id="join-password-group" class="input-group hidden">
-                <label>Room Password</label>
-                <input type="password" id="joiner-password" placeholder="Required by room host">
-            </div>
-            
-            <button onclick="app.joinWorkspace()">
-                Join Workspace
-            </button>
-            
-            <button class="secondary" onclick="app.showLandingScreen()" style="margin-top: 0.75rem;">
-                Back
-            </button>
-        </div>
-    </div>
-
-    <!-- Main Workspace -->
-    <div id="workspace" class="workspace-container hidden">
-        <div class="sidebar">
-            <div class="workspace-header">
-                <div class="workspace-name">
-                    <span id="workspace-name">Loading...</span>
-                    <button class="copy-button" onclick="app.copyInviteLink()" title="Copy invite link">
-                        📋
-                    </button>
-                </div>
-                <div class="connection-status">
-                    <span class="status-dot"></span>
-                    <span id="connection-count">Connecting...</span>
-                </div>
-                <div id="workspace-security" class="security-badge" style="margin-top: 0.75rem;">
-                    Security Level
-                </div>
-            </div>
-            
-            <div class="channels-section">
-                <div class="section-title">Channels</div>
-                <div id="channels-list">
-                    <div class="channel-item active" data-channel="general" onclick="app.switchChannel('general')">
-                        # general
-                    </div>
-                    <div class="channel-item" data-channel="random" onclick="app.switchChannel('random')">
-                        # random
-                    </div>
-                </div>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Relay Mesh Chat</h1>
+            <p>Smart connection relay system</p>
+            <div class="network-status" id="networkStatus">
+                <span>📡 Ready</span>
             </div>
         </div>
         
-        <div class="main-content">
-            <div class="messages-container" id="messages-container">
-                <!-- Messages appear here -->
+        <div class="content">
+            <!-- Initial Setup -->
+            <div id="setupScreen">
+                <input type="text" id="userName" placeholder="Enter your name">
+                
+                <button class="button primary" onclick="createRoom()">
+                    🏠 Create New Room
+                </button>
+                
+                <button class="button secondary" onclick="showJoinScreen()">
+                    🔗 Join Existing Room
+                </button>
             </div>
             
-            <div class="message-input-container">
-                <div class="message-input-wrapper">
-                    <input 
-                        type="text" 
-                        class="message-input" 
-                        id="message-input"
-                        placeholder="Type your message..."
-                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); app.sendMessage(); }"
-                    >
-                    <button class="send-button" onclick="app.sendMessage()">Send</button>
+            <!-- Create Room (Person A) -->
+            <div id="createRoomScreen" style="display: none;">
+                <div class="room-display">
+                    <p>Room Created!</p>
+                    <div class="room-code" id="roomCode"></div>
+                </div>
+                
+                <div class="info-box">
+                    <h4>How the relay system works:</h4>
+                    <p>1. You create an offer and send it to Person B</p>
+                    <p>2. Person B sends back an answer</p>
+                    <p>3. You both connect!</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Creating your offer...</strong>
+                    <div class="connection-code" id="hostInvite">Generating...</div>
+                    <button class="button secondary hidden" id="copyHostInviteBtn" onclick="copyHostInvite()">
+                        📋 Copy Invite
+                    </button>
+                </div>
+                
+                <div class="step" id="hostWaitingStep">
+                    <span class="step-number">2</span>
+                    <strong>Waiting for them to respond...</strong>
+                    <textarea id="hostReceiveResponse" placeholder="Paste their response here"></textarea>
+                    <button class="button success" onclick="hostProcessResponse()">
+                        Complete Connection
+                    </button>
+                </div>
+                
+                <button class="button primary" onclick="enterChat()" style="display: none;" id="hostEnterChat">
+                    💬 Enter Chat Room
+                </button>
+            </div>
+            
+            <!-- Join Room (Person B, C, etc.) -->
+            <div id="joinRoomScreen" style="display: none;">
+                <h2>Join Room</h2>
+                
+                <input type="text" id="joinerName" placeholder="Your name">
+                
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Paste the invite from a room member:</strong>
+                    <textarea id="joinInvite" placeholder="Paste invite here"></textarea>
+                    <button class="button primary" onclick="processInvite()">
+                        Process Invite
+                    </button>
+                </div>
+                
+                <div class="step" id="joinResponseStep" style="display: none;">
+                    <span class="step-number">2</span>
+                    <strong>Creating your answer...</strong>
+                    <div class="connection-code" id="joinResponse">Generating...</div>
+                    <button class="button secondary hidden" id="copyJoinResponseBtn" onclick="copyJoinResponse()">
+                        📋 Copy Response
+                    </button>
+                    <p style="margin-top: 10px; color: #6b7280;">
+                        Once they confirm, you'll be connected!
+                    </p>
+                </div>
+                
+                <button class="button primary" onclick="enterChat()" style="display: none;" id="joinerEnterChat">
+                    💬 Enter Chat Room
+                </button>
+            </div>
+            
+            <!-- Chat Room -->
+            <div id="chatScreen" style="display: none;">
+                <div class="peers-grid" id="peersGrid"></div>
+                
+                <div class="chat-container">
+                    <div class="chat-messages" id="messages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+                
+                <button class="button success" onclick="inviteNewPerson()">
+                    + Invite Someone New
+                </button>
+                
+                <div id="inviteSection" style="display: none;">
+                    <div class="connection-box">
+                        <h3>Invite New Person</h3>
+                        <p>They'll connect to everyone in the room!</p>
+                        <div class="connection-code" id="relayInvite">Generating...</div>
+                        <button class="button secondary" onclick="copyRelayInvite()">
+                            📋 Copy Invite
+                        </button>
+                        
+                        <p style="margin-top: 15px;">When they respond, paste here:</p>
+                        <textarea id="relayResponse" placeholder="Paste their response"></textarea>
+                        <button class="button success" onclick="processRelayResponse()">
+                            Connect Them
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Verification Modal -->
-    <div id="verification-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h2 style="margin-bottom: 1rem; text-align: center;">Verify Connection</h2>
-            
-            <div class="info-box">
-                New connection with <strong id="peer-name">User</strong>
-            </div>
-            
-            <p style="margin-bottom: 1rem; color: var(--text-secondary); text-align: center;">
-                Compare this security code:
-            </p>
-            
-            <div class="verification-display" id="verification-code">0000</div>
-            
-            <div class="emoji-display" id="verification-emoji">🔒 🔒 🔒 🔒</div>
-            
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">
-                Ask them: "What emojis do you see?"
-            </p>
-            
-            <div style="display: flex; gap: 0.5rem;">
-                <button onclick="app.acceptVerification()">
-                    ✓ They Match
-                </button>
-                <button class="secondary" onclick="app.rejectVerification()">
-                    ✗ Different
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        class CryptoManager {
+        // Global mesh state
+        class MeshNetwork {
             constructor() {
-                this.seatKey = null;
-                this.salt = null;
-                this.currentKey = null;
-                this.messageCounter = 0;
-                this.epoch = 0;
+                this.myId = this.generateId();
+                this.myName = '';
+                this.roomId = null;
+                this.peers = new Map(); // peerId -> {name, pc, dc, status}
+                this.messageQueue = new Map(); // peerId -> [messages] for pending connections
+                this.relayOffers = new Map(); // Store relay offers waiting to be processed
             }
             
-            async generateSeat() {
-                const secret = crypto.getRandomValues(new Uint8Array(32));
-                const id = crypto.getRandomValues(new Uint8Array(16));
-                return { secret, id };
+            generateId() {
+                return Math.random().toString(36).substring(2, 15);
             }
             
-            async deriveSeatKey(secret, salt) {
-                const baseKey = await crypto.subtle.importKey(
-                    'raw', secret, 'HKDF', false, ['deriveKey']
-                );
+            // Create a peer connection with better state management
+            createPeerConnection(peerId, isInitiator = true) {
+                console.log(`Creating peer connection for ${peerId}, initiator: ${isInitiator}`);
                 
-                this.currentKey = await crypto.subtle.deriveKey(
-                    {
-                        name: 'HKDF',
-                        salt: salt,
-                        info: new TextEncoder().encode('seat-key-v1'),
-                        hash: 'SHA-256'
-                    },
-                    baseKey,
-                    { name: 'AES-GCM', length: 256 },
-                    false,
-                    ['encrypt', 'decrypt']
-                );
+                const pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
                 
-                this.salt = salt;
-                return this.currentKey;
-            }
-            
-            async encrypt(data) {
-                const iv = crypto.getRandomValues(new Uint8Array(12));
-                const encrypted = await crypto.subtle.encrypt(
-                    { name: 'AES-GCM', iv },
-                    this.currentKey,
-                    new TextEncoder().encode(JSON.stringify(data))
-                );
+                // Initialize or update peer info
+                const peer = this.peers.get(peerId) || {};
+                peer.pc = pc;
+                peer.peerId = peerId; // Store the peer ID with the peer object
+                peer.status = 'connecting';
+                peer.iceCandidates = [];
+                peer.isInitiator = isInitiator;
+                this.peers.set(peerId, peer);
                 
-                // Combine IV and ciphertext
-                const combined = new Uint8Array(iv.length + encrypted.byteLength);
-                combined.set(iv);
-                combined.set(new Uint8Array(encrypted), iv.length);
+                // ICE candidate collection
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        const currentPeer = this.peers.get(peerId);
+                        if (currentPeer) {
+                            currentPeer.iceCandidates.push(event.candidate.toJSON());
+                        }
+                    }
+                };
                 
-                return btoa(String.fromCharCode(...combined));
-            }
-            
-            async decrypt(encryptedData) {
-                const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
-                const iv = combined.slice(0, 12);
-                const ciphertext = combined.slice(12);
-                
-                const decrypted = await crypto.subtle.decrypt(
-                    { name: 'AES-GCM', iv },
-                    this.currentKey,
-                    ciphertext
-                );
-                
-                return JSON.parse(new TextDecoder().decode(decrypted));
-            }
-            
-            generateFingerprint(key) {
-                // Generate visual fingerprint from key material
-                const keyStr = btoa(String.fromCharCode(...new Uint8Array(key)));
-                const hash = this.simpleHash(keyStr);
-                return hash.toString().padStart(4, '0').slice(0, 4);
-            }
-            
-            generateEmojiFingerprint(key) {
-                const emojis = ['🔒', '🔑', '🛡️', '✨', '🌟', '🔐', '🎯', '💎'];
-                const keyStr = btoa(String.fromCharCode(...new Uint8Array(key)));
-                const indices = [];
-                for (let i = 0; i < 4; i++) {
-                    indices.push(keyStr.charCodeAt(i) % emojis.length);
+                // Data channel setup
+                if (isInitiator) {
+                    console.log('Creating data channel as initiator');
+                    const dc = pc.createDataChannel('chat');
+                    peer.dc = dc;
+                    this.setupDataChannel(dc, peerId);
+                } else {
+                    console.log('Waiting for data channel as responder');
+                    pc.ondatachannel = (event) => {
+                        console.log('Data channel received');
+                        const currentPeer = this.peers.get(peerId);
+                        if (currentPeer) {
+                            currentPeer.dc = event.channel;
+                            this.setupDataChannel(event.channel, peerId);
+                        }
+                    };
                 }
-                return indices.map(i => emojis[i]).join(' ');
+                
+                // Connection state monitoring
+                pc.onconnectionstatechange = () => {
+                    console.log(`Connection state for ${peerId}: ${pc.connectionState}`);
+                    const currentPeer = this.peers.get(peerId);
+                    if (currentPeer) {
+                        currentPeer.status = pc.connectionState === 'connected' ? 'connected' : 
+                                          pc.connectionState === 'failed' ? 'failed' : 
+                                          pc.connectionState === 'disconnected' ? 'disconnected' : 'connecting';
+                        this.updatePeersDisplay();
+                        
+                        if (pc.connectionState === 'connected') {
+                            addSystemMessage(`Connected to ${currentPeer.name || 'peer'}`);
+                        } else if (pc.connectionState === 'failed') {
+                            addSystemMessage(`Failed to connect to ${currentPeer.name || 'peer'}`);
+                        }
+                    }
+                };
+                
+                return pc;
             }
             
-            simpleHash(str) {
-                let hash = 0;
-                for (let i = 0; i < str.length; i++) {
-                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                    hash = hash & hash;
+            // Setup data channel handlers with proper queuing
+            setupDataChannel(dc, peerId) {
+                // Store reference to this mesh instance
+                const mesh = this;
+                
+                dc.onopen = () => {
+                    // Find the current peer by data channel reference
+                    let currentPeerId = peerId;
+                    for (const [id, peer] of mesh.peers.entries()) {
+                        if (peer.dc === dc) {
+                            currentPeerId = id;
+                            break;
+                        }
+                    }
+                    
+                    console.log(`Data channel open with ${currentPeerId}`);
+                    const peer = mesh.peers.get(currentPeerId);
+                    if (peer) {
+                        peer.status = 'connected';
+                        peer.dcReady = true;
+                        mesh.updatePeersDisplay();
+                        
+                        // Send introduction
+                        mesh.sendToPeer(currentPeerId, {
+                            type: 'intro',
+                            id: mesh.myId,
+                            name: mesh.myName
+                        });
+                        
+                        // Flush message queue for this peer
+                        mesh.flushMessageQueue(currentPeerId);
+                        
+                        // Process any waiting relay offers
+                        mesh.processQueuedRelayOffers();
+                    }
+                };
+                
+                dc.onmessage = (event) => {
+                    try {
+                        // Find the current peer by data channel reference
+                        let currentPeerId = peerId;
+                        for (const [id, peer] of mesh.peers.entries()) {
+                            if (peer.dc === dc) {
+                                currentPeerId = id;
+                                break;
+                            }
+                        }
+                        
+                        const data = JSON.parse(event.data);
+                        mesh.handleMessage(data, currentPeerId);
+                    } catch(e) {
+                        console.error('Failed to parse message:', e);
+                    }
+                };
+                
+                dc.onerror = (error) => {
+                    // Find the current peer by data channel reference
+                    let currentPeerId = peerId;
+                    for (const [id, peer] of mesh.peers.entries()) {
+                        if (peer.dc === dc) {
+                            currentPeerId = id;
+                            break;
+                        }
+                    }
+                    console.error(`Data channel error with ${currentPeerId}:`, error);
+                };
+                
+                dc.onclose = () => {
+                    // Find the current peer by data channel reference
+                    let currentPeerId = peerId;
+                    for (const [id, peer] of mesh.peers.entries()) {
+                        if (peer.dc === dc) {
+                            currentPeerId = id;
+                            break;
+                        }
+                    }
+                    
+                    console.log(`Data channel closed with ${currentPeerId}`);
+                    const peer = mesh.peers.get(currentPeerId);
+                    if (peer) {
+                        peer.dcReady = false;
+                        peer.status = 'disconnected';
+                        mesh.updatePeersDisplay();
+                    }
+                };
+            }
+            
+            // Queue messages for peers not yet connected
+            queueMessage(peerId, message) {
+                if (!this.messageQueue.has(peerId)) {
+                    this.messageQueue.set(peerId, []);
                 }
-                return Math.abs(hash);
+                this.messageQueue.get(peerId).push(message);
+                console.log(`Queued message for ${peerId}:`, message.type);
+            }
+            
+            // Flush queued messages when connection opens
+            flushMessageQueue(peerId) {
+                const queue = this.messageQueue.get(peerId);
+                if (queue && queue.length > 0) {
+                    console.log(`Flushing ${queue.length} messages for ${peerId}`);
+                    for (const message of queue) {
+                        this.sendToPeer(peerId, message);
+                    }
+                    this.messageQueue.delete(peerId);
+                }
+            }
+            
+            // Handle incoming messages
+            handleMessage(data, fromPeerId) {
+                switch(data.type) {
+                    case 'intro':
+                        // For pending connections, we need to update the peer mapping
+                        if (fromPeerId.startsWith('pending_')) {
+                            const tempPeer = this.peers.get(fromPeerId);
+                            if (tempPeer && data.id) {
+                                // Move the entire peer object to the new ID
+                                this.peers.delete(fromPeerId);
+                                this.peers.set(data.id, tempPeer);
+                                tempPeer.peerId = data.id;
+                                tempPeer.name = data.name;
+                                fromPeerId = data.id;
+                                console.log(`Updated peer ID from pending to ${data.id}`);
+                            }
+                        } else {
+                            // Normal intro for already-known peer
+                            const peer = this.peers.get(fromPeerId);
+                            if (peer) {
+                                peer.name = data.name;
+                            }
+                        }
+                        this.updatePeersDisplay();
+                        addSystemMessage(`${data.name} joined the room`);
+                        break;
+                        
+                    case 'message':
+                        displayMessage(data.text, data.author, false);
+                        break;
+                        
+                    case 'relay-offer':
+                        this.handleRelayOffer(data, fromPeerId);
+                        break;
+                        
+                    case 'relay-answer':
+                        this.handleRelayAnswer(data, fromPeerId);
+                        break;
+                }
+            }
+            
+            // Handle relay offer with proper queuing
+            async handleRelayOffer(data, fromPeerId) {
+                const { newPeerId, newPeerName, offer, iceCandidates } = data;
+                
+                console.log(`Received relay offer from ${fromPeerId} for new peer ${newPeerId}`);
+                
+                // Prevent duplicate connections
+                if (this.peers.has(newPeerId)) {
+                    console.log(`Already connected to ${newPeerId}, ignoring duplicate`);
+                    return;
+                }
+                
+                // Store the offer for processing
+                this.relayOffers.set(newPeerId, { data, fromPeerId });
+                
+                // Create connection as responder
+                const pc = this.createPeerConnection(newPeerId, false);
+                const peer = this.peers.get(newPeerId);
+                peer.name = newPeerName;
+                
+                try {
+                    // Set the remote offer
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: 'offer',
+                        sdp: offer
+                    }));
+                    
+                    // Add ICE candidates
+                    if (iceCandidates) {
+                        for (const candidate of iceCandidates) {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                    }
+                    
+                    // Create answer
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    // Wait for ICE gathering
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    // Create answer message
+                    const answerMessage = {
+                        type: 'relay-answer',
+                        targetPeerId: newPeerId,
+                        answer: answer.sdp,
+                        iceCandidates: peer.iceCandidates,
+                        fromPeerId: this.myId,
+                        fromPeerName: this.myName
+                    };
+                    
+                    // Send or queue the answer
+                    if (!this.sendToPeer(fromPeerId, answerMessage)) {
+                        console.log(`Queuing answer for relay back to ${fromPeerId}`);
+                        this.queueMessage(fromPeerId, answerMessage);
+                    }
+                    
+                    console.log(`Processed relay offer from ${newPeerId}`);
+                    
+                } catch(e) {
+                    console.error('Failed to handle relay offer:', e);
+                }
+            }
+            
+            // Process queued relay offers when connections are ready
+            processQueuedRelayOffers() {
+                // Check if we have any queued relay offers that can now be processed
+                for (const [newPeerId, {data, fromPeerId}] of this.relayOffers.entries()) {
+                    const fromPeer = this.peers.get(fromPeerId);
+                    if (fromPeer && fromPeer.dcReady) {
+                        // Connection is ready, process can continue
+                        console.log(`Processing queued relay offer for ${newPeerId}`);
+                    }
+                }
+            }
+            
+            // Handle relay answer with better routing
+            async handleRelayAnswer(data, fromPeerId) {
+                const { targetPeerId, answer, iceCandidates, fromPeerId: answerFromId, fromPeerName } = data;
+                
+                console.log(`Received relay answer for ${targetPeerId} from ${answerFromId}`);
+                
+                // Check if this answer is for us
+                if (targetPeerId === this.myId) {
+                    // We are the new peer receiving an answer
+                    const peer = this.peers.get(answerFromId);
+                    if (peer && peer.pc) {
+                        try {
+                            peer.name = fromPeerName;
+                            
+                            await peer.pc.setRemoteDescription(new RTCSessionDescription({
+                                type: 'answer',
+                                sdp: answer
+                            }));
+                            
+                            if (iceCandidates) {
+                                for (const candidate of iceCandidates) {
+                                    await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+                                }
+                            }
+                            
+                            console.log(`Connected to ${answerFromId} via relay`);
+                            this.updatePeersDisplay();
+                            
+                        } catch(e) {
+                            console.error('Failed to set relay answer:', e);
+                        }
+                    }
+                } else {
+                    // We are the relay, forward to target
+                    console.log(`Relaying answer to ${targetPeerId}`);
+                    if (!this.sendToPeer(targetPeerId, data)) {
+                        // Queue for later delivery
+                        console.log(`Queuing relay answer for ${targetPeerId}`);
+                        this.queueMessage(targetPeerId, data);
+                    }
+                }
+            }
+            
+            // Send data to a specific peer with queuing fallback
+            sendToPeer(peerId, data) {
+                const peer = this.peers.get(peerId);
+                if (peer && peer.dc && peer.dc.readyState === 'open' && peer.dcReady) {
+                    try {
+                        peer.dc.send(JSON.stringify(data));
+                        return true;
+                    } catch(e) {
+                        console.error(`Failed to send to ${peerId}:`, e);
+                        return false;
+                    }
+                }
+                // If not ready, queue the message
+                this.queueMessage(peerId, data);
+                return false;
+            }
+            
+            // Broadcast to all connected peers
+            broadcast(data) {
+                for (const [peerId, peer] of this.peers.entries()) {
+                    if (peer.dcReady) {
+                        this.sendToPeer(peerId, data);
+                    }
+                }
+            }
+            
+            // Update peers display
+            updatePeersDisplay() {
+                const grid = document.getElementById('peersGrid');
+                if (!grid) return;
+                
+                grid.innerHTML = '';
+                
+                // Add self
+                const selfCard = document.createElement('div');
+                selfCard.className = 'peer-card connected';
+                selfCard.innerHTML = `
+                    <div class="connection-indicator"></div>
+                    <div class="peer-avatar">${this.myName[0]?.toUpperCase() || '?'}</div>
+                    <div class="peer-name">${this.myName} (You)</div>
+                    <div class="peer-status">Connected</div>
+                `;
+                grid.appendChild(selfCard);
+                
+                // Add peers
+                this.peers.forEach((peer, peerId) => {
+                    const card = document.createElement('div');
+                    const isConnected = peer.status === 'connected' && peer.dcReady;
+                    card.className = `peer-card ${isConnected ? 'connected' : 'pending'}`;
+                    card.innerHTML = `
+                        ${isConnected ? '<div class="connection-indicator"></div>' : ''}
+                        <div class="peer-avatar">${peer.name?.[0]?.toUpperCase() || '?'}</div>
+                        <div class="peer-name">${peer.name || 'Connecting...'}</div>
+                        <div class="peer-status">${peer.status}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+                
+                // Update network status
+                const connected = Array.from(this.peers.values()).filter(p => p.status === 'connected' && p.dcReady).length;
+                document.getElementById('networkStatus').innerHTML = `
+                    <span>📡 ${connected} peer${connected !== 1 ? 's' : ''} connected</span>
+                `;
             }
         }
         
-        class SecureWorkspaceApp {
-            constructor() {
-                // Core state
-                this.workspaceId = null;
-                this.userName = null;
-                this.userId = 'U' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-                this.isHost = false;
-                this.securityLevel = 3;
-                
-                // Crypto
-                this.crypto = new CryptoManager();
-                this.hostSeat = null;
-                this.guestSeat = null;
-                
-                // Workspace - Initialize channels properly
-                this.currentChannel = 'general';
-                this.channels = {
-                    general: { messages: [] },
-                    random: { messages: [] }
-                };
-                
-                // P2P
-                this.peers = new Map();
-                this.pendingConnections = new Set();
-                this.pendingVerifications = new Map();
-                
-                // Security features
-                this.roomPassword = null;
-                this.needsRoomPassword = false;
-                this.messageAutoDelete = null;
-                
-                this.init();
+        // Initialize mesh network
+        const mesh = new MeshNetwork();
+        
+        // Create room (Person A - Host)
+        async function createRoom() {
+            const name = document.getElementById('userName').value.trim();
+            if (!name) {
+                alert('Please enter your name');
+                return;
             }
             
-            init() {
-                const hash = window.location.hash.slice(1);
-                if (hash) {
-                    this.showJoinScreen();
-                    this.parseInvite(hash);
-                }
-            }
+            mesh.myName = name;
+            mesh.roomId = mesh.generateId().substring(0, 8).toUpperCase();
             
-            // UI Navigation
-            showLandingScreen() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('landing-screen').classList.remove('hidden');
-            }
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('createRoomScreen').style.display = 'block';
+            document.getElementById('roomCode').textContent = mesh.roomId;
             
-            showCreateScreen() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('create-screen').classList.remove('hidden');
-                this.workspaceId = this.generateWorkspaceName();
-                document.getElementById('workspace-id').textContent = this.workspaceId;
-            }
-            
-            showJoinScreen() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('join-screen').classList.remove('hidden');
-            }
-            
-            showWorkspace() {
-                document.getElementById('landing').classList.add('hidden');
-                document.getElementById('workspace').classList.remove('hidden');
-                document.getElementById('workspace-name').textContent = this.workspaceId;
-                
-                // Update security badge
-                const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
-                const badge = document.getElementById('workspace-security');
-                badge.textContent = levelInfo.emoji + ' ' + levelInfo.name;
-                badge.dataset.level = this.securityLevel;
-                
-                // Start auto-delete if DEFCON 1
-                if (this.securityLevel === 1) {
-                    this.startAutoDelete();
-                }
-                
-                this.startSignaling();
-            }
-            
-            // Security Level Management
-            selectSecurityLevel(level) {
-                this.securityLevel = level;
-                
-                // Update UI
-                document.querySelectorAll('.security-option').forEach(opt => {
-                    opt.classList.toggle('selected', opt.dataset.level == level);
-                });
-                
-                // Update password requirements
-                const passwordGroup = document.getElementById('password-group');
-                const passwordReq = document.getElementById('password-requirement');
-                
-                if (level === 1) {
-                    passwordReq.textContent = '(required for all users)';
-                    passwordGroup.classList.remove('hidden');
-                } else if (level === 2) {
-                    passwordReq.textContent = '(required)';
-                    passwordGroup.classList.remove('hidden');
-                } else if (level === 3) {
-                    passwordReq.textContent = '(optional)';
-                    passwordGroup.classList.remove('hidden');
-                } else {
-                    passwordGroup.classList.add('hidden');
-                }
-            }
-            
-            getSecurityLevelInfo(level) {
-                const levels = {
-                    1: { emoji: '🔴', name: 'Maximum', features: ['password', 'verify', 'autodelete'] },
-                    2: { emoji: '🟠', name: 'High', features: ['password', 'verify'] },
-                    3: { emoji: '🟡', name: 'Standard', features: [] },
-                    4: { emoji: '🟢', name: 'Easy', features: [] },
-                    5: { emoji: '🔵', name: 'Open', features: [] }
-                };
-                return levels[level] || levels[3];
-            }
-            
-            // Workspace Creation with Seats
-            async createWorkspace() {
-                const name = document.getElementById('creator-name').value.trim();
-                if (!name) {
-                    this.showToast('Please enter your name', 'error');
-                    return;
-                }
-                
-                const password = document.getElementById('creator-password').value;
-                
-                // Check password requirements based on security level
-                if (this.securityLevel <= 2 && !password) {
-                    this.showToast('Password required for this security level', 'error');
-                    return;
-                }
-                
-                // For DEFCON 1, this becomes the room password everyone needs
-                if (this.securityLevel === 1) {
-                    this.roomPassword = password;
-                    // Note: In a real app, this would be hashed and verified securely
-                }
-                
-                this.userName = name;
-                this.isHost = true;
-                
-                // Initialize channels for host
-                this.channels = {
-                    general: { messages: [] },
-                    random: { messages: [] }
-                };
-                
-                // Generate cryptographic seats
-                this.hostSeat = await this.crypto.generateSeat();
-                this.guestSeat = await this.crypto.generateSeat();
-                
-                // Derive initial key from guest seat (shared with joiners)
-                await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
-                console.log('[CREATE] Encryption key derived from guest seat');
-                
-                this.showWorkspace();
-                this.addSystemMessage(`Welcome to ${this.workspaceId}! Share the invite link to add teammates.`);
-                
-                setTimeout(() => this.copyInviteLink(), 500);
-            }
-            
-            async joinWorkspace() {
-                const name = document.getElementById('joiner-name').value.trim();
-                if (!name) {
-                    this.showToast('Please enter your name', 'error');
-                    return;
-                }
-                
-                // Check room password for DEFCON 1
-                if (this.securityLevel === 1 && this.needsRoomPassword) {
-                    const password = document.getElementById('joiner-password').value;
-                    // For now, we can't validate the password since it's not in the invite
-                    // In a real app, this would validate against a server or use PAKE
-                    if (!password) {
-                        this.showToast('Room password required', 'error');
-                        return;
-                    }
-                    this.roomPassword = password; // Store for later verification
-                }
-                
-                this.userName = name;
-                this.isHost = false;
-                
-                // Initialize channels for joiners (critical fix!)
-                this.channels = {
-                    general: { messages: [] },
-                    random: { messages: [] }
-                };
-                
-                // Derive encryption key from guest seat
-                if (this.guestSeat) {
-                    await this.crypto.deriveSeatKey(this.guestSeat.secret, this.guestSeat.id);
-                    console.log('[JOIN] Encryption key derived from guest seat');
-                }
-                
-                this.showWorkspace();
-            }
-            
-            // Generate invite with cryptographic material
-            generateInviteLink() {
-                const inviteData = {
-                    workspaceId: this.workspaceId,
-                    securityLevel: this.securityLevel,
-                    guestSeat: {
-                        secret: btoa(String.fromCharCode(...this.guestSeat.secret)),
-                        id: btoa(String.fromCharCode(...this.guestSeat.id))
-                    }
-                };
-                
-                // Add room password hint for DEFCON 1
-                if (this.securityLevel === 1) {
-                    inviteData.needsPassword = true;
-                }
-                
-                const encoded = btoa(JSON.stringify(inviteData));
-                return `${window.location.origin}${window.location.pathname}#${encoded}`;
-            }
-            
-            async parseInvite(hash) {
+            // Create initial offer for first joiner
+            setTimeout(async () => {
                 try {
-                    const data = JSON.parse(atob(hash));
-                    this.workspaceId = data.workspaceId;
-                    this.securityLevel = data.securityLevel;
-                    
-                    // Extract guest seat
-                    if (data.guestSeat) {
-                        this.guestSeat = {
-                            secret: Uint8Array.from(atob(data.guestSeat.secret), c => c.charCodeAt(0)),
-                            id: Uint8Array.from(atob(data.guestSeat.id), c => c.charCodeAt(0))
-                        };
-                    }
-                    
-                    // Show invite info
-                    document.getElementById('invite-valid').classList.remove('hidden');
-                    document.getElementById('invite-workspace-name').textContent = this.workspaceId;
-                    
-                    // Show security level
-                    const levelInfo = this.getSecurityLevelInfo(this.securityLevel);
-                    const badge = document.getElementById('security-level-display');
-                    badge.classList.remove('hidden');
-                    badge.dataset.level = this.securityLevel;
-                    document.getElementById('security-level-text').textContent = 
-                        levelInfo.emoji + ' ' + levelInfo.name + ' Security';
-                    
-                    // Show password field if DEFCON 1
-                    if (data.needsPassword) {
-                        document.getElementById('join-password-group').classList.remove('hidden');
-                        this.needsRoomPassword = true; // Flag that password is needed
-                        // Note: The actual password is NOT in the invite for security
-                        // It must be communicated separately
-                    }
-                    
-                    return true;
-                } catch (e) {
-                    console.error('Invalid invite:', e);
-                    return false;
-                }
-            }
-            
-            // P2P Communication
-            startSignaling() {
-                console.log(`Starting signaling for ${this.userName} (${this.userId})`);
-                
-                this.signaler = new BroadcastChannel(`workspace-${this.workspaceId}`);
-                
-                this.signaler.onmessage = async (event) => {
-                    const { from, data } = event.data;
-                    if (from === this.userId) return;
-                    
-                    await this.handleSignal(from, data);
-                };
-                
-                // Announce with encryption capability
-                this.announcePresence();
-                setInterval(() => this.announcePresence(), 5000);
-            }
-            
-            announcePresence() {
-                this.signaler.postMessage({
-                    from: this.userId,
-                    data: {
-                        type: 'announce',
-                        userName: this.userName,
-                        timestamp: Date.now(),
-                        hasKey: !!this.crypto.currentKey
-                    }
-                });
-            }
-            
-            async handleSignal(from, data) {
-                switch (data.type) {
-                    case 'announce':
-                        if (!this.peers.has(from) && !this.pendingConnections.has(from)) {
-                            const shouldInitiate = data.timestamp > Date.now() - 1000;
-                            
-                            if (shouldInitiate || this.isHost) {
-                                console.log(`Initiating connection to ${data.userName}`);
-                                this.pendingConnections.add(from);
-                                await this.createConnection(from, data.userName, true);
-                            }
-                        }
-                        break;
-                        
-                    case 'offer':
-                        if (!this.peers.has(from) && !this.pendingConnections.has(from)) {
-                            console.log(`Accepting offer from ${data.userName}`);
-                            this.pendingConnections.add(from);
-                            await this.createConnection(from, data.userName, false);
-                            await this.peers.get(from)?.pc.setRemoteDescription(data.offer);
-                            const answer = await this.peers.get(from)?.pc.createAnswer();
-                            await this.peers.get(from)?.pc.setLocalDescription(answer);
-                            
-                            this.signaler.postMessage({
-                                from: this.userId,
-                                data: {
-                                    type: 'answer',
-                                    answer: answer,
-                                    target: from
-                                }
-                            });
-                        }
-                        break;
-                        
-                    case 'answer':
-                        if (data.target === this.userId) {
-                            const peer = this.peers.get(from);
-                            if (peer && peer.pc.signalingState === 'have-local-offer') {
-                                await peer.pc.setRemoteDescription(data.answer);
-                            }
-                        }
-                        break;
-                        
-                    case 'ice':
-                        if (data.target === this.userId) {
-                            const peer = this.peers.get(from);
-                            if (peer) {
-                                // Create RTCIceCandidate from plain object
-                                const candidate = new RTCIceCandidate(data.candidate);
-                                await peer.pc.addIceCandidate(candidate);
-                            }
-                        }
-                        break;
-                }
-            }
-            
-            async createConnection(peerId, peerName, createOffer) {
-                const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                });
-                
-                const peer = {
-                    id: peerId,
-                    name: peerName,
-                    pc: pc,
-                    channel: null,
-                    verified: false
-                };
-                
-                this.peers.set(peerId, peer);
-                
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        this.signaler.postMessage({
-                            from: this.userId,
-                            data: {
-                                type: 'ice',
-                                candidate: event.candidate.toJSON(), // Serialize to plain object
-                                target: peerId
-                            }
-                        });
-                    }
-                };
-                
-                if (createOffer) {
-                    peer.channel = pc.createDataChannel('data');
-                    this.setupDataChannel(peer);
+                    const tempPeerId = 'pending_' + Date.now();
+                    const pc = mesh.createPeerConnection(tempPeerId, true);
                     
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     
-                    this.signaler.postMessage({
-                        from: this.userId,
-                        data: {
-                            type: 'offer',
-                            offer: offer,
-                            userName: this.userName
-                        }
-                    });
-                } else {
-                    pc.ondatachannel = (event) => {
-                        peer.channel = event.channel;
-                        this.setupDataChannel(peer);
-                    };
-                }
-                
-                pc.onconnectionstatechange = () => {
-                    console.log(`Connection state: ${pc.connectionState}`);
-                    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-                        this.handleDisconnect(peerId, peerName);
-                    }
-                };
-            }
-            
-            setupDataChannel(peer) {
-                const channel = peer.channel;
-                
-                console.log('[CHANNEL] Setting up data channel for', peer.name);
-                
-                channel.onopen = async () => {
-                    console.log('[CHANNEL] Data channel OPEN with', peer.name);
-                    this.pendingConnections.delete(peer.id);
-                    
-                    // Show verification for DEFCON 1-2
-                    if (this.securityLevel <= 2) {
-                        this.showVerification(peer);
-                    } else {
-                        console.log('[CHANNEL] Auto-verifying for security level', this.securityLevel);
-                        peer.verified = true;
-                        this.onPeerConnected(peer);
-                    }
-                };
-                
-                channel.onmessage = async (event) => {
-                    console.log('[CHANNEL] Message received from', peer.name, 'size:', event.data.length);
-                    try {
-                        // Decrypt if we have a key
-                        let data;
-                        if (this.crypto.currentKey) {
-                            console.log('[CHANNEL] Decrypting message');
-                            data = await this.crypto.decrypt(event.data);
+                    // Wait for ICE gathering
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
                         } else {
-                            console.log('[CHANNEL] Parsing plain message');
-                            data = JSON.parse(event.data);
-                        }
-                        
-                        this.handlePeerMessage(peer, data);
-                    } catch (e) {
-                        console.error('[CHANNEL] Message handling error:', e);
-                    }
-                };
-                
-                channel.onclose = () => {
-                    console.log('[CHANNEL] Data channel CLOSED with', peer.name);
-                    this.handleDisconnect(peer.id, peer.name);
-                };
-                
-                channel.onerror = (error) => {
-                    console.error('[CHANNEL] Data channel error with', peer.name, error);
-                };
-            }
-            
-            async onPeerConnected(peer) {
-                this.showToast(`${peer.name} joined`, 'success');
-                this.updateConnectionCount();
-                
-                // Send encrypted sync data
-                setTimeout(async () => {
-                    const syncData = {
-                        type: 'sync',
-                        userName: this.userName,
-                        messages: this.getAllMessages()
-                    };
-                    
-                    if (this.crypto.currentKey) {
-                        const encrypted = await this.crypto.encrypt(syncData);
-                        peer.channel.send(encrypted);
-                    } else {
-                        peer.channel.send(JSON.stringify(syncData));
-                    }
-                }, 100);
-            }
-            
-            // Verification for high security levels
-            showVerification(peer) {
-                // Auto-verify for DEFCON 3+
-                if (this.securityLevel >= 3) {
-                    console.log('[VERIFY] Auto-verifying peer for security level', this.securityLevel);
-                    peer.verified = true;
-                    this.onPeerConnected(peer);
-                    return;
-                }
-                
-                // Show verification modal for DEFCON 1-2
-                console.log('[VERIFY] Showing verification for', peer.name);
-                
-                // Generate verification codes
-                const fingerprint = this.crypto.generateFingerprint(this.crypto.salt || new Uint8Array(16));
-                const emojis = this.crypto.generateEmojiFingerprint(this.crypto.salt || new Uint8Array(16));
-                
-                this.pendingVerifications.set(peer.id, peer);
-                
-                document.getElementById('peer-name').textContent = peer.name;
-                document.getElementById('verification-code').textContent = fingerprint;
-                document.getElementById('verification-emoji').textContent = emojis;
-                document.getElementById('verification-modal').classList.remove('hidden');
-            }
-            
-            acceptVerification() {
-                document.getElementById('verification-modal').classList.add('hidden');
-                
-                // Get the pending peer
-                const peerId = Array.from(this.pendingVerifications.keys())[0];
-                const peer = this.pendingVerifications.get(peerId);
-                
-                if (peer) {
-                    peer.verified = true;
-                    this.pendingVerifications.delete(peerId);
-                    this.onPeerConnected(peer);
-                }
-            }
-            
-            rejectVerification() {
-                document.getElementById('verification-modal').classList.add('hidden');
-                
-                const peerId = Array.from(this.pendingVerifications.keys())[0];
-                const peer = this.pendingVerifications.get(peerId);
-                
-                if (peer) {
-                    this.pendingVerifications.delete(peerId);
-                    peer.pc.close();
-                    this.peers.delete(peerId);
-                    this.showToast('Connection rejected', 'error');
-                }
-            }
-            
-            // Message handling with encryption
-            async sendMessage() {
-                const input = document.getElementById('message-input');
-                const text = input.value.trim();
-                if (!text) return;
-                
-                const message = {
-                    id: 'M' + Date.now() + Math.random().toString(36).substr(2, 5),
-                    channel: this.currentChannel,
-                    userId: this.userId,
-                    userName: this.userName,
-                    text: text,
-                    timestamp: Date.now()
-                };
-                
-                console.log('[SEND] Creating message:', message);
-                
-                this.channels[this.currentChannel].messages.push(message);
-                this.addMessageToUI(message);
-                
-                input.value = '';
-                
-                // Check peer status
-                console.log('[SEND] Active peers:', this.peers.size);
-                
-                // Broadcast encrypted to all verified peers
-                let sentCount = 0;
-                for (const [peerId, peer] of this.peers.entries()) {
-                    console.log(`[SEND] Peer ${peer.name}: channel=${peer.channel?.readyState}, verified=${peer.verified}`);
-                    
-                    if (peer.channel?.readyState === 'open' && peer.verified) {
-                        const payload = {
-                            type: 'message',
-                            message: message
-                        };
-                        
-                        try {
-                            if (this.crypto.currentKey) {
-                                console.log('[SEND] Encrypting message for', peer.name);
-                                const encrypted = await this.crypto.encrypt(payload);
-                                peer.channel.send(encrypted);
-                            } else {
-                                console.log('[SEND] Sending plain message to', peer.name);
-                                peer.channel.send(JSON.stringify(payload));
-                            }
-                            sentCount++;
-                        } catch (err) {
-                            console.error('[SEND] Error sending to', peer.name, err);
-                        }
-                    }
-                }
-                
-                console.log(`[SEND] Message sent to ${sentCount} peers`);
-                
-                if (sentCount === 0 && this.peers.size > 0) {
-                    console.warn('[SEND] No messages sent despite having peers!');
-                }
-            }
-            
-            handlePeerMessage(peer, data) {
-                console.log('[RECEIVE] Message from', peer.name, 'type:', data.type);
-                
-                switch (data.type) {
-                    case 'sync':
-                        console.log('[RECEIVE] Syncing', data.messages?.length || 0, 'messages');
-                        data.messages?.forEach(msg => {
-                            // Ensure channel exists
-                            if (!this.channels[msg.channel]) {
-                                console.log('[RECEIVE] Creating missing channel:', msg.channel);
-                                this.channels[msg.channel] = { messages: [] };
-                            }
-                            
-                            if (!this.messageExists(msg)) {
-                                this.channels[msg.channel].messages.push(msg);
-                                if (msg.channel === this.currentChannel) {
-                                    this.addMessageToUI(msg);
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
                                 }
-                            }
-                        });
-                        break;
-                        
-                    case 'message':
-                        const msg = data.message;
-                        console.log('[RECEIVE] New message:', msg);
-                        
-                        // Ensure channel exists
-                        if (!this.channels[msg.channel]) {
-                            console.log('[RECEIVE] Creating missing channel:', msg.channel);
-                            this.channels[msg.channel] = { messages: [] };
+                            };
+                            setTimeout(resolve, 3000);
                         }
-                        
-                        if (!this.messageExists(msg)) {
-                            this.channels[msg.channel].messages.push(msg);
-                            if (msg.channel === this.currentChannel) {
-                                this.addMessageToUI(msg);
-                                console.log('[RECEIVE] Added message to UI');
-                            } else {
-                                console.log('[RECEIVE] Message for different channel:', msg.channel);
-                            }
-                        } else {
-                            console.log('[RECEIVE] Duplicate message ignored');
-                        }
-                        break;
-                        
-                    default:
-                        console.log('[RECEIVE] Unknown message type:', data.type);
-                }
-            }
-            
-            // Auto-delete for DEFCON 1
-            startAutoDelete() {
-                if (this.securityLevel !== 1) return;
-                
-                setInterval(() => {
-                    const now = Date.now();
-                    const maxAge = 5 * 60 * 1000; // 5 minutes
-                    
-                    Object.values(this.channels).forEach(channel => {
-                        channel.messages = channel.messages.filter(msg => 
-                            now - msg.timestamp < maxAge
-                        );
                     });
                     
-                    // Update UI if in current channel
-                    this.displayChannelMessages(this.currentChannel);
-                }, 30000); // Check every 30 seconds
+                    const peer = mesh.peers.get(tempPeerId);
+                    const invite = {
+                        type: 'host-offer',
+                        roomId: mesh.roomId,
+                        hostId: mesh.myId,
+                        hostName: mesh.myName,
+                        offer: offer.sdp,
+                        iceCandidates: peer.iceCandidates
+                    };
+                    
+                    document.getElementById('hostInvite').textContent = btoa(JSON.stringify(invite));
+                    document.getElementById('copyHostInviteBtn').classList.remove('hidden');
+                } catch(e) {
+                    console.error('Failed to create offer:', e);
+                }
+            }, 100);
+        }
+        
+        // Copy host invite
+        function copyHostInvite() {
+            const text = document.getElementById('hostInvite').textContent;
+            navigator.clipboard.writeText(text);
+            alert('Invite copied! Send it to someone to join.');
+        }
+        
+        // Host processes response from Person B
+        async function hostProcessResponse() {
+            const response = document.getElementById('hostReceiveResponse').value.trim();
+            if (!response) {
+                alert('Please paste the response');
+                return;
             }
             
-            // UI Methods
-            addMessageToUI(message) {
-                const container = document.getElementById('messages-container');
-                const messageEl = document.createElement('div');
-                messageEl.className = 'message';
+            try {
+                const data = JSON.parse(atob(response));
                 
-                // Add ephemeral class for DEFCON 1
-                if (this.securityLevel === 1) {
-                    messageEl.classList.add('ephemeral');
+                // Find pending connection
+                let pc = null;
+                let tempPeerId = null;
+                let tempPeer = null;
+                
+                for (const [id, peer] of mesh.peers.entries()) {
+                    if (id.startsWith('pending_')) {
+                        pc = peer.pc;
+                        tempPeerId = id;
+                        tempPeer = peer;
+                        break;
+                    }
                 }
                 
-                const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit'
-                });
-                
-                const initials = message.userName.split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2);
-                
-                messageEl.innerHTML = `
-                    <div class="message-avatar">${initials}</div>
-                    <div class="message-content">
-                        <div class="message-header">
-                            <span class="message-author">${message.userName}</span>
-                            <span class="message-time">${time}</span>
-                        </div>
-                        <div class="message-text">${this.escapeHtml(message.text)}</div>
-                    </div>
-                `;
-                
-                container.appendChild(messageEl);
-                container.scrollTop = container.scrollHeight;
-            }
-            
-            addSystemMessage(text) {
-                const container = document.getElementById('messages-container');
-                const messageEl = document.createElement('div');
-                messageEl.className = 'system-message';
-                messageEl.textContent = text;
-                container.appendChild(messageEl);
-                container.scrollTop = container.scrollHeight;
-            }
-            
-            displayChannelMessages(channel) {
-                const container = document.getElementById('messages-container');
-                container.innerHTML = '';
-                this.channels[channel].messages.forEach(msg => this.addMessageToUI(msg));
-            }
-            
-            switchChannel(channel) {
-                this.currentChannel = channel;
-                
-                document.querySelectorAll('.channel-item').forEach(item => {
-                    item.classList.toggle('active', item.dataset.channel === channel);
-                });
-                
-                this.displayChannelMessages(channel);
-            }
-            
-            handleDisconnect(peerId, peerName) {
-                this.peers.delete(peerId);
-                this.pendingConnections.delete(peerId);
-                this.pendingVerifications.delete(peerId);
-                this.showToast(`${peerName} disconnected`, 'error');
-                this.updateConnectionCount();
-            }
-            
-            // Utilities
-            getAllMessages() {
-                const messages = [];
-                Object.entries(this.channels).forEach(([channel, data]) => {
-                    messages.push(...data.messages);
-                });
-                return messages;
-            }
-            
-            messageExists(message) {
-                // Add safety check for channel existence
-                if (!this.channels[message.channel]) {
-                    this.channels[message.channel] = { messages: [] };
+                if (!pc) {
+                    throw new Error('No pending connection found');
                 }
-                return this.channels[message.channel].messages.some(m => m.id === message.id);
-            }
-            
-            updateConnectionCount() {
-                const count = this.peers.size + 1;
-                document.getElementById('connection-count').textContent = 
-                    `${count} ${count === 1 ? 'member' : 'members'} online`;
-            }
-            
-            showToast(text, type = 'success') {
-                const toast = document.getElementById('connection-toast');
-                const icon = document.getElementById('toast-icon');
-                const textEl = document.getElementById('toast-text');
                 
-                toast.className = `connection-toast ${type}`;
-                icon.textContent = type === 'success' ? '✓' : '⚠';
-                textEl.textContent = text;
+                // Set remote description first
+                await pc.setRemoteDescription(new RTCSessionDescription({
+                    type: 'answer',
+                    sdp: data.answer
+                }));
                 
-                toast.classList.remove('hidden');
+                // Add ICE candidates
+                if (data.iceCandidates) {
+                    for (const candidate of data.iceCandidates) {
+                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    }
+                }
                 
-                setTimeout(() => {
-                    toast.classList.add('hidden');
-                }, 3000);
-            }
-            
-            generateWorkspaceName() {
-                const words = ['aurora', 'cascade', 'nebula', 'prism', 'zenith', 'cosmos', 'stellar'];
-                const word = words[Math.floor(Math.random() * words.length)];
-                const num = Math.floor(Math.random() * 9000) + 1000;
-                return `${word}-${num}`;
-            }
-            
-            copyInviteLink() {
-                const link = this.generateInviteLink();
-                navigator.clipboard.writeText(link).then(() => {
-                    this.showToast('Invite link copied!', 'success');
-                });
-            }
-            
-            escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
+                // Update peer info - but keep the pending ID for now
+                // It will be updated when we receive the intro message
+                tempPeer.name = data.name;
+                tempPeer.expectedRealId = data.peerId;
+                
+                document.getElementById('hostEnterChat').style.display = 'block';
+                addSystemMessage(`Connecting to ${data.name}...`);
+                
+            } catch (e) {
+                alert('Invalid response: ' + e.message);
+                console.error(e);
             }
         }
         
-        const app = new SecureWorkspaceApp();
+        // Show join screen
+        function showJoinScreen() {
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('joinRoomScreen').style.display = 'block';
+        }
+        
+        // Process invite (Person B or C+)
+        async function processInvite() {
+            const name = document.getElementById('joinerName').value.trim();
+            const invite = document.getElementById('joinInvite').value.trim();
+            
+            if (!name || !invite) {
+                alert('Please enter your name and paste the invite');
+                return;
+            }
+            
+            mesh.myName = name;
+            
+            try {
+                const data = JSON.parse(atob(invite));
+                mesh.roomId = data.roomId;
+                
+                if (data.type === 'host-offer') {
+                    // Direct connection to host
+                    const pc = mesh.createPeerConnection(data.hostId, false);
+                    const peer = mesh.peers.get(data.hostId);
+                    peer.name = data.hostName;
+                    
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: 'offer',
+                        sdp: data.offer
+                    }));
+                    
+                    if (data.iceCandidates) {
+                        for (const candidate of data.iceCandidates) {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                    }
+                    
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    // Wait for ICE
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    const response = {
+                        peerId: mesh.myId,
+                        name: mesh.myName,
+                        answer: answer.sdp,
+                        iceCandidates: peer.iceCandidates
+                    };
+                    
+                    document.getElementById('joinResponse').textContent = btoa(JSON.stringify(response));
+                    document.getElementById('joinResponseStep').style.display = 'block';
+                    document.getElementById('copyJoinResponseBtn').classList.remove('hidden');
+                    document.getElementById('joinerEnterChat').style.display = 'block';
+                    
+                } else if (data.type === 'relay-invite') {
+                    // Create offers for all existing peers
+                    const offers = [];
+                    
+                    for (const peerInfo of data.existingPeers) {
+                        if (peerInfo.id !== mesh.myId) {
+                            const pc = mesh.createPeerConnection(peerInfo.id, true);
+                            const peer = mesh.peers.get(peerInfo.id);
+                            peer.name = peerInfo.name;
+                            
+                            const offer = await pc.createOffer();
+                            await pc.setLocalDescription(offer);
+                            
+                            await new Promise((resolve) => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                } else {
+                                    pc.onicegatheringstatechange = () => {
+                                        if (pc.iceGatheringState === 'complete') {
+                                            resolve();
+                                        }
+                                    };
+                                    setTimeout(resolve, 3000);
+                                }
+                            });
+                            
+                            offers.push({
+                                targetId: peerInfo.id,
+                                offer: offer.sdp,
+                                iceCandidates: peer.iceCandidates
+                            });
+                        }
+                    }
+                    
+                    const response = {
+                        type: 'relay-response',
+                        newPeerId: mesh.myId,
+                        newPeerName: mesh.myName,
+                        offers: offers
+                    };
+                    
+                    document.getElementById('joinResponse').textContent = btoa(JSON.stringify(response));
+                    document.getElementById('joinResponseStep').style.display = 'block';
+                    document.getElementById('copyJoinResponseBtn').classList.remove('hidden');
+                    document.getElementById('joinerEnterChat').style.display = 'block';
+                }
+                
+            } catch (e) {
+                alert('Invalid invite: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Copy join response
+        function copyJoinResponse() {
+            const text = document.getElementById('joinResponse').textContent;
+            navigator.clipboard.writeText(text);
+            alert('Response copied! Send it back to the person who invited you.');
+        }
+        
+        // Enter chat room
+        function enterChat() {
+            document.getElementById('createRoomScreen').style.display = 'none';
+            document.getElementById('joinRoomScreen').style.display = 'none';
+            document.getElementById('chatScreen').style.display = 'block';
+            mesh.updatePeersDisplay();
+        }
+        
+        // Invite new person with better connection handling
+        async function inviteNewPerson() {
+            const connectedPeers = [];
+            mesh.peers.forEach((peer, peerId) => {
+                if (peer.status === 'connected' && peer.dcReady) {
+                    connectedPeers.push({
+                        id: peerId,
+                        name: peer.name
+                    });
+                }
+            });
+            
+            const relayInvite = {
+                type: 'relay-invite',
+                roomId: mesh.roomId,
+                inviterId: mesh.myId,
+                inviterName: mesh.myName,
+                existingPeers: [
+                    { id: mesh.myId, name: mesh.myName },
+                    ...connectedPeers
+                ]
+            };
+            
+            document.getElementById('relayInvite').textContent = btoa(JSON.stringify(relayInvite));
+            document.getElementById('inviteSection').style.display = 'block';
+        }
+        
+        // Copy relay invite
+        function copyRelayInvite() {
+            const text = document.getElementById('relayInvite').textContent;
+            navigator.clipboard.writeText(text);
+            alert('Invite copied! Send it to the new person.');
+        }
+        
+        // Process relay response with improved connection management
+        async function processRelayResponse() {
+            const response = document.getElementById('relayResponse').value.trim();
+            if (!response) {
+                alert('Please paste their response');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(atob(response));
+                
+                if (data.type !== 'relay-response') {
+                    throw new Error('Invalid response type');
+                }
+                
+                const { newPeerId, newPeerName, offers } = data;
+                
+                // Check for duplicates
+                if (mesh.peers.has(newPeerId)) {
+                    console.log(`Already connected to ${newPeerId}`);
+                    document.getElementById('inviteSection').style.display = 'none';
+                    return;
+                }
+                
+                console.log(`Processing ${offers.length} offers from ${newPeerName}`);
+                addSystemMessage(`Connecting ${newPeerName} to the mesh...`);
+                
+                // Process our offer first
+                const ourOffer = offers.find(o => o.targetId === mesh.myId);
+                if (ourOffer) {
+                    const pc = mesh.createPeerConnection(newPeerId, false);
+                    const peer = mesh.peers.get(newPeerId);
+                    peer.name = newPeerName;
+                    
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: 'offer',
+                        sdp: ourOffer.offer
+                    }));
+                    
+                    if (ourOffer.iceCandidates) {
+                        for (const candidate of ourOffer.iceCandidates) {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                    }
+                    
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    // Queue our answer for when connection opens
+                    const answerMessage = {
+                        type: 'relay-answer',
+                        targetPeerId: newPeerId,
+                        answer: answer.sdp,
+                        iceCandidates: peer.iceCandidates,
+                        fromPeerId: mesh.myId,
+                        fromPeerName: mesh.myName
+                    };
+                    
+                    mesh.queueMessage(newPeerId, answerMessage);
+                }
+                
+                // Schedule relay of other offers after a delay
+                setTimeout(() => {
+                    for (const offer of offers) {
+                        if (offer.targetId !== mesh.myId) {
+                            const relayMessage = {
+                                type: 'relay-offer',
+                                newPeerId: newPeerId,
+                                newPeerName: newPeerName,
+                                offer: offer.offer,
+                                iceCandidates: offer.iceCandidates
+                            };
+                            
+                            if (!mesh.sendToPeer(offer.targetId, relayMessage)) {
+                                console.log(`Queuing relay offer for ${offer.targetId}`);
+                                mesh.queueMessage(offer.targetId, relayMessage);
+                            }
+                        }
+                    }
+                }, 500);
+                
+                document.getElementById('inviteSection').style.display = 'none';
+                document.getElementById('relayResponse').value = '';
+                
+            } catch (e) {
+                alert('Invalid response: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Send message
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const message = {
+                type: 'message',
+                text: text,
+                author: mesh.myName,
+                timestamp: Date.now()
+            };
+            
+            mesh.broadcast(message);
+            displayMessage(text, 'You', true);
+            
+            input.value = '';
+        }
+        
+        // Display message
+        function displayMessage(text, author, isOwn) {
+            const messages = document.getElementById('messages');
+            if (!messages) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isOwn ? 'message own' : 'message peer';
+            
+            if (!isOwn) {
+                const authorDiv = document.createElement('div');
+                authorDiv.className = 'message-author';
+                authorDiv.textContent = author;
+                messageDiv.appendChild(authorDiv);
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            messageDiv.appendChild(bubble);
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Add system message
+        function addSystemMessage(text) {
+            const messages = document.getElementById('messages');
+            if (!messages) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
     </script>
 </body>
 </html>
