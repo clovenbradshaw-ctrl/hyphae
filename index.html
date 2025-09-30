@@ -418,7 +418,16 @@
                         Once they confirm, you'll be connected!
                     </p>
                 </div>
-                
+
+                <div class="step hidden" id="joinFinalStep">
+                    <span class="step-number">3</span>
+                    <strong>Paste the connection bundle they send back:</strong>
+                    <textarea id="joinFinalAnswers" placeholder="Paste connection bundle here"></textarea>
+                    <button class="button success" onclick="processRelayAnswers()">
+                        Complete Mesh Connection
+                    </button>
+                </div>
+
                 <button class="button primary" onclick="enterChat()" style="display: none;" id="joinerEnterChat">
                     💬 Enter Chat Room
                 </button>
@@ -454,6 +463,15 @@
                         <button class="button success" onclick="processRelayResponse()">
                             Connect Them
                         </button>
+
+                        <div class="connection-box hidden" id="relayAnswersBox" style="margin-top: 15px;">
+                            <h4>Send this connection bundle to the new person</h4>
+                            <p style="color: #6b7280; margin-bottom: 10px;">Share once all answers are ready.</p>
+                            <div class="connection-code" id="relayAnswers">Waiting for responses...</div>
+                            <button class="button secondary hidden" id="copyRelayAnswersBtn" onclick="copyRelayAnswers()">
+                                📋 Copy Connection Bundle
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -470,6 +488,7 @@
                 this.peers = new Map(); // peerId -> {name, pc, dc, status}
                 this.messageQueue = new Map(); // peerId -> [messages] for pending connections
                 this.relayOffers = new Map(); // Store relay offers waiting to be processed
+                this.pendingRelaySessions = new Map(); // Track pending mesh invitations
             }
             
             generateId() {
@@ -576,9 +595,14 @@
                         
                         // Flush message queue for this peer
                         mesh.flushMessageQueue(currentPeerId);
-                        
+
                         // Process any waiting relay offers
                         mesh.processQueuedRelayOffers();
+
+                        // Clear any pending relay UI once the connection is complete
+                        if (mesh.pendingRelaySessions.has(currentPeerId)) {
+                            mesh.clearRelaySession(currentPeerId);
+                        }
                     }
                 };
                 
@@ -784,7 +808,7 @@
             // Handle relay answer with better routing
             async handleRelayAnswer(data, fromPeerId) {
                 const { targetPeerId, answer, iceCandidates, fromPeerId: answerFromId, fromPeerName } = data;
-                
+
                 console.log(`Received relay answer for ${targetPeerId} from ${answerFromId}`);
                 
                 // Check if this answer is for us
@@ -814,13 +838,79 @@
                         }
                     }
                 } else {
-                    // We are the relay, forward to target
-                    console.log(`Relaying answer to ${targetPeerId}`);
-                    if (!this.sendToPeer(targetPeerId, data)) {
-                        // Queue for later delivery
-                        console.log(`Queuing relay answer for ${targetPeerId}`);
+                    // We are the relay, collect the answer for the bundle
+                    console.log(`Storing relay answer for ${targetPeerId}`);
+                    if (!this.registerRelayAnswer(targetPeerId, data)) {
+                        console.log(`No relay session found for ${targetPeerId}, queuing message`);
                         this.queueMessage(targetPeerId, data);
                     }
+                }
+            }
+
+            startRelaySession(newPeerId, newPeerName, expectedPeerIds) {
+                const session = {
+                    newPeerId,
+                    newPeerName,
+                    expectedPeerIds: new Set(expectedPeerIds),
+                    answers: new Map()
+                };
+                this.pendingRelaySessions.set(newPeerId, session);
+                this.updateRelayAnswerDisplay(session);
+            }
+
+            registerRelayAnswer(newPeerId, answerData) {
+                const session = this.pendingRelaySessions.get(newPeerId);
+                if (!session) {
+                    return false;
+                }
+
+                session.answers.set(answerData.fromPeerId, answerData);
+                this.updateRelayAnswerDisplay(session);
+                return true;
+            }
+
+            clearRelaySession(newPeerId) {
+                this.pendingRelaySessions.delete(newPeerId);
+
+                if (this.pendingRelaySessions.size === 0) {
+                    const box = document.getElementById('relayAnswersBox');
+                    const code = document.getElementById('relayAnswers');
+                    const copyBtn = document.getElementById('copyRelayAnswersBtn');
+                    if (box && code && copyBtn) {
+                        box.classList.add('hidden');
+                        copyBtn.classList.add('hidden');
+                        code.textContent = '';
+                    }
+                }
+            }
+
+            updateRelayAnswerDisplay(session) {
+                const box = document.getElementById('relayAnswersBox');
+                const code = document.getElementById('relayAnswers');
+                const copyBtn = document.getElementById('copyRelayAnswersBtn');
+
+                if (!box || !code || !copyBtn) {
+                    return;
+                }
+
+                box.classList.remove('hidden');
+
+                const expectedCount = session.expectedPeerIds.size;
+                const receivedCount = session.answers.size;
+
+                if (receivedCount < expectedCount) {
+                    const remaining = expectedCount - receivedCount;
+                    code.textContent = `Waiting for ${remaining} more answer${remaining === 1 ? '' : 's'}...`;
+                    copyBtn.classList.add('hidden');
+                } else {
+                    const bundle = {
+                        type: 'relay-answers',
+                        newPeerId: session.newPeerId,
+                        newPeerName: session.newPeerName,
+                        answers: Array.from(session.answers.values())
+                    };
+                    code.textContent = btoa(JSON.stringify(bundle));
+                    copyBtn.classList.remove('hidden');
                 }
             }
             
@@ -1074,12 +1164,18 @@
                         answer: answer.sdp,
                         iceCandidates: peer.iceCandidates
                     };
-                    
+
                     document.getElementById('joinResponse').textContent = btoa(JSON.stringify(response));
                     document.getElementById('joinResponseStep').style.display = 'block';
                     document.getElementById('copyJoinResponseBtn').classList.remove('hidden');
                     document.getElementById('joinerEnterChat').style.display = 'block';
-                    
+                    const finalStep = document.getElementById('joinFinalStep');
+                    if (finalStep) {
+                        finalStep.classList.add('hidden');
+                        finalStep.style.display = 'none';
+                        document.getElementById('joinFinalAnswers').value = '';
+                    }
+
                 } else if (data.type === 'relay-invite') {
                     // Create offers for all existing peers
                     const offers = [];
@@ -1120,11 +1216,16 @@
                         newPeerName: mesh.myName,
                         offers: offers
                     };
-                    
+
                     document.getElementById('joinResponse').textContent = btoa(JSON.stringify(response));
                     document.getElementById('joinResponseStep').style.display = 'block';
                     document.getElementById('copyJoinResponseBtn').classList.remove('hidden');
-                    document.getElementById('joinerEnterChat').style.display = 'block';
+                    const finalStep = document.getElementById('joinFinalStep');
+                    if (finalStep) {
+                        finalStep.classList.remove('hidden');
+                        finalStep.style.display = 'block';
+                    }
+                    document.getElementById('joinerEnterChat').style.display = 'none';
                 }
                 
             } catch (e) {
@@ -1170,9 +1271,22 @@
                     ...connectedPeers
                 ]
             };
-            
+
             document.getElementById('relayInvite').textContent = btoa(JSON.stringify(relayInvite));
             document.getElementById('inviteSection').style.display = 'block';
+
+            const answersBox = document.getElementById('relayAnswersBox');
+            const answersCode = document.getElementById('relayAnswers');
+            const copyBtn = document.getElementById('copyRelayAnswersBtn');
+            if (answersBox && answersCode && copyBtn) {
+                answersBox.classList.add('hidden');
+                copyBtn.classList.add('hidden');
+                answersCode.textContent = 'Waiting for responses...';
+            }
+
+            if (mesh.pendingRelaySessions) {
+                mesh.pendingRelaySessions.clear();
+            }
         }
         
         // Copy relay invite
@@ -1181,7 +1295,15 @@
             navigator.clipboard.writeText(text);
             alert('Invite copied! Send it to the new person.');
         }
-        
+
+        function copyRelayAnswers() {
+            const bundle = document.getElementById('relayAnswers');
+            if (bundle && bundle.textContent && !bundle.textContent.startsWith('Waiting')) {
+                navigator.clipboard.writeText(bundle.textContent);
+                alert('Connection bundle copied! Send it to the new person.');
+            }
+        }
+
         // Process relay response with improved connection management
         async function processRelayResponse() {
             const response = document.getElementById('relayResponse').value.trim();
@@ -1202,13 +1324,15 @@
                 // Check for duplicates
                 if (mesh.peers.has(newPeerId)) {
                     console.log(`Already connected to ${newPeerId}`);
-                    document.getElementById('inviteSection').style.display = 'none';
                     return;
                 }
                 
                 console.log(`Processing ${offers.length} offers from ${newPeerName}`);
                 addSystemMessage(`Connecting ${newPeerName} to the mesh...`);
                 
+                // Track expected answers so we can build a bundle for the new peer
+                mesh.startRelaySession(newPeerId, newPeerName, offers.map(o => o.targetId));
+
                 // Process our offer first
                 const ourOffer = offers.find(o => o.targetId === mesh.myId);
                 if (ourOffer) {
@@ -1243,7 +1367,7 @@
                         }
                     });
                     
-                    // Queue our answer for when connection opens
+                    // Store our answer so it can be shared back with the new peer
                     const answerMessage = {
                         type: 'relay-answer',
                         targetPeerId: newPeerId,
@@ -1252,10 +1376,10 @@
                         fromPeerId: mesh.myId,
                         fromPeerName: mesh.myName
                     };
-                    
-                    mesh.queueMessage(newPeerId, answerMessage);
+
+                    mesh.registerRelayAnswer(newPeerId, answerMessage);
                 }
-                
+
                 // Schedule relay of other offers after a delay
                 setTimeout(() => {
                     for (const offer of offers) {
@@ -1275,16 +1399,72 @@
                         }
                     }
                 }, 500);
-                
-                document.getElementById('inviteSection').style.display = 'none';
+
                 document.getElementById('relayResponse').value = '';
-                
+                const answersBox = document.getElementById('relayAnswersBox');
+                if (answersBox) {
+                    answersBox.classList.remove('hidden');
+                }
+
             } catch (e) {
                 alert('Invalid response: ' + e.message);
                 console.error(e);
             }
         }
-        
+
+        async function processRelayAnswers() {
+            const bundleText = document.getElementById('joinFinalAnswers').value.trim();
+            if (!bundleText) {
+                alert('Please paste the connection bundle');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(atob(bundleText));
+
+                if (data.type !== 'relay-answers') {
+                    throw new Error('Invalid bundle type');
+                }
+
+                if (data.newPeerId && data.newPeerId !== mesh.myId) {
+                    console.warn('Bundle targeted for different peer, continuing anyway');
+                }
+
+                for (const answer of data.answers || []) {
+                    const peer = mesh.peers.get(answer.fromPeerId);
+                    if (!peer || !peer.pc) {
+                        console.warn(`No peer connection found for ${answer.fromPeerId}`);
+                        continue;
+                    }
+
+                    try {
+                        await peer.pc.setRemoteDescription(new RTCSessionDescription({
+                            type: 'answer',
+                            sdp: answer.answer
+                        }));
+
+                        if (answer.iceCandidates) {
+                            for (const candidate of answer.iceCandidates) {
+                                await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            }
+                        }
+
+                        peer.name = answer.fromPeerName;
+                    } catch (error) {
+                        console.error('Failed to apply relay answer:', error);
+                    }
+                }
+
+                addSystemMessage('Connection bundle processed. Finalizing links...');
+                mesh.updatePeersDisplay();
+                document.getElementById('joinFinalStep').style.display = 'none';
+                document.getElementById('joinerEnterChat').style.display = 'block';
+            } catch (error) {
+                alert('Invalid connection bundle: ' + error.message);
+                console.error(error);
+            }
+        }
+
         // Send message
         function sendMessage() {
             const input = document.getElementById('messageInput');
