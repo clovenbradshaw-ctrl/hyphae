@@ -489,6 +489,7 @@
                 this.messageQueue = new Map(); // peerId -> [messages] for pending connections
                 this.relayOffers = new Map(); // Store relay offers waiting to be processed
                 this.pendingRelaySessions = new Map(); // Track pending mesh invitations
+                this.pendingConnections = new Map(); // Map pending IDs to real IDs
             }
             
             generateId() {
@@ -509,7 +510,7 @@
                 // Initialize or update peer info
                 const peer = this.peers.get(peerId) || {};
                 peer.pc = pc;
-                peer.peerId = peerId; // Store the peer ID with the peer object
+                peer.peerId = peerId;
                 peer.status = 'connecting';
                 peer.iceCandidates = [];
                 peer.isInitiator = isInitiator;
@@ -564,96 +565,110 @@
                 return pc;
             }
             
-            // Setup data channel handlers with proper queuing
-            setupDataChannel(dc, peerId) {
-                // Store reference to this mesh instance
+            // Setup data channel handlers with proper closure handling
+            setupDataChannel(dc, originalPeerId) {
                 const mesh = this;
                 
                 dc.onopen = () => {
-                    // Find the current peer by data channel reference
-                    let currentPeerId = peerId;
-                    for (const [id, peer] of mesh.peers.entries()) {
-                        if (peer.dc === dc) {
-                            currentPeerId = id;
-                            break;
-                        }
+                    console.log(`Data channel open with peer initially identified as ${originalPeerId}`);
+                    
+                    // Find the actual peer ID (might have changed from pending to real)
+                    let actualPeerId = originalPeerId;
+                    if (mesh.pendingConnections.has(originalPeerId)) {
+                        actualPeerId = mesh.pendingConnections.get(originalPeerId);
                     }
                     
-                    console.log(`Data channel open with ${currentPeerId}`);
-                    const peer = mesh.peers.get(currentPeerId);
+                    const peer = mesh.peers.get(actualPeerId);
                     if (peer) {
                         peer.status = 'connected';
                         peer.dcReady = true;
                         mesh.updatePeersDisplay();
                         
                         // Send introduction
-                        mesh.sendToPeer(currentPeerId, {
+                        mesh.sendToPeer(actualPeerId, {
                             type: 'intro',
                             id: mesh.myId,
                             name: mesh.myName
                         });
                         
                         // Flush message queue for this peer
-                        mesh.flushMessageQueue(currentPeerId);
+                        mesh.flushMessageQueue(actualPeerId);
 
                         // Process any waiting relay offers
                         mesh.processQueuedRelayOffers();
 
                         // Clear any pending relay UI once the connection is complete
-                        if (mesh.pendingRelaySessions.has(currentPeerId)) {
-                            mesh.clearRelaySession(currentPeerId);
+                        if (mesh.pendingRelaySessions.has(actualPeerId)) {
+                            mesh.clearRelaySession(actualPeerId);
                         }
                     }
                 };
                 
                 dc.onmessage = (event) => {
                     try {
-                        // Find the current peer by data channel reference
-                        let currentPeerId = peerId;
-                        for (const [id, peer] of mesh.peers.entries()) {
-                            if (peer.dc === dc) {
-                                currentPeerId = id;
-                                break;
-                            }
+                        const data = JSON.parse(event.data);
+                        
+                        // Determine the actual peer ID for this message
+                        let actualPeerId = originalPeerId;
+                        if (mesh.pendingConnections.has(originalPeerId)) {
+                            actualPeerId = mesh.pendingConnections.get(originalPeerId);
                         }
                         
-                        const data = JSON.parse(event.data);
-                        mesh.handleMessage(data, currentPeerId);
+                        // Special handling for intro messages to update peer mappings
+                        if (data.type === 'intro' && originalPeerId.startsWith('pending_')) {
+                            actualPeerId = data.id;
+                            mesh.migratePendingPeer(originalPeerId, actualPeerId, data.name);
+                        }
+                        
+                        mesh.handleMessage(data, actualPeerId);
                     } catch(e) {
                         console.error('Failed to parse message:', e);
                     }
                 };
                 
                 dc.onerror = (error) => {
-                    // Find the current peer by data channel reference
-                    let currentPeerId = peerId;
-                    for (const [id, peer] of mesh.peers.entries()) {
-                        if (peer.dc === dc) {
-                            currentPeerId = id;
-                            break;
-                        }
-                    }
-                    console.error(`Data channel error with ${currentPeerId}:`, error);
+                    console.error(`Data channel error with ${originalPeerId}:`, error);
                 };
                 
                 dc.onclose = () => {
-                    // Find the current peer by data channel reference
-                    let currentPeerId = peerId;
-                    for (const [id, peer] of mesh.peers.entries()) {
-                        if (peer.dc === dc) {
-                            currentPeerId = id;
-                            break;
-                        }
+                    console.log(`Data channel closed with ${originalPeerId}`);
+                    
+                    let actualPeerId = originalPeerId;
+                    if (mesh.pendingConnections.has(originalPeerId)) {
+                        actualPeerId = mesh.pendingConnections.get(originalPeerId);
                     }
                     
-                    console.log(`Data channel closed with ${currentPeerId}`);
-                    const peer = mesh.peers.get(currentPeerId);
+                    const peer = mesh.peers.get(actualPeerId);
                     if (peer) {
                         peer.dcReady = false;
                         peer.status = 'disconnected';
                         mesh.updatePeersDisplay();
                     }
                 };
+            }
+            
+            // Migrate a pending peer to its real ID
+            migratePendingPeer(pendingId, realId, name) {
+                console.log(`Migrating peer from ${pendingId} to ${realId}`);
+                
+                const pendingPeer = this.peers.get(pendingId);
+                if (pendingPeer) {
+                    // Move the peer object to the new ID
+                    this.peers.delete(pendingId);
+                    pendingPeer.peerId = realId;
+                    pendingPeer.name = name;
+                    this.peers.set(realId, pendingPeer);
+                    
+                    // Track the mapping for data channel handlers
+                    this.pendingConnections.set(pendingId, realId);
+                    
+                    // Move any queued messages
+                    const pendingQueue = this.messageQueue.get(pendingId);
+                    if (pendingQueue) {
+                        this.messageQueue.delete(pendingId);
+                        this.messageQueue.set(realId, pendingQueue);
+                    }
+                }
             }
             
             // Queue messages for peers not yet connected
@@ -681,24 +696,9 @@
             handleMessage(data, fromPeerId) {
                 switch(data.type) {
                     case 'intro':
-                        // For pending connections, we need to update the peer mapping
-                        if (fromPeerId.startsWith('pending_')) {
-                            const tempPeer = this.peers.get(fromPeerId);
-                            if (tempPeer && data.id) {
-                                // Move the entire peer object to the new ID
-                                this.peers.delete(fromPeerId);
-                                this.peers.set(data.id, tempPeer);
-                                tempPeer.peerId = data.id;
-                                tempPeer.name = data.name;
-                                fromPeerId = data.id;
-                                console.log(`Updated peer ID from pending to ${data.id}`);
-                            }
-                        } else {
-                            // Normal intro for already-known peer
-                            const peer = this.peers.get(fromPeerId);
-                            if (peer) {
-                                peer.name = data.name;
-                            }
+                        const peer = this.peers.get(fromPeerId);
+                        if (peer) {
+                            peer.name = data.name;
                         }
                         this.updatePeersDisplay();
                         addSystemMessage(`${data.name} joined the room`);
@@ -958,22 +958,26 @@
                 `;
                 grid.appendChild(selfCard);
                 
-                // Add peers
+                // Add peers - skip pending connections
                 this.peers.forEach((peer, peerId) => {
-                    const card = document.createElement('div');
-                    const isConnected = peer.status === 'connected' && peer.dcReady;
-                    card.className = `peer-card ${isConnected ? 'connected' : 'pending'}`;
-                    card.innerHTML = `
-                        ${isConnected ? '<div class="connection-indicator"></div>' : ''}
-                        <div class="peer-avatar">${peer.name?.[0]?.toUpperCase() || '?'}</div>
-                        <div class="peer-name">${peer.name || 'Connecting...'}</div>
-                        <div class="peer-status">${peer.status}</div>
-                    `;
-                    grid.appendChild(card);
+                    if (!peerId.startsWith('pending_')) {
+                        const card = document.createElement('div');
+                        const isConnected = peer.status === 'connected' && peer.dcReady;
+                        card.className = `peer-card ${isConnected ? 'connected' : 'pending'}`;
+                        card.innerHTML = `
+                            ${isConnected ? '<div class="connection-indicator"></div>' : ''}
+                            <div class="peer-avatar">${peer.name?.[0]?.toUpperCase() || '?'}</div>
+                            <div class="peer-name">${peer.name || 'Connecting...'}</div>
+                            <div class="peer-status">${peer.status}</div>
+                        `;
+                        grid.appendChild(card);
+                    }
                 });
                 
                 // Update network status
-                const connected = Array.from(this.peers.values()).filter(p => p.status === 'connected' && p.dcReady).length;
+                const connected = Array.from(this.peers.values()).filter(p => 
+                    p.status === 'connected' && p.dcReady && !p.peerId.startsWith('pending_')
+                ).length;
                 document.getElementById('networkStatus').innerHTML = `
                     <span>📡 ${connected} peer${connected !== 1 ? 's' : ''} connected</span>
                 `;
@@ -982,6 +986,9 @@
         
         // Initialize mesh network
         const mesh = new MeshNetwork();
+        
+        // Global variable to track the pending peer ID for the host
+        let hostPendingPeerId = null;
         
         // Create room (Person A - Host)
         async function createRoom() {
@@ -1001,8 +1008,8 @@
             // Create initial offer for first joiner
             setTimeout(async () => {
                 try {
-                    const tempPeerId = 'pending_' + Date.now();
-                    const pc = mesh.createPeerConnection(tempPeerId, true);
+                    hostPendingPeerId = 'pending_' + Date.now();
+                    const pc = mesh.createPeerConnection(hostPendingPeerId, true);
                     
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
@@ -1021,14 +1028,15 @@
                         }
                     });
                     
-                    const peer = mesh.peers.get(tempPeerId);
+                    const peer = mesh.peers.get(hostPendingPeerId);
                     const invite = {
                         type: 'host-offer',
                         roomId: mesh.roomId,
                         hostId: mesh.myId,
                         hostName: mesh.myName,
                         offer: offer.sdp,
-                        iceCandidates: peer.iceCandidates
+                        iceCandidates: peer.iceCandidates,
+                        pendingPeerId: hostPendingPeerId // Include the pending ID
                     };
                     
                     document.getElementById('hostInvite').textContent = btoa(JSON.stringify(invite));
@@ -1057,23 +1065,17 @@
             try {
                 const data = JSON.parse(atob(response));
                 
-                // Find pending connection
-                let pc = null;
-                let tempPeerId = null;
-                let tempPeer = null;
-                
-                for (const [id, peer] of mesh.peers.entries()) {
-                    if (id.startsWith('pending_')) {
-                        pc = peer.pc;
-                        tempPeerId = id;
-                        tempPeer = peer;
-                        break;
-                    }
-                }
-                
-                if (!pc) {
+                // Use the stored pending peer ID
+                if (!hostPendingPeerId) {
                     throw new Error('No pending connection found');
                 }
+                
+                const tempPeer = mesh.peers.get(hostPendingPeerId);
+                if (!tempPeer || !tempPeer.pc) {
+                    throw new Error('Pending connection not found');
+                }
+                
+                const pc = tempPeer.pc;
                 
                 // Set remote description first
                 await pc.setRemoteDescription(new RTCSessionDescription({
@@ -1088,8 +1090,8 @@
                     }
                 }
                 
-                // Update peer info - but keep the pending ID for now
-                // It will be updated when we receive the intro message
+                // Map the pending ID to the real peer ID
+                mesh.pendingConnections.set(hostPendingPeerId, data.peerId);
                 tempPeer.name = data.name;
                 tempPeer.expectedRealId = data.peerId;
                 
@@ -1253,7 +1255,7 @@
         async function inviteNewPerson() {
             const connectedPeers = [];
             mesh.peers.forEach((peer, peerId) => {
-                if (peer.status === 'connected' && peer.dcReady) {
+                if (peer.status === 'connected' && peer.dcReady && !peerId.startsWith('pending_')) {
                     connectedPeers.push({
                         id: peerId,
                         name: peer.name
