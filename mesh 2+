@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relay Mesh Chat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .network-status {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .button.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .button.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 1em;
+        }
+        
+        .room-display {
+            background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .room-code {
+            font-size: 2.5em;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin: 10px 0;
+        }
+        
+        .connection-box {
+            background: #f9fafb;
+            border: 2px dashed #9ca3af;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .connection-code {
+            font-family: monospace;
+            font-size: 0.85em;
+            word-break: break-all;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .step {
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .peers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .peer-card {
+            background: #f3f4f6;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .peer-card.connected {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+        }
+        
+        .peer-card.pending {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
+        
+        .peer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0 auto 10px;
+        }
+        
+        .peer-name {
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .peer-status {
+            font-size: 0.85em;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .connection-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .chat-container {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: white;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        .message-bubble {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .message.own {
+            text-align: right;
+        }
+        
+        .message.own .message-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .message.peer .message-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .message.system {
+            text-align: center;
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+        
+        .message-author {
+            font-size: 0.8em;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background: #f9fafb;
+            border-top: 2px solid #e5e7eb;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            margin: 0;
+        }
+        
+        .chat-input button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .info-box h4 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Relay Mesh Chat</h1>
+            <p>Smart connection relay system</p>
+            <div class="network-status" id="networkStatus">
+                <span>📡 Ready</span>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- Initial Setup -->
+            <div id="setupScreen">
+                <input type="text" id="userName" placeholder="Enter your name">
+                
+                <button class="button primary" onclick="createRoom()">
+                    🏠 Create New Room
+                </button>
+                
+                <button class="button secondary" onclick="showJoinScreen()">
+                    🔗 Join Existing Room
+                </button>
+            </div>
+            
+            <!-- Create Room (Person A) -->
+            <div id="createRoomScreen" style="display: none;">
+                <div class="room-display">
+                    <p>Room Created!</p>
+                    <div class="room-code" id="roomCode"></div>
+                </div>
+                
+                <div class="info-box">
+                    <h4>How the relay system works:</h4>
+                    <p>1. You create an offer and send it to Person B</p>
+                    <p>2. Person B sends back an answer</p>
+                    <p>3. You both connect!</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Creating your offer...</strong>
+                    <div class="connection-code" id="hostInvite">Generating...</div>
+                    <button class="button secondary hidden" id="copyHostInviteBtn" onclick="copyHostInvite()">
+                        📋 Copy Invite
+                    </button>
+                </div>
+                
+                <div class="step" id="hostWaitingStep">
+                    <span class="step-number">2</span>
+                    <strong>Waiting for them to respond...</strong>
+                    <textarea id="hostReceiveResponse" placeholder="Paste their response here"></textarea>
+                    <button class="button success" onclick="hostProcessResponse()">
+                        Complete Connection
+                    </button>
+                </div>
+                
+                <button class="button primary" onclick="enterChat()" style="display: none;" id="hostEnterChat">
+                    💬 Enter Chat Room
+                </button>
+            </div>
+            
+            <!-- Join Room (Person B, C, etc.) -->
+            <div id="joinRoomScreen" style="display: none;">
+                <h2>Join Room</h2>
+                
+                <input type="text" id="joinerName" placeholder="Your name">
+                
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Paste the invite from a room member:</strong>
+                    <textarea id="joinInvite" placeholder="Paste invite here"></textarea>
+                    <button class="button primary" onclick="processInvite()">
+                        Process Invite
+                    </button>
+                </div>
+                
+                <div class="step" id="joinResponseStep" style="display: none;">
+                    <span class="step-number">2</span>
+                    <strong>Creating your answer...</strong>
+                    <div class="connection-code" id="joinResponse">Generating...</div>
+                    <button class="button secondary hidden" id="copyJoinResponseBtn" onclick="copyJoinResponse()">
+                        📋 Copy Response
+                    </button>
+                    <p style="margin-top: 10px; color: #6b7280;">
+                        Once they confirm, you'll be connected!
+                    </p>
+                </div>
+                
+                <button class="button primary" onclick="enterChat()" style="display: none;" id="joinerEnterChat">
+                    💬 Enter Chat Room
+                </button>
+            </div>
+            
+            <!-- Chat Room -->
+            <div id="chatScreen" style="display: none;">
+                <div class="peers-grid" id="peersGrid"></div>
+                
+                <div class="chat-container">
+                    <div class="chat-messages" id="messages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+                
+                <button class="button success" onclick="inviteNewPerson()">
+                    + Invite Someone New
+                </button>
+                
+                <div id="inviteSection" style="display: none;">
+                    <div class="connection-box">
+                        <h3>Invite New Person</h3>
+                        <p>They'll connect to everyone in the room!</p>
+                        <div class="connection-code" id="relayInvite">Generating...</div>
+                        <button class="button secondary" onclick="copyRelayInvite()">
+                            📋 Copy Invite
+                        </button>
+                        
+                        <p style="margin-top: 15px;">When they respond, paste here:</p>
+                        <textarea id="relayResponse" placeholder="Paste their response"></textarea>
+                        <button class="button success" onclick="processRelayResponse()">
+                            Connect Them
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global mesh state
+        class MeshNetwork {
+            constructor() {
+                this.myId = this.generateId();
+                this.myName = '';
+                this.roomId = null;
+                this.peers = new Map(); // peerId -> {name, pc, dc, status}
+                this.pendingOffers = new Map(); // Store offers while gathering ICE
+            }
+            
+            generateId() {
+                return Math.random().toString(36).substring(2, 15);
+            }
+            
+            // Create a peer connection
+            createPeerConnection(peerId, isInitiator = true) {
+                console.log(`Creating peer connection for ${peerId}, initiator: ${isInitiator}`);
+                
+                const pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+                
+                // Store the connection
+                const peer = this.peers.get(peerId) || {};
+                peer.pc = pc;
+                peer.status = 'connecting';
+                peer.iceCandidates = [];
+                peer.originalId = peerId; // Store original ID for tracking
+                this.peers.set(peerId, peer);
+                
+                // ICE candidate collection
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        // Find the current peer ID (might have changed from temp to real)
+                        let currentPeerId = peerId;
+                        for (const [id, p] of this.peers.entries()) {
+                            if (p.pc === pc) {
+                                currentPeerId = id;
+                                break;
+                            }
+                        }
+                        const peer = this.peers.get(currentPeerId);
+                        if (peer) {
+                            peer.iceCandidates.push(event.candidate.toJSON());
+                            console.log('ICE candidate collected for', currentPeerId);
+                        }
+                    }
+                };
+                
+                // Data channel setup
+                if (isInitiator) {
+                    console.log('Creating data channel as initiator');
+                    const dc = pc.createDataChannel('chat');
+                    peer.dc = dc;
+                    this.setupDataChannel(dc, pc); // Pass PC instead of peerId
+                } else {
+                    console.log('Waiting for data channel as responder');
+                    pc.ondatachannel = (event) => {
+                        console.log('Data channel received');
+                        peer.dc = event.channel;
+                        this.setupDataChannel(event.channel, pc); // Pass PC instead of peerId
+                    };
+                }
+                
+                // Connection state monitoring
+                pc.onconnectionstatechange = () => {
+                    // Find the current peer ID for this connection
+                    let currentPeerId = null;
+                    for (const [id, p] of this.peers.entries()) {
+                        if (p.pc === pc) {
+                            currentPeerId = id;
+                            break;
+                        }
+                    }
+                    
+                    if (currentPeerId) {
+                        console.log(`Connection state for ${currentPeerId}: ${pc.connectionState}`);
+                        if (pc.connectionState === 'connected') {
+                            this.onPeerConnected(currentPeerId);
+                        } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                            this.onPeerDisconnected(currentPeerId);
+                        }
+                    }
+                };
+                
+                return pc;
+            }
+            
+            // Setup data channel handlers (now accepts pc instead of peerId)
+            setupDataChannel(dc, pc) {
+                dc.onopen = () => {
+                    // Find the current peer ID for this connection
+                    let peerId = null;
+                    for (const [id, peer] of this.peers.entries()) {
+                        if (peer.pc === pc) {
+                            peerId = id;
+                            break;
+                        }
+                    }
+                    
+                    if (!peerId) {
+                        console.error('Could not find peer for data channel');
+                        return;
+                    }
+                    
+                    console.log(`Data channel open with ${peerId}`);
+                    const peer = this.peers.get(peerId);
+                    if (peer) {
+                        peer.status = 'connected';
+                        peer.dc = dc; // Update DC reference
+                        this.updatePeersDisplay();
+                        
+                        // Send introduction
+                        this.sendToPeer(peerId, {
+                            type: 'intro',
+                            id: this.myId,
+                            name: this.myName
+                        });
+                        
+                        // Check if we have pending answers for this peer
+                        if (this.pendingAnswers && this.pendingAnswers.has(peerId)) {
+                            const answers = this.pendingAnswers.get(peerId);
+                            console.log(`Sending ${answers.length} pending answers to ${peerId}`);
+                            for (const answer of answers) {
+                                this.sendToPeer(peerId, answer);
+                            }
+                            this.pendingAnswers.delete(peerId);
+                        }
+                    }
+                };
+                
+                dc.onmessage = (event) => {
+                    try {
+                        // Find current peer ID
+                        let peerId = null;
+                        for (const [id, peer] of this.peers.entries()) {
+                            if (peer.pc === pc) {
+                                peerId = id;
+                                break;
+                            }
+                        }
+                        
+                        if (peerId) {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data, peerId);
+                        }
+                    } catch(e) {
+                        console.error('Failed to parse message:', e);
+                    }
+                };
+                
+                dc.onerror = (error) => {
+                    console.error('Data channel error:', error);
+                };
+                
+                dc.onclose = () => {
+                    // Find current peer ID
+                    let peerId = null;
+                    for (const [id, peer] of this.peers.entries()) {
+                        if (peer.pc === pc) {
+                            peerId = id;
+                            break;
+                        }
+                    }
+                    console.log(`Data channel closed with ${peerId || 'unknown'}`);
+                };
+            }
+            
+            // Handle incoming messages
+            handleMessage(data, fromPeerId) {
+                switch(data.type) {
+                    case 'intro':
+                        const peer = this.peers.get(fromPeerId) || {};
+                        peer.name = data.name;
+                        this.peers.set(fromPeerId, peer);
+                        this.updatePeersDisplay();
+                        addSystemMessage(`${data.name} joined the room`);
+                        break;
+                        
+                    case 'message':
+                        displayMessage(data.text, data.author, false);
+                        break;
+                        
+                    case 'peer-list':
+                        // Receive list of other peers in the room
+                        console.log('Received peer list:', data.peers);
+                        for (const peerInfo of data.peers) {
+                            if (!this.peers.has(peerInfo.id) && peerInfo.id !== this.myId) {
+                                console.log('Learning about peer:', peerInfo);
+                                // We'll connect to them via relay
+                            }
+                        }
+                        break;
+                        
+                    case 'relay-offer':
+                        // Someone new wants to connect through the relay
+                        this.handleRelayOffer(data, fromPeerId);
+                        break;
+                        
+                    case 'relay-answer':
+                        // Answer from new peer via relay
+                        this.handleRelayAnswer(data, fromPeerId);
+                        break;
+                }
+            }
+            
+            // Handle relay offer from new peer via existing peer
+            async handleRelayOffer(data, fromPeerId) {
+                const { newPeerId, newPeerName, offer, iceCandidates } = data;
+                
+                console.log(`Received relay offer from ${fromPeerId} for new peer ${newPeerId}`);
+                
+                // Check if we already have this peer to avoid duplicates
+                if (this.peers.has(newPeerId)) {
+                    console.log(`Already have peer ${newPeerId}, skipping duplicate connection`);
+                    return;
+                }
+                
+                // Create connection as responder
+                const pc = this.createPeerConnection(newPeerId, false);
+                const peer = this.peers.get(newPeerId);
+                peer.name = newPeerName;
+                
+                try {
+                    // Set the remote offer
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: 'offer',
+                        sdp: offer
+                    }));
+                    
+                    // Add ICE candidates
+                    if (iceCandidates) {
+                        for (const candidate of iceCandidates) {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                    }
+                    
+                    // Create answer
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    // Wait for ICE gathering
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    // Send answer back through relay to the inviter
+                    // The inviter will forward it to the new peer
+                    this.sendToPeer(fromPeerId, {
+                        type: 'relay-answer',
+                        targetPeerId: newPeerId,
+                        answer: answer.sdp,
+                        iceCandidates: peer.iceCandidates,
+                        fromPeerId: this.myId,
+                        fromPeerName: this.myName
+                    });
+                    
+                    console.log(`Sent answer back through relay for ${newPeerId}`);
+                    
+                } catch(e) {
+                    console.error('Failed to handle relay offer:', e);
+                }
+            }
+            
+            // Handle relay answer
+            async handleRelayAnswer(data, fromPeerId) {
+                const { targetPeerId, answer, iceCandidates, fromPeerId: answerFromId, fromPeerName } = data;
+                
+                console.log(`Received relay answer from ${fromPeerId} targeting ${targetPeerId}`);
+                
+                // Check if this answer is for us (we're the new peer)
+                if (targetPeerId === this.myId) {
+                    const peer = this.peers.get(answerFromId);
+                    if (peer && peer.pc) {
+                        try {
+                            peer.name = fromPeerName;
+                            
+                            await peer.pc.setRemoteDescription(new RTCSessionDescription({
+                                type: 'answer',
+                                sdp: answer
+                            }));
+                            
+                            if (iceCandidates) {
+                                for (const candidate of iceCandidates) {
+                                    await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+                                }
+                            }
+                            
+                            console.log(`Connected to ${answerFromId} (${fromPeerName}) via relay!`);
+                            addSystemMessage(`Connected to ${fromPeerName}`);
+                            
+                        } catch(e) {
+                            console.error('Failed to set relay answer:', e);
+                        }
+                    }
+                } else {
+                    // We're the relay - forward to the actual target (new peer)
+                    const sent = this.sendToPeer(targetPeerId, data);
+                    if (sent) {
+                        console.log(`Forwarded answer to ${targetPeerId}`);
+                    } else {
+                        // If we can't send directly, store it for when they connect
+                        console.log(`Storing answer for ${targetPeerId} until they connect`);
+                        if (!this.pendingAnswers) this.pendingAnswers = new Map();
+                        if (!this.pendingAnswers.has(targetPeerId)) {
+                            this.pendingAnswers.set(targetPeerId, []);
+                        }
+                        this.pendingAnswers.get(targetPeerId).push(data);
+                    }
+                }
+            }
+            
+            // Send data to a specific peer
+            sendToPeer(peerId, data) {
+                const peer = this.peers.get(peerId);
+                if (peer && peer.dc && peer.dc.readyState === 'open') {
+                    peer.dc.send(JSON.stringify(data));
+                    return true;
+                }
+                return false;
+            }
+            
+            // Broadcast to all connected peers
+            broadcast(data) {
+                this.peers.forEach((peer, peerId) => {
+                    this.sendToPeer(peerId, data);
+                });
+            }
+            
+            // Update UI when peer connects
+            onPeerConnected(peerId) {
+                const peer = this.peers.get(peerId);
+                if (peer) {
+                    peer.status = 'connected';
+                    this.updatePeersDisplay();
+                }
+            }
+            
+            // Update UI when peer disconnects
+            onPeerDisconnected(peerId) {
+                const peer = this.peers.get(peerId);
+                if (peer) {
+                    peer.status = 'disconnected';
+                    this.updatePeersDisplay();
+                    addSystemMessage(`${peer.name || 'A peer'} disconnected`);
+                }
+            }
+            
+            // Update peers display
+            updatePeersDisplay() {
+                const grid = document.getElementById('peersGrid');
+                if (!grid) return;
+                
+                grid.innerHTML = '';
+                
+                // Add self
+                const selfCard = document.createElement('div');
+                selfCard.className = 'peer-card connected';
+                selfCard.innerHTML = `
+                    <div class="connection-indicator"></div>
+                    <div class="peer-avatar">${this.myName[0]?.toUpperCase() || '?'}</div>
+                    <div class="peer-name">${this.myName} (You)</div>
+                    <div class="peer-status">Connected</div>
+                `;
+                grid.appendChild(selfCard);
+                
+                // Add peers
+                this.peers.forEach((peer, peerId) => {
+                    const card = document.createElement('div');
+                    card.className = `peer-card ${peer.status === 'connected' ? 'connected' : 'pending'}`;
+                    card.innerHTML = `
+                        ${peer.status === 'connected' ? '<div class="connection-indicator"></div>' : ''}
+                        <div class="peer-avatar">${peer.name?.[0]?.toUpperCase() || '?'}</div>
+                        <div class="peer-name">${peer.name || 'Connecting...'}</div>
+                        <div class="peer-status">${peer.status}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+                
+                // Update network status
+                const connected = Array.from(this.peers.values()).filter(p => p.status === 'connected').length;
+                document.getElementById('networkStatus').innerHTML = `
+                    <span>📡 ${connected} peer${connected !== 1 ? 's' : ''} connected</span>
+                `;
+            }
+        }
+        
+        // Initialize mesh network
+        const mesh = new MeshNetwork();
+        
+        // Create room (Person A - Host)
+        async function createRoom() {
+            const name = document.getElementById('userName').value.trim();
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+            
+            mesh.myName = name;
+            mesh.roomId = mesh.generateId().substring(0, 8).toUpperCase();
+            
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('createRoomScreen').style.display = 'block';
+            document.getElementById('roomCode').textContent = mesh.roomId;
+            
+            // Create offer for the first peer who will join
+            setTimeout(async () => {
+                try {
+                    // Generate a temporary peer ID for whoever will join
+                    const tempPeerId = 'pending_' + Date.now();
+                    const pc = mesh.createPeerConnection(tempPeerId, true);
+                    
+                    // Create offer
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    
+                    // Wait for ICE gathering
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            // Timeout after 3 seconds
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    // Store the offer
+                    const peer = mesh.peers.get(tempPeerId);
+                    mesh.pendingOffers.set(tempPeerId, {
+                        offer: offer.sdp,
+                        iceCandidates: peer.iceCandidates
+                    });
+                    
+                    // Create invite with offer included
+                    const invite = {
+                        type: 'host-offer',
+                        roomId: mesh.roomId,
+                        hostId: mesh.myId,
+                        hostName: mesh.myName,
+                        tempPeerId: tempPeerId,
+                        offer: offer.sdp,
+                        iceCandidates: peer.iceCandidates
+                    };
+                    
+                    document.getElementById('hostInvite').textContent = btoa(JSON.stringify(invite));
+                    document.getElementById('copyHostInviteBtn').classList.remove('hidden');
+                } catch(e) {
+                    console.error('Failed to create offer:', e);
+                    alert('Failed to create connection offer. Please try again.');
+                }
+            }, 100);
+        }
+        
+        // Copy host invite
+        function copyHostInvite() {
+            const text = document.getElementById('hostInvite').textContent;
+            navigator.clipboard.writeText(text);
+            alert('Invite copied! Send it to someone to join.');
+        }
+        
+        // Host processes response from Person B
+        async function hostProcessResponse() {
+            const response = document.getElementById('hostReceiveResponse').value.trim();
+            if (!response) {
+                alert('Please paste the response');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(atob(response));
+                
+                // Find and remove the pending connection
+                let pc = null;
+                let tempPeerId = null;
+                
+                for (const [id, peer] of mesh.peers.entries()) {
+                    if (id.startsWith('pending_')) {
+                        pc = peer.pc;
+                        tempPeerId = id;
+                        break;
+                    }
+                }
+                
+                if (!pc) {
+                    throw new Error('No pending connection found');
+                }
+                
+                // Delete the temp peer and recreate with real ID
+                const tempPeer = mesh.peers.get(tempPeerId);
+                mesh.peers.delete(tempPeerId);
+                
+                // Store with the actual peer ID from Person B
+                mesh.peers.set(data.peerId, {
+                    pc: pc,
+                    dc: tempPeer.dc,
+                    name: data.name,
+                    status: 'connecting',
+                    iceCandidates: tempPeer.iceCandidates
+                });
+                
+                // Set the remote answer
+                await pc.setRemoteDescription(new RTCSessionDescription({
+                    type: 'answer',
+                    sdp: data.answer
+                }));
+                
+                // Add their ICE candidates from peer
+                if (data.iceCandidates) {
+                    for (const candidate of data.iceCandidates) {
+                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    }
+                }
+                
+                document.getElementById('hostEnterChat').style.display = 'block';
+                addSystemMessage(`Connecting to ${data.name}...`);
+                
+            } catch (e) {
+                alert('Invalid response: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Show join screen
+        function showJoinScreen() {
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('joinRoomScreen').style.display = 'block';
+        }
+        
+        // Process invite (Person B joins directly, or Person C+ joins via relay)
+        async function processInvite() {
+            const name = document.getElementById('joinerName').value.trim();
+            const invite = document.getElementById('joinInvite').value.trim();
+            
+            if (!name || !invite) {
+                alert('Please enter your name and paste the invite');
+                return;
+            }
+            
+            mesh.myName = name;
+            
+            try {
+                const data = JSON.parse(atob(invite));
+                mesh.roomId = data.roomId;
+                
+                if (data.type === 'host-offer') {
+                    // Direct invite from the host (Person A → B)
+                    const pc = mesh.createPeerConnection(data.hostId, false);
+                    const peer = mesh.peers.get(data.hostId);
+                    peer.name = data.hostName;
+                    
+                    // Set the remote offer
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: 'offer',
+                        sdp: data.offer
+                    }));
+                    
+                    // Add host's ICE candidates
+                    if (data.iceCandidates) {
+                        for (const candidate of data.iceCandidates) {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                    }
+                    
+                    // Create answer
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    // Wait for ICE gathering
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    // Create response with answer
+                    const response = {
+                        peerId: mesh.myId,
+                        name: mesh.myName,
+                        answer: answer.sdp,
+                        iceCandidates: peer.iceCandidates
+                    };
+                    
+                    document.getElementById('joinResponse').textContent = btoa(JSON.stringify(response));
+                    document.getElementById('joinResponseStep').style.display = 'block';
+                    document.getElementById('copyJoinResponseBtn').classList.remove('hidden');
+                    document.getElementById('joinerEnterChat').style.display = 'block';
+                    
+                } else if (data.type === 'relay-invite') {
+                    // Relay invite (Person C+ joining via existing member)
+                    // Store inviter info
+                    mesh.peers.set(data.inviterId, {
+                        name: data.inviterName,
+                        status: 'relay-pending'
+                    });
+                    
+                    // We need to create offers for ALL existing peers
+                    const offers = [];
+                    
+                    for (const peerInfo of data.existingPeers) {
+                        if (peerInfo.id !== mesh.myId) {
+                            // Create connection to this peer
+                            const pc = mesh.createPeerConnection(peerInfo.id, true);
+                            const peer = mesh.peers.get(peerInfo.id);
+                            peer.name = peerInfo.name;
+                            
+                            // Create offer
+                            const offer = await pc.createOffer();
+                            await pc.setLocalDescription(offer);
+                            
+                            // Wait for ICE gathering
+                            await new Promise((resolve) => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                } else {
+                                    pc.onicegatheringstatechange = () => {
+                                        if (pc.iceGatheringState === 'complete') {
+                                            resolve();
+                                        }
+                                    };
+                                    setTimeout(resolve, 3000);
+                                }
+                            });
+                            
+                            offers.push({
+                                targetId: peerInfo.id,
+                                offer: offer.sdp,
+                                iceCandidates: peer.iceCandidates
+                            });
+                        }
+                    }
+                    
+                    // Create response with all offers
+                    const response = {
+                        type: 'relay-response',
+                        newPeerId: mesh.myId,
+                        newPeerName: mesh.myName,
+                        offers: offers
+                    };
+                    
+                    // Just show the base64 text, not HTML
+                    document.getElementById('joinResponse').textContent = btoa(JSON.stringify(response));
+                    document.getElementById('joinResponseStep').style.display = 'block';
+                    document.getElementById('copyJoinResponseBtn').classList.remove('hidden');
+                    document.getElementById('joinerEnterChat').style.display = 'block';
+                }
+                
+            } catch (e) {
+                alert('Invalid invite: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Copy join response
+        function copyJoinResponse() {
+            const text = document.getElementById('joinResponse').textContent;
+            navigator.clipboard.writeText(text);
+            alert('Response copied! Send it back to the person who invited you.');
+        }
+        
+        // Enter chat room
+        function enterChat() {
+            document.getElementById('createRoomScreen').style.display = 'none';
+            document.getElementById('joinRoomScreen').style.display = 'none';
+            document.getElementById('chatScreen').style.display = 'block';
+            mesh.updatePeersDisplay();
+        }
+        
+        // Invite new person (relay) - for 3rd, 4th, etc. person
+        function inviteNewPerson() {
+            // Collect all connected peers
+            const connectedPeers = [];
+            mesh.peers.forEach((peer, peerId) => {
+                if (peer.status === 'connected') {
+                    connectedPeers.push({
+                        id: peerId,
+                        name: peer.name
+                    });
+                }
+            });
+            
+            // Create relay invite with information about all peers
+            const relayInvite = {
+                type: 'relay-invite',
+                roomId: mesh.roomId,
+                inviterId: mesh.myId,
+                inviterName: mesh.myName,
+                existingPeers: [
+                    { id: mesh.myId, name: mesh.myName },
+                    ...connectedPeers
+                ]
+            };
+            
+            document.getElementById('relayInvite').textContent = btoa(JSON.stringify(relayInvite));
+            document.getElementById('inviteSection').style.display = 'block';
+        }
+        
+        // Copy relay invite
+        function copyRelayInvite() {
+            const text = document.getElementById('relayInvite').textContent;
+            navigator.clipboard.writeText(text);
+            alert('Invite copied! Send it to the new person.');
+        }
+        
+        // Process relay response (when new person responds to join)
+        async function processRelayResponse() {
+            const response = document.getElementById('relayResponse').value.trim();
+            if (!response) {
+                alert('Please paste their response');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(atob(response));
+                
+                if (data.type !== 'relay-response') {
+                    throw new Error('Invalid response type');
+                }
+                
+                // The new person sent us their offers for everyone
+                const { newPeerId, newPeerName, offers } = data;
+                
+                // Check if we already have this peer to avoid duplicates
+                if (mesh.peers.has(newPeerId)) {
+                    console.log(`Peer ${newPeerId} already exists, skipping duplicate`);
+                    document.getElementById('inviteSection').style.display = 'none';
+                    document.getElementById('relayResponse').value = '';
+                    return;
+                }
+                
+                console.log(`Processing relay response from ${newPeerName}`);
+                addSystemMessage(`Connecting ${newPeerName} to everyone...`);
+                
+                // Process our own offer first (direct connection to us)
+                const ourOffer = offers.find(o => o.targetId === mesh.myId);
+                if (ourOffer) {
+                    // Create connection to the new peer
+                    const pc = mesh.createPeerConnection(newPeerId, false);
+                    const peer = mesh.peers.get(newPeerId);
+                    peer.name = newPeerName;
+                    
+                    // Set their offer
+                    await pc.setRemoteDescription(new RTCSessionDescription({
+                        type: 'offer',
+                        sdp: ourOffer.offer
+                    }));
+                    
+                    // Add their ICE candidates
+                    if (ourOffer.iceCandidates) {
+                        for (const candidate of ourOffer.iceCandidates) {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                    }
+                    
+                    // Create our answer
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    // Wait for ICE gathering
+                    await new Promise((resolve) => {
+                        if (pc.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            pc.onicegatheringstatechange = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(resolve, 3000);
+                        }
+                    });
+                    
+                    // Send our answer to the new peer
+                    const answerData = {
+                        type: 'relay-answer',
+                        targetPeerId: newPeerId,
+                        answer: answer.sdp,
+                        iceCandidates: peer.iceCandidates,
+                        fromPeerId: mesh.myId,
+                        fromPeerName: mesh.myName
+                    };
+                    
+                    // Try to send immediately if connected, otherwise store for later
+                    if (!mesh.sendToPeer(newPeerId, answerData)) {
+                        console.log('Storing answer for when peer connects');
+                        if (!mesh.pendingAnswers) mesh.pendingAnswers = new Map();
+                        if (!mesh.pendingAnswers.has(newPeerId)) {
+                            mesh.pendingAnswers.set(newPeerId, []);
+                        }
+                        mesh.pendingAnswers.get(newPeerId).push(answerData);
+                    }
+                }
+                
+                // Relay offers to other connected peers
+                for (const offer of offers) {
+                    if (offer.targetId !== mesh.myId) {
+                        // Send to the target peer
+                        const sent = mesh.sendToPeer(offer.targetId, {
+                            type: 'relay-offer',
+                            newPeerId: newPeerId,
+                            newPeerName: newPeerName,
+                            offer: offer.offer,
+                            iceCandidates: offer.iceCandidates
+                        });
+                        
+                        if (sent) {
+                            console.log(`Relayed offer to ${offer.targetId}`);
+                        } else {
+                            console.log(`Failed to relay to ${offer.targetId} - they may be disconnected`);
+                        }
+                    }
+                }
+                
+                document.getElementById('inviteSection').style.display = 'none';
+                document.getElementById('relayResponse').value = '';
+                
+                // Show success message with connection status
+                setTimeout(() => {
+                    const peer = mesh.peers.get(newPeerId);
+                    if (peer && peer.status === 'connected') {
+                        addSystemMessage(`✅ ${newPeerName} successfully joined!`);
+                    }
+                }, 3000);
+                
+            } catch (e) {
+                alert('Invalid response: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        // Send message
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const message = {
+                type: 'message',
+                text: text,
+                author: mesh.myName,
+                timestamp: Date.now()
+            };
+            
+            mesh.broadcast(message);
+            displayMessage(text, 'You', true);
+            
+            input.value = '';
+        }
+        
+        // Display message
+        function displayMessage(text, author, isOwn) {
+            const messages = document.getElementById('messages');
+            if (!messages) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isOwn ? 'message own' : 'message peer';
+            
+            if (!isOwn) {
+                const authorDiv = document.createElement('div');
+                authorDiv.className = 'message-author';
+                authorDiv.textContent = author;
+                messageDiv.appendChild(authorDiv);
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            messageDiv.appendChild(bubble);
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Add system message
+        function addSystemMessage(text) {
+            const messages = document.getElementById('messages');
+            if (!messages) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
