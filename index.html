@@ -1,2258 +1,1253 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EVENT_OPERATOR - Activity Flows</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    :root {
-      --bg-primary: #0f0f0f;
-      --bg-secondary: #1a1a1a;
-      --bg-tertiary: #252525;
-      --bg-hover: #2a2a2a;
-      --border: #333;
-      --text-primary: #f5f5f5;
-      --text-secondary: #b4b4b4;
-      --text-tertiary: #757575;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --purple: #a855f7;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    
-    .app {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-    
-    .header {
-      margin-bottom: 32px;
-    }
-    
-    .header h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-    
-    .header p {
-      color: var(--text-secondary);
-    }
-    
-    .operator-sequence {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 16px;
-      padding: 12px;
-      background: var(--bg-secondary);
-      border-radius: 6px;
-      overflow-x: auto;
-      font-size: 12px;
-    }
-    
-    .operator-sequence-item {
-      padding: 4px 8px;
-      background: var(--bg-tertiary);
-      border-radius: 4px;
-      white-space: nowrap;
-      color: var(--text-secondary);
-    }
-    
-    .operator-sequence-arrow {
-      color: var(--text-tertiary);
-    }
-    
-    .section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    
-    .section-title {
-      font-size: 18px;
-      font-weight: 600;
-    }
-    
-    .btn {
-      padding: 8px 16px;
-      border: 1px solid var(--border);
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.15s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .btn:hover {
-      background: var(--bg-hover);
-    }
-    
-    .btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: white;
-    }
-    
-    .btn.primary:hover {
-      background: var(--accent-hover);
-    }
-    
-    .btn.small {
-      padding: 6px 12px;
-      font-size: 13px;
-    }
-    
-    .input, select {
-      width: 100%;
-      padding: 10px 12px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-primary);
-      font-size: 14px;
-    }
-    
-    .input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    
-    select {
-      cursor: pointer;
-    }
-    
-    .activity-pool {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    .activity-card {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .activity-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
-    }
-    
-    .activity-card.claimed {
-      border-left: 3px solid var(--success);
-    }
-    
-    .activity-card.in-flow {
-      border-left: 3px solid var(--purple);
-    }
-    
-    .activity-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 8px;
-    }
-    
-    .activity-title {
-      font-weight: 500;
-      font-size: 15px;
-    }
-    
-    .activity-status {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 4px;
-      background: var(--bg-secondary);
-      color: var(--text-tertiary);
-      white-space: nowrap;
-    }
-    
-    .activity-status.claimed {
-      background: var(--success);
-      color: white;
-    }
-    
-    .activity-meta {
-      color: var(--text-secondary);
-      font-size: 13px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-    
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 1000;
-    }
-    
-    .modal.active {
-      display: flex;
-    }
-    
-    .modal-content {
-      background: var(--bg-secondary);
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 600px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    
-    .modal-header {
-      margin-bottom: 20px;
-    }
-    
-    .modal-header h2 {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 500;
-    }
-    
-    .radio-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .radio-option {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    
-    .radio-option:hover {
-      border-color: var(--accent);
-    }
-    
-    .radio-option input[type="radio"] {
-      cursor: pointer;
-    }
-    
-    .btn-group {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-    
-    .empty-state {
-      text-align: center;
-      padding: 48px;
-      color: var(--text-tertiary);
-    }
-    
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-    
-    .role-card {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-    
-    .role-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    
-    .role-title {
-      font-weight: 600;
-      font-size: 16px;
-    }
-    
-    .role-badge {
-      font-size: 12px;
-      padding: 4px 8px;
-      background: var(--bg-secondary);
-      border-radius: 4px;
-      color: var(--text-tertiary);
-    }
-    
-    .role-type {
-      font-size: 12px;
-      padding: 4px 8px;
-      background: var(--accent);
-      color: white;
-      border-radius: 4px;
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-    }
-    
-    .role-people {
-      color: var(--text-secondary);
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-    
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      background: var(--bg-secondary);
-      border-radius: 4px;
-      font-size: 12px;
-      color: var(--text-tertiary);
-    }
-    
-    .badge.success {
-      background: var(--success);
-      color: white;
-    }
-    
-    .badge.purple {
-      background: var(--purple);
-      color: white;
-    }
-    
-    .operator-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    
-    .operator-card {
-      padding: 12px;
-      background: var(--bg-tertiary);
-      border: 2px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    
-    .operator-card:hover {
-      border-color: var(--accent);
-    }
-    
-    .operator-card.selected {
-      border-color: var(--accent);
-      background: var(--bg-hover);
-    }
-    
-    .operator-name {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    
-    .operator-desc {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    
-    .columns {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-    }
-    
-    .info-box {
-      padding: 12px;
-      background: var(--bg-tertiary);
-      border-radius: 6px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-    
-    .tabs {
-      display: flex;
-      gap: 8px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-    
-    .tab {
-      padding: 10px 16px;
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.15s;
-    }
-    
-    .tab:hover {
-      color: var(--text-primary);
-    }
-    
-    .tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
-    
-    .consent-card {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--warning);
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-    
-    .consent-card.accepted {
-      border-left-color: var(--success);
-    }
-    
-    .consent-card.rejected {
-      border-left-color: var(--danger);
-    }
-    
-    .consent-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 12px;
-    }
-    
-    .consent-flow {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-    
-    .consent-contract {
-      background: var(--bg-secondary);
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      margin-top: 8px;
-    }
-    
-    .pattern-card {
-      background: var(--bg-tertiary);
-      border: 2px solid var(--purple);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .pattern-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-2px);
-    }
-    
-    .pattern-stats {
-      display: flex;
-      gap: 16px;
-      margin-top: 12px;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    
-    .pattern-stat {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    .chain-visual {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 12px 0;
-      font-size: 12px;
-      overflow-x: auto;
-      padding: 8px;
-      background: var(--bg-secondary);
-      border-radius: 4px;
-    }
-    
-    .chain-node {
-      padding: 6px 12px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      white-space: nowrap;
-    }
-    
-    .chain-arrow {
-      color: var(--text-tertiary);
-    }
-    
-    .notification-badge {
-      display: inline-block;
-      background: var(--danger);
-      color: white;
-      border-radius: 10px;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-left: 6px;
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <div class="header">
-      <h1 id="headerTitle">EVENT_OPERATOR</h1>
-      <p id="headerSubtitle">Activities first, roles emerge, flows connect</p>
-      <div class="operator-sequence" id="operatorSequence" style="display: none;">
-        <span style="color: var(--text-secondary); margin-right: 8px;">Nine-Operator Flow:</span>
-        <span class="operator-sequence-item">1. Starter</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">2. Doer</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">3. Connector</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">4. Reviewer</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">5. Approver</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">6. Documenter</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">7. Convener</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">8. Steward</span>
-        <span class="operator-sequence-arrow">→</span>
-        <span class="operator-sequence-item">9. Coordinator</span>
-        <span class="operator-sequence-arrow">↻</span>
-      </div>
-    </div>
-    
-    <!-- Setup View -->
-    <div id="setupView" class="section">
-      <div class="section-header">
-        <div class="section-title">Start a New Project</div>
-      </div>
-      <div class="form-group">
-        <label>What do you want to work on?</label>
-        <input type="text" id="projectName" class="input" placeholder="e.g., Community Newsletter" />
-      </div>
-      <div class="form-group">
-        <label>Who's working on this? (comma separated)</label>
-        <input type="text" id="teamMembers" class="input" placeholder="e.g., alex, pat, sam, jordan" />
-      </div>
-      <div class="form-group">
-        <label>What's your name?</label>
-        <input type="text" id="currentUser" class="input" placeholder="Your name" />
-      </div>
-      <button class="btn primary" onclick="createProject()">Create Project</button>
-    </div>
-    
-    <!-- Main View -->
-    <div id="mainView" style="display: none;">
-      
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('work')">Your Work</button>
-        <button class="tab" onclick="switchTab('consent')">Consent Queue<span id="consentBadge"></span></button>
-        <button class="tab" onclick="switchTab('patterns')">Pattern Library</button>
-        <button class="tab" onclick="switchTab('roles')">Roles</button>
-      </div>
-      
-      <!-- Work Tab -->
-      <div id="workTab" class="tab-content">
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Your Claimed Activities</div>
-            <button class="btn small primary" onclick="showNewActivityModal()">+ New Activity</button>
-          </div>
-          <div id="myActivities"></div>
-        </div>
-        
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">All Activities</div>
-          </div>
-          <div id="allActivities"></div>
-        </div>
-      </div>
-      
-      <!-- Consent Queue Tab -->
-      <div id="consentTab" class="tab-content" style="display: none;">
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Consent Queue</div>
-          </div>
-          <div class="info-box">
-            💡 Activities chain into other activities. The receiving role must consent before work flows through.
-          </div>
-          <div id="consentQueue"></div>
-        </div>
-      </div>
-      
-      <!-- Pattern Library Tab -->
-      <div id="patternsTab" class="tab-content" style="display: none;">
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Pattern Library</div>
-          </div>
-          <div class="info-box">
-            🔄 Flows that have completed successfully 3+ times become reusable patterns.
-          </div>
-          <div id="patternsList"></div>
-        </div>
-      </div>
-      
-      <!-- Roles Tab -->
-      <div id="rolesTab" class="tab-content" style="display: none;">
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Roles</div>
-            <button class="btn small" onclick="showCreateRoleModal()">+ Create Role</button>
-          </div>
-          <div id="rolesList"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- New Activity Modal -->
-  <div id="newActivityModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Create New Activity</h2>
-        <p style="color: var(--text-secondary); font-size: 14px;">What work needs to be done?</p>
-      </div>
-      <div class="form-group">
-        <label>Activity name</label>
-        <input type="text" id="newActivityTitle" class="input" placeholder="e.g., Write housing article" />
-      </div>
-      <div class="form-group">
-        <label>Which role does this work?</label>
-        <select id="newActivityRole" class="input">
-          <option value="_new">⭐ Create new role...</option>
-        </select>
-      </div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeNewActivityModal()">Cancel</button>
-        <button class="btn primary" onclick="createActivity()">Create Activity</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Quick Role Creation Modal -->
-  <div id="quickRoleModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Create New Role</h2>
-        <p style="color: var(--text-secondary); font-size: 14px;">Define the role for this activity</p>
-      </div>
-      <div class="info-box" style="background: var(--accent); color: white;">
-        ⭐ <strong>Creating a New Role</strong><br>
-        Roles are typed by operators. Select which type of work this role performs in the nine-operator sequence.
-      </div>
-      <div class="form-group">
-        <label>Role name</label>
-        <input type="text" id="quickRoleName" class="input" placeholder="e.g., Content Writer" />
-      </div>
-      <div class="form-group">
-        <label>What operator type is this role?</label>
-        <div id="quickOperatorGrid" class="operator-grid"></div>
-      </div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeQuickRoleModal()">Cancel</button>
-        <button class="btn primary" onclick="createQuickRole()">Create Role</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Create Role Modal -->
-  <div id="createRoleModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Create New Role</h2>
-        <p style="color: var(--text-secondary); font-size: 14px;">Roles are typed by operators</p>
-      </div>
-      <div class="form-group">
-        <label>Role name</label>
-        <input type="text" id="createRoleName" class="input" placeholder="e.g., Content Reviewer" />
-      </div>
-      <div class="form-group">
-        <label>Which operator type is this?</label>
-        <div id="createRoleOperatorGrid" class="operator-grid"></div>
-      </div>
-      <div class="form-group">
-        <label>Who's in this role? (comma separated)</label>
-        <input type="text" id="createRolePeople" class="input" placeholder="e.g., pat, jordan" />
-      </div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeCreateRoleModal()">Cancel</button>
-        <button class="btn primary" onclick="createRole()">Create Role</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Claim Activity Modal -->
-  <div id="claimActivityModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="claimActivityTitle">Activity</h2>
-        <p id="claimActivityRole" style="color: var(--text-secondary); font-size: 14px;"></p>
-      </div>
-      <div class="form-group">
-        <label>Priority</label>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="priority" value="high" />
-            <span>High - I'll focus on this</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="priority" value="medium" checked />
-            <span>Medium - Among other work</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="priority" value="low" />
-            <span>Low - When I have space</span>
-          </label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>When can you complete this?</label>
-        <input type="date" id="estimatedDate" class="input" />
-      </div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeClaimModal()">Cancel</button>
-        <button class="btn primary" onclick="claimActivity()">Start Working</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Complete Activity Modal -->
-  <div id="completeActivityModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="completeActivityTitle">Complete Activity</h2>
-      </div>
-      <div id="completeActivityContent"></div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeCompleteModal()">Cancel</button>
-        <button class="btn primary" onclick="completeActivity()">Done</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Create Flow Modal -->
-  <div id="createFlowModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Create Flow</h2>
-        <p style="color: var(--text-secondary); font-size: 14px;">What happens next?</p>
-      </div>
-      <div class="info-box" id="flowSequenceInfo">
-        🔄 Following the nine-operator sequence...
-      </div>
-      <div class="form-group">
-        <label>Next activity name</label>
-        <input type="text" id="nextActivityTitle" class="input" placeholder="e.g., Review article" />
-      </div>
-      <div class="form-group">
-        <label>Which role handles this? (filtered by next operator in sequence)</label>
-        <select id="nextActivityRole" class="input" onchange="handleFlowRoleSelectChange()">
-          <option value="_new">+ Create new role</option>
-        </select>
-      </div>
-      <div id="flowNewRoleSection" style="display: none;">
-        <div class="form-group">
-          <label>New role name</label>
-          <input type="text" id="flowNewRoleName" class="input" placeholder="e.g., Content Reviewer" />
-        </div>
-        <div class="form-group">
-          <label>Operator type (next in sequence)</label>
-          <div id="flowOperatorGrid" class="operator-grid"></div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Flow type</label>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="flowType" value="sequential" checked />
-            <span>Sequential → (one-way to next activity)</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="flowType" value="loop" />
-            <span>Loop ↻ (can return to previous activity)</span>
-          </label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Interface Contract (optional)</label>
-        <input type="text" id="flowContract" class="input" placeholder="e.g., Article draft + test evidence, complete within 48h" />
-      </div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeFlowModal()">Cancel</button>
-        <button class="btn primary" onclick="createFlow()">Propose Flow</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Consent Decision Modal -->
-  <div id="consentModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Review Chain Proposal</h2>
-      </div>
-      <div id="consentContent"></div>
-      <div class="form-group">
-        <label>Response</label>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="consentDecision" value="accept" checked />
-            <span>✓ Accept - Work can flow through</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="consentDecision" value="reject" />
-            <span>✗ Reject - Needs clarification</span>
-          </label>
-        </div>
-      </div>
-      <div id="rejectReasonSection" style="display: none;">
-        <div class="form-group">
-          <label>Rejection reason</label>
-          <select id="rejectReason" class="input">
-            <option value="scope">Scope unclear or misaligned</option>
-            <option value="quality">Quality standards not met</option>
-            <option value="timing">Timing or cadence mismatch</option>
-            <option value="capacity">Insufficient capacity</option>
-            <option value="jurisdiction">Outside my authority</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Notes (optional)</label>
-          <input type="text" id="rejectNotes" class="input" placeholder="Additional context..." />
-        </div>
-      </div>
-      <div class="btn-group">
-        <button class="btn" onclick="closeConsentModal()">Cancel</button>
-        <button class="btn primary" onclick="submitConsent()">Submit Decision</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Instantiate Pattern Modal -->
-  <div id="instantiatePatternModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="patternModalTitle">Instantiate Pattern</h2>
-      </div>
-      <div id="patternModalContent"></div>
-      <div class="btn-group">
-        <button class="btn" onclick="closePatternModal()">Cancel</button>
-        <button class="btn primary" onclick="instantiatePattern()">Create Flow</button>
-      </div>
-    </div>
-  </div>
+import React, { useState, useEffect } from 'react';
+import { Plus, CheckCircle, AlertCircle, TrendingDown, Zap, Users, GitBranch, Link, ChevronRight, X, ArrowLeft, Layers } from 'lucide-react';
 
-  <script>
-    // ========================================
-    // OPERATORS & OPCODES
-    // ========================================
-    
-    const OPERATORS = [
-      { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', opcode: 'DES', seq: 1 },
-      { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', opcode: 'INS', seq: 2 },
-      { id: 'connector', name: 'Connector', desc: 'Links work across contexts', opcode: 'CON', seq: 3 },
-      { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', opcode: 'SEG', seq: 4 },
-      { id: 'approver', name: 'Approver', desc: 'Alters state with authority', opcode: 'ALT', seq: 5 },
-      { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', opcode: 'REC', seq: 6 },
-      { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', opcode: 'CON', seq: 7 },
-      { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', opcode: 'SUP', seq: 8 },
-      { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', opcode: 'CON', seq: 9 }
-    ];
-    
-    function getNextOperatorTypes(currentOperatorType) {
-      const current = OPERATORS.find(op => op.id === currentOperatorType);
-      if (!current) return OPERATORS;
-      
-      const nextSeq = current.seq + 1;
-      if (nextSeq > 9) {
-        // Loop back to start
-        return OPERATORS.filter(op => op.seq === 1);
+const OPERATORS = [
+  { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', seq: 1, deliverableType: 'foundation' },
+  { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', seq: 2, deliverableType: 'core' },
+  { id: 'connector', name: 'Connector', desc: 'Links work across contexts', seq: 3, deliverableType: 'core' },
+  { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', seq: 4, deliverableType: 'foundation' },
+  { id: 'approver', name: 'Approver', desc: 'Alters state with authority', seq: 5, deliverableType: 'foundation' },
+  { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', seq: 6, deliverableType: 'foundation' },
+  { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', seq: 7, deliverableType: 'distribution' },
+  { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', seq: 8, deliverableType: 'distribution' },
+  { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, deliverableType: 'analytics' }
+];
+
+function getNextOperators(currentOperatorId) {
+  const current = OPERATORS.find(op => op.id === currentOperatorId);
+  if (!current) return OPERATORS;
+  const nextSeq = current.seq === 9 ? 1 : current.seq + 1;
+  return OPERATORS.filter(op => op.seq === nextSeq);
+}
+
+export default function EventOperator() {
+  const [view, setView] = useState('welcome');
+  const [currentUser, setCurrentUser] = useState('');
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedFlow, setSelectedFlow] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [showModal, setShowModal] = useState(null);
+  const [modalData, setModalData] = useState({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem('eo_v3_state');
+    if (saved) {
+      const state = JSON.parse(saved);
+      if (state.currentUser) {
+        setCurrentUser(state.currentUser);
+        setProjects(state.projects || []);
+        setRoles(state.roles || []);
+        setView('projects');
       }
-      
-      return OPERATORS.filter(op => op.seq === nextSeq);
     }
-    
-    const OPCODES = {
-      DES: 'DES', INS: 'INS', SEG: 'SEG', CON: 'CON',
-      ALT: 'ALT', REC: 'REC', SUP: 'SUP'
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('eo_v3_state', JSON.stringify({
+        currentUser,
+        projects,
+        roles
+      }));
+    }
+  }, [currentUser, projects, roles]);
+
+  // Update selectedProject when projects change
+  useEffect(() => {
+    if (selectedProject) {
+      const updated = projects.find(p => p.id === selectedProject.id);
+      if (updated) {
+        setSelectedProject(updated);
+      }
+    }
+  }, [projects]);
+
+  // Update selectedFlow when selectedProject changes
+  useEffect(() => {
+    if (selectedFlow && selectedProject) {
+      const updated = selectedProject.flows.find(f => f.id === selectedFlow.id);
+      if (updated) {
+        setSelectedFlow(updated);
+      }
+    }
+  }, [selectedProject]);
+
+  const createProject = (name, team, user) => {
+    const project = {
+      id: `project-${Date.now()}`,
+      name,
+      team,
+      createdBy: user,
+      createdAt: Date.now(),
+      flows: []
     };
-    
-    // ========================================
-    // EVENT SOURCING & STORAGE
-    // ========================================
-    
-    const STORAGE_KEY = 'eo_pm_events_v7';
-    let eventStore = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    let currentActivity = null;
-    let currentChain = null;
-    let currentPattern = null;
-    let currentUser = '';
-    let project = null;
-    let selectedOperator = null;
-    let activeTab = 'work';
-    
-    function recordEvent(event) {
-      const evt = {
-        id: 'evt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-        ts: Date.now(),
-        ...event
-      };
-      eventStore.push(evt);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(eventStore));
-      return evt;
-    }
-    
-    // ========================================
-    // STATE PROJECTION
-    // ========================================
-    
-    function projectRoles() {
-      const roles = {};
-      
-      eventStore.forEach(e => {
-        if (e.type === 'role_created') {
-          roles[e.role_id] = {
-            id: e.role_id,
-            name: e.role_name,
-            operator_type: e.operator_type,
-            people: e.people || [],
-            created_by: e.actor
-          };
-        }
-        if (e.type === 'person_joined_role') {
-          if (roles[e.role_id] && !roles[e.role_id].people.includes(e.person)) {
-            roles[e.role_id].people.push(e.person);
-          }
-        }
-      });
-      
-      return roles;
-    }
-    
-    function projectActivity(activityId) {
-      const events = eventStore.filter(e => e.activity_id === activityId).sort((a, b) => a.ts - b.ts);
-      const state = {
-        id: activityId,
-        title: '',
-        role_id: null,
-        status: 'unclaimed',
-        claimed_by: null,
-        priority: null,
-        estimated_completion: null,
-        completed_at: null,
-        next_activity: null,
-        flow_type: null,
-        created_by: null
-      };
-      
-      for (const e of events) {
-        if (e.type === 'activity_created') {
-          state.title = e.title;
-          state.role_id = e.role_id;
-          state.created_by = e.actor;
-        }
-        if (e.type === 'activity_claimed') {
-          state.status = 'claimed';
-          state.claimed_by = e.person;
-          state.priority = e.priority;
-          state.estimated_completion = e.estimated_completion;
-        }
-        if (e.type === 'activity_completed') {
-          state.status = 'completed';
-          state.completed_at = e.ts;
-        }
-        if (e.type === 'flow_created') {
-          state.next_activity = e.next_activity_id;
-          state.flow_type = e.flow_type;
-        }
+    setProjects([...projects, project]);
+    setCurrentUser(user);
+    setView('projects');
+  };
+
+  const createFlow = (projectId, name, deliverables, description) => {
+    setProjects(prevProjects => prevProjects.map(p => {
+      if (p.id === projectId) {
+        const flow = {
+          id: `flow-${Date.now()}`,
+          name,
+          deliverables,
+          description,
+          createdBy: currentUser,
+          createdAt: Date.now(),
+          activities: []
+        };
+        return { ...p, flows: [...p.flows, flow] };
       }
-      
-      return state;
-    }
-    
-    function getAllActivities() {
-      const activityIds = new Set();
-      eventStore.forEach(e => {
-        if (e.activity_id) activityIds.add(e.activity_id);
-      });
-      return Array.from(activityIds).map(projectActivity);
-    }
-    
-    function projectChain(chainId) {
-      const events = eventStore.filter(e => e.chain_id === chainId).sort((a, b) => a.ts - b.ts);
-      const state = {
-        id: chainId,
-        from_activity_id: null,
-        to_activity_id: null,
-        contract: null,
-        status: 'pending',
-        proposed_by: null,
-        decided_by: null,
-        reject_reason: null,
-        reject_notes: null,
-        created_at: null
-      };
-      
-      for (const e of events) {
-        if (e.type === 'chain_proposed') {
-          state.from_activity_id = e.from_activity_id;
-          state.to_activity_id = e.to_activity_id;
-          state.contract = e.contract;
-          state.proposed_by = e.actor;
-          state.created_at = e.ts;
-        }
-        if (e.type === 'chain_accepted') {
-          state.status = 'accepted';
-          state.decided_by = e.actor;
-        }
-        if (e.type === 'chain_rejected') {
-          state.status = 'rejected';
-          state.decided_by = e.actor;
-          state.reject_reason = e.reason;
-          state.reject_notes = e.notes;
-        }
+      return p;
+    }));
+  };
+
+  const createActivity = (projectId, flowId, title, roleId, accountabilities = [], deliverable = '', timing = null) => {
+    setProjects(projects.map(p => {
+      if (p.id === projectId) {
+        return {
+          ...p,
+          flows: p.flows.map(f => {
+            if (f.id === flowId) {
+              const activity = {
+                id: `activity-${Date.now()}`,
+                title,
+                roleId,
+                accountabilities,
+                deliverable,
+                timing,
+                status: 'unclaimed',
+                claimedBy: null,
+                priority: null,
+                createdBy: currentUser,
+                createdAt: Date.now()
+              };
+              return { ...f, activities: [...f.activities, activity] };
+            }
+            return f;
+          })
+        };
       }
-      
-      return state;
-    }
-    
-    function getAllChains() {
-      const chainIds = new Set();
-      eventStore.forEach(e => {
-        if (e.chain_id) chainIds.add(e.chain_id);
-      });
-      return Array.from(chainIds).map(projectChain);
-    }
-    
-    function getPendingChainsForUser(person) {
-      const roles = projectRoles();
-      const myRoleIds = Object.values(roles)
-        .filter(r => r.people.includes(person))
-        .map(r => r.id);
-      
-      return getAllChains().filter(chain => {
-        if (chain.status !== 'pending') return false;
-        const toActivity = projectActivity(chain.to_activity_id);
-        return myRoleIds.includes(toActivity.role_id);
-      });
-    }
-    
-    function projectPattern(patternId) {
-      const events = eventStore.filter(e => e.pattern_id === patternId).sort((a, b) => a.ts - b.ts);
-      const state = {
-        id: patternId,
-        name: null,
-        chain_topology: [],
-        success_count: 0,
-        avg_cycle_time: null,
-        created_at: null
-      };
-      
-      for (const e of events) {
-        if (e.type === 'pattern_promoted') {
-          state.name = e.pattern_name;
-          state.chain_topology = e.chain_topology;
-          state.success_count = e.success_count;
-          state.created_at = e.ts;
-        }
-        if (e.type === 'pattern_instantiated') {
-          state.success_count++;
-        }
+      return p;
+    }));
+  };
+
+  const createRole = (name, operatorType, people = []) => {
+    const role = {
+      id: `role-${Date.now()}`,
+      name,
+      operatorType,
+      people: [...people, currentUser],
+      createdBy: currentUser
+    };
+    setRoles([...roles, role]);
+    return role;
+  };
+
+  const claimActivity = (projectId, flowId, activityId, priority) => {
+    setProjects(projects.map(p => {
+      if (p.id === projectId) {
+        return {
+          ...p,
+          flows: p.flows.map(f => {
+            if (f.id === flowId) {
+              return {
+                ...f,
+                activities: f.activities.map(a =>
+                  a.id === activityId
+                    ? { ...a, status: 'claimed', claimedBy: currentUser, priority }
+                    : a
+                )
+              };
+            }
+            return f;
+          })
+        };
       }
-      
-      return state;
-    }
-    
-    function getAllPatterns() {
-      const patternIds = new Set();
-      eventStore.forEach(e => {
-        if (e.pattern_id) patternIds.add(e.pattern_id);
-      });
-      return Array.from(patternIds).map(projectPattern);
-    }
-    
-    function detectPatternPromotion() {
-      const completedFlows = {};
-      
-      eventStore.forEach(e => {
-        if (e.type === 'flow_created') {
-          const fromActivity = projectActivity(e.activity_id);
-          const toActivity = projectActivity(e.next_activity_id);
-          if (!fromActivity || !toActivity) return;
-          
-          const fromRole = projectRoles()[fromActivity.role_id];
-          const toRole = projectRoles()[toActivity.role_id];
-          if (!fromRole || !toRole) return;
-          
-          const topologyKey = `${fromRole.operator_type}->${toRole.operator_type}`;
-          
-          if (!completedFlows[topologyKey]) {
-            completedFlows[topologyKey] = {
-              count: 0,
-              roles: [fromRole, toRole],
-              examples: []
-            };
-          }
-          
-          completedFlows[topologyKey].count++;
-          completedFlows[topologyKey].examples.push({
-            from: fromActivity.title,
-            to: toActivity.title
-          });
-        }
-      });
-      
-      Object.entries(completedFlows).forEach(([key, data]) => {
-        if (data.count >= 3) {
-          const existingPattern = getAllPatterns().find(p => 
-            p.chain_topology.map(r => r.operator_type).join('->') === key
-          );
-          
-          if (!existingPattern) {
-            const patternId = 'pattern-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-            const patternName = `${data.roles[0].name} → ${data.roles[1].name} Flow`;
-            
-            recordEvent({
-              type: 'pattern_promoted',
-              pattern_id: patternId,
-              pattern_name: patternName,
-              chain_topology: data.roles.map(r => ({
-                operator_type: r.operator_type,
-                role_name: r.name
-              })),
-              success_count: data.count,
-              actor: 'system',
-              ops: [OPCODES.REC, OPCODES.SUP]
-            });
-          }
-        }
-      });
-    }
-    
-    function getActivitiesForRole(roleId) {
-      return getAllActivities().filter(a => a.role_id === roleId && a.status !== 'completed');
-    }
-    
-    function getMyActivities(person) {
-      return getAllActivities().filter(a => a.claimed_by === person && a.status === 'claimed');
-    }
-    
-    function canClaimActivity(activity, person) {
-      if (activity.status !== 'unclaimed') return false;
-      const roles = projectRoles();
-      const role = roles[activity.role_id];
-      return role && role.people.includes(person);
-    }
-    
-    // ========================================
-    // UI RENDERING
-    // ========================================
-    
-    function createProject() {
-      const name = document.getElementById('projectName').value.trim();
-      const teamStr = document.getElementById('teamMembers').value.trim();
-      const user = document.getElementById('currentUser').value.trim();
-      
-      if (!name || !user) {
-        alert('Please fill in project name and your name');
-        return;
+      return p;
+    }));
+  };
+
+  const completeActivity = (projectId, flowId, activityId) => {
+    setProjects(projects.map(p => {
+      if (p.id === projectId) {
+        return {
+          ...p,
+          flows: p.flows.map(f => {
+            if (f.id === flowId) {
+              return {
+                ...f,
+                activities: f.activities.map(a =>
+                  a.id === activityId
+                    ? { ...a, status: 'completed', completedAt: Date.now() }
+                    : a
+                )
+              };
+            }
+            return f;
+          })
+        };
       }
-      
-      currentUser = user;
-      const team = teamStr ? teamStr.split(',').map(s => s.trim()) : [user];
-      
-      project = { name, team };
-      
-      recordEvent({
-        type: 'project_created',
-        project_name: name,
-        team: team,
-        created_by: user,
-        ops: [OPCODES.DES, OPCODES.INS]
-      });
-      
-      document.getElementById('headerTitle').textContent = name;
-      document.getElementById('headerSubtitle').textContent = `Team: ${team.join(', ')}`;
-      document.getElementById('operatorSequence').style.display = 'flex';
-      
-      document.getElementById('setupView').style.display = 'none';
-      document.getElementById('mainView').style.display = 'block';
-      
-      renderAll();
-    }
-    
-    function renderAll() {
-      detectPatternPromotion();
-      renderMyActivities();
-      renderAllActivities();
-      renderRoles();
-      renderConsentQueue();
-      renderPatterns();
-      updateConsentBadge();
-    }
-    
-    function switchTab(tab) {
-      activeTab = tab;
-      const allTabs = document.querySelectorAll('.tab');
-      const allContent = document.querySelectorAll('.tab-content');
-      
-      allTabs.forEach(t => t.classList.remove('active'));
-      allContent.forEach(t => t.style.display = 'none');
-      
-      if (tab === 'work') {
-        allTabs[0].classList.add('active');
-        document.getElementById('workTab').style.display = 'block';
-      } else if (tab === 'consent') {
-        allTabs[1].classList.add('active');
-        document.getElementById('consentTab').style.display = 'block';
-      } else if (tab === 'patterns') {
-        allTabs[2].classList.add('active');
-        document.getElementById('patternsTab').style.display = 'block';
-      } else if (tab === 'roles') {
-        allTabs[3].classList.add('active');
-        document.getElementById('rolesTab').style.display = 'block';
-      }
-    }
-    
-    function updateConsentBadge() {
-      const pending = getPendingChainsForUser(currentUser);
-      const badge = document.getElementById('consentBadge');
-      if (pending.length > 0) {
-        badge.innerHTML = `<span class="notification-badge">${pending.length}</span>`;
-      } else {
-        badge.innerHTML = '';
-      }
-    }
-    
-    function renderMyActivities() {
-      const myActivities = getMyActivities(currentUser);
-      const container = document.getElementById('myActivities');
-      
-      if (myActivities.length === 0) {
-        container.innerHTML = `
-          <div style="color: var(--text-secondary); font-size: 14px;">
-            No activities claimed yet. Claim an activity from below or create a new one.
-          </div>
-        `;
-        return;
-      }
-      
-      container.innerHTML = '<div class="activity-pool">' + myActivities.map(renderActivityCard).join('') + '</div>';
-    }
-    
-    function renderAllActivities() {
-      const activities = getAllActivities();
-      const container = document.getElementById('allActivities');
-      
-      if (activities.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📋</div>
-            <div>No activities yet. Create your first activity to get started!</div>
-          </div>
-        `;
-        return;
-      }
-      
-      const unclaimed = activities.filter(a => a.status === 'unclaimed');
-      const claimed = activities.filter(a => a.status === 'claimed');
-      const completed = activities.filter(a => a.status === 'completed');
-      
-      let html = '';
-      
-      if (unclaimed.length > 0) {
-        html += '<h3 style="margin-bottom: 12px; color: var(--text-secondary);">Available to Claim</h3>';
-        html += '<div class="activity-pool">' + unclaimed.map(renderActivityCard).join('') + '</div>';
-      }
-      
-      if (claimed.length > 0) {
-        html += '<h3 style="margin: 24px 0 12px; color: var(--text-secondary);">In Progress</h3>';
-        html += '<div class="activity-pool">' + claimed.map(renderActivityCard).join('') + '</div>';
-      }
-      
-      if (completed.length > 0) {
-        html += '<h3 style="margin: 24px 0 12px; color: var(--text-secondary);">Completed</h3>';
-        html += '<div class="activity-pool">' + completed.slice(-5).reverse().map(renderActivityCard).join('') + '</div>';
-      }
-      
-      container.innerHTML = html;
-    }
-    
-    function renderActivityCard(activity) {
-      const roles = projectRoles();
-      const role = roles[activity.role_id];
-      const isMine = activity.claimed_by === currentUser;
-      const canClaim = canClaimActivity(activity, currentUser);
-      const canChain = activity.status !== 'completed' && !activity.next_activity;
-      
-      const onclick = canClaim ? `showClaimModal('${activity.id}')` :
-                      isMine ? `showCompleteModal('${activity.id}')` :
-                      '';
-      
-      let statusText = '';
-      let statusClass = '';
-      
-      if (activity.status === 'completed') {
-        statusText = '✓ Done';
-      } else if (isMine) {
-        statusText = 'You';
-        statusClass = 'claimed';
-      } else if (activity.claimed_by) {
-        statusText = activity.claimed_by;
-        statusClass = 'claimed';
-      } else {
-        statusText = 'Available';
-      }
-      
-      let meta = '';
-      if (role) {
-        const operator = OPERATORS.find(op => op.id === role.operator_type);
-        meta += `<span class="badge">${role.name} : ${operator?.name}</span> `;
-        meta += `<span class="badge" style="background: var(--accent); color: white;">${operator?.seq}</span> `;
-      }
-      if (activity.priority) {
-        meta += `<span class="badge">${activity.priority}</span> `;
-      }
-      if (activity.next_activity) {
-        const nextActivity = projectActivity(activity.next_activity);
-        const nextRole = roles[nextActivity?.role_id];
-        const flowIcon = activity.flow_type === 'loop' ? '↻' : '→';
-        meta += `<span class="badge purple">Flow ${flowIcon} ${nextRole?.name || 'next'}</span>`;
-      }
-      
-      const cardClass = activity.next_activity ? 'in-flow' : (statusClass || '');
-      
-      return `
-        <div class="activity-card ${cardClass}" ${onclick ? `onclick="${onclick}"` : ''} style="${!onclick ? 'cursor: default;' : ''}">
-          <div class="activity-header">
-            <div class="activity-title">${activity.title}</div>
-            <div class="activity-status ${statusClass}">${statusText}</div>
-          </div>
-          ${meta ? `<div class="activity-meta">${meta}</div>` : ''}
-          ${canChain && (isMine || activity.status === 'unclaimed') ? `
-            <div style="margin-top: 12px;">
-              <button class="btn small" onclick="event.stopPropagation(); showFlowModal('${activity.id}')">⛓️ Chain to Next</button>
-            </div>
-          ` : ''}
+      return p;
+    }));
+  };
+
+  const joinRole = (roleId) => {
+    setRoles(roles.map(r =>
+      r.id === roleId && !r.people.includes(currentUser)
+        ? { ...r, people: [...r.people, currentUser] }
+        : r
+    ));
+  };
+
+  const getProject = (projectId) => projects.find(p => p.id === projectId);
+  const getFlow = (projectId, flowId) => {
+    const project = getProject(projectId);
+    return project?.flows.find(f => f.id === flowId);
+  };
+
+  let mainContent;
+
+  if (view === 'welcome') {
+    mainContent = <WelcomeView onCreate={createProject} />;
+  } else if (view === 'projects') {
+    mainContent = (
+      <ProjectsView
+        projects={projects}
+        currentUser={currentUser}
+        onSelectProject={(project) => {
+          setSelectedProject(project);
+          setView('flows');
+        }}
+        onCreateProject={() => setShowModal('createProject')}
+      />
+    );
+  } else if (view === 'flows' && selectedProject) {
+    mainContent = (
+      <FlowsView
+        project={selectedProject}
+        currentUser={currentUser}
+        onBack={() => {
+          setSelectedProject(null);
+          setView('projects');
+        }}
+        onSelectFlow={(flow) => {
+          setSelectedFlow(flow);
+          setView('activities');
+        }}
+        onCreateFlow={() => setShowModal('createFlow')}
+      />
+    );
+  } else if (view === 'activities' && selectedProject && selectedFlow) {
+    mainContent = (
+      <ActivitiesView
+        project={selectedProject}
+        flow={selectedFlow}
+        roles={roles}
+        currentUser={currentUser}
+        onBack={() => {
+          setSelectedFlow(null);
+          setView('flows');
+        }}
+        onCreateActivity={() => setShowModal('createActivity')}
+        onClaimActivity={(activityId) => {
+          setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId });
+          setShowModal('claimActivity');
+        }}
+        onCompleteActivity={(activityId) => {
+          completeActivity(selectedProject.id, selectedFlow.id, activityId);
+        }}
+        onUpdateProjects={setProjects}
+        projects={projects}
+      />
+    );
+  }
+
+  return (
+    <>
+      {mainContent}
+
+      {showModal === 'createProject' && (
+        <CreateProjectModal
+          onClose={() => setShowModal(null)}
+          onCreate={(name, team) => {
+            createProject(name, team, currentUser);
+            setShowModal(null);
+          }}
+        />
+      )}
+
+      {showModal === 'createFlow' && selectedProject && (
+        <CreateFlowModal
+          onClose={() => setShowModal(null)}
+          onCreate={(name, deliverables, description) => {
+            createFlow(selectedProject.id, name, deliverables, description);
+            setShowModal(null);
+          }}
+        />
+      )}
+
+      {showModal === 'createActivity' && selectedProject && selectedFlow && (
+        <CreateActivityModal
+          project={selectedProject}
+          flow={selectedFlow}
+          roles={roles}
+          onClose={() => setShowModal(null)}
+          onCreate={(title, roleId, accountabilities, deliverable, timing) => {
+            createActivity(selectedProject.id, selectedFlow.id, title, roleId, accountabilities, deliverable, timing);
+            setShowModal(null);
+          }}
+          onCreateRole={createRole}
+        />
+      )}
+
+      {showModal === 'claimActivity' && selectedFlow && (
+        <ClaimActivityModal
+          activity={selectedFlow.activities.find(a => a.id === modalData.activityId)}
+          roles={roles}
+          onClose={() => {
+            setShowModal(null);
+            setModalData({});
+          }}
+          onClaim={(priority) => {
+            claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority);
+            setShowModal(null);
+            setModalData({});
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function WelcomeView({ onCreate }) {
+  const [projectName, setProjectName] = useState('');
+  const [team, setTeam] = useState('');
+  const [userName, setUserName] = useState('');
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">EVENT_OPERATOR</h1>
+          <p className="text-gray-300 text-lg">Projects contain flows, flows contain activities</p>
         </div>
-      `;
-    }
-    
-    function renderRoles() {
-      const roles = Object.values(projectRoles());
-      const container = document.getElementById('rolesList');
-      
-      if (roles.length === 0) {
-        container.innerHTML = `
-          <div style="color: var(--text-secondary);">
-            No roles yet. Create an activity - roles will emerge.
-          </div>
-        `;
-        return;
-      }
-      
-      container.innerHTML = '<div class="columns">' + roles.map(role => {
-        const operator = OPERATORS.find(op => op.id === role.operator_type);
-        const activities = getActivitiesForRole(role.id);
-        
-        return `
-          <div class="role-card">
-            <div class="role-header">
-              <div>
-                <div class="role-title">${role.name} : ${operator?.name}</div>
-                ${operator ? `<div class="role-type">Step ${operator.seq}</div>` : ''}
-              </div>
-              <div class="role-badge">${activities.length} activit${activities.length !== 1 ? 'ies' : 'y'}</div>
-            </div>
-            <div class="role-people">
-              ${role.people.length > 0 ? role.people.join(', ') : 'No one assigned'}
-            </div>
-            ${!role.people.includes(currentUser) ? `<button class="btn small" onclick="joinRole('${role.id}')" style="margin-top: 8px;">Join Role</button>` : ''}
-          </div>
-        `;
-      }).join('') + '</div>';
-    }
-    
-    function renderConsentQueue() {
-      const container = document.getElementById('consentQueue');
-      const roles = projectRoles();
-      const myRoleIds = Object.values(roles)
-        .filter(r => r.people.includes(currentUser))
-        .map(r => r.id);
-      
-      const allChains = getAllChains();
-      const myChains = allChains.filter(chain => {
-        const toActivity = projectActivity(chain.to_activity_id);
-        return myRoleIds.includes(toActivity.role_id);
-      });
-      
-      const pending = myChains.filter(c => c.status === 'pending');
-      const accepted = myChains.filter(c => c.status === 'accepted');
-      const rejected = myChains.filter(c => c.status === 'rejected');
-      
-      if (myChains.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">🔗</div>
-            <div>No chain proposals yet. Complete activities and create flows to see them here.</div>
-          </div>
-        `;
-        return;
-      }
-      
-      let html = '';
-      
-      if (pending.length > 0) {
-        html += '<h3 style="margin-bottom: 12px; color: var(--warning);">⏳ Pending Your Decision</h3>';
-        html += pending.map(renderConsentCard).join('');
-      }
-      
-      if (accepted.length > 0) {
-        html += '<h3 style="margin: 24px 0 12px; color: var(--success);">✓ Accepted</h3>';
-        html += accepted.slice(-3).reverse().map(renderConsentCard).join('');
-      }
-      
-      if (rejected.length > 0) {
-        html += '<h3 style="margin: 24px 0 12px; color: var(--danger);">✗ Rejected</h3>';
-        html += rejected.slice(-3).reverse().map(renderConsentCard).join('');
-      }
-      
-      container.innerHTML = html;
-    }
-    
-    function renderConsentCard(chain) {
-      const fromActivity = projectActivity(chain.from_activity_id);
-      const toActivity = projectActivity(chain.to_activity_id);
-      const roles = projectRoles();
-      const fromRole = roles[fromActivity?.role_id];
-      const toRole = roles[toActivity?.role_id];
-      const fromOp = OPERATORS.find(op => op.id === fromRole?.operator_type);
-      const toOp = OPERATORS.find(op => op.id === toRole?.operator_type);
-      
-      const isPending = chain.status === 'pending';
-      const statusClass = chain.status;
-      
-      return `
-        <div class="consent-card ${statusClass}">
-          <div class="consent-header">
+
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
+          <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
+          
+          <div className="space-y-4 mb-6">
             <div>
-              <div style="font-weight: 600; margin-bottom: 4px;">
-                ${fromActivity?.title || 'Unknown'} → ${toActivity?.title || 'Unknown'}
-              </div>
-              <div class="consent-flow">
-                <span class="badge">${fromRole?.name} : ${fromOp?.name}</span> →
-                <span class="badge">${toRole?.name} : ${toOp?.name}</span>
-              </div>
+              <label className="block text-sm text-gray-300 mb-2">Project name</label>
+              <input
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="e.g., Marketing, Product Development"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Team members (comma separated)</label>
+              <input
+                type="text"
+                value={team}
+                onChange={(e) => setTeam(e.target.value)}
+                placeholder="e.g., alex, pat, sam"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Your name</label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Your name"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+              />
             </div>
           </div>
-          ${chain.contract ? `
-            <div class="consent-contract">
-              <strong>Contract:</strong> ${chain.contract}
-            </div>
-          ` : ''}
-          ${chain.status === 'rejected' ? `
-            <div style="margin-top: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 13px;">
-              <strong>Reason:</strong> ${chain.reject_reason}<br>
-              ${chain.reject_notes ? `<strong>Notes:</strong> ${chain.reject_notes}` : ''}
-            </div>
-          ` : ''}
-          ${isPending ? `
-            <div style="margin-top: 12px;">
-              <button class="btn small primary" onclick="showConsentModal('${chain.id}')">Review</button>
-            </div>
-          ` : ''}
+
+          <button
+            onClick={() => {
+              if (projectName && userName) {
+                const teamList = team ? team.split(',').map(s => s.trim()) : [userName];
+                onCreate(projectName, teamList, userName);
+              }
+            }}
+            disabled={!projectName || !userName}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
+          >
+            Create Project
+          </button>
         </div>
-      `;
-    }
-    
-    function renderPatterns() {
-      const container = document.getElementById('patternsList');
-      const patterns = getAllPatterns();
-      
-      if (patterns.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">🔄</div>
-            <div>No patterns yet. Complete similar flows 3+ times to promote them into reusable patterns.</div>
+
+        <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
+          <p className="text-sm text-gray-300 leading-relaxed">
+            Projects organize related coordination cycles. Within each project, you will create flows that represent complete coordination cycles moving through the nine-operator sequence. Each flow produces up to three deliverables.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectsView({ projects, currentUser, onSelectProject, onCreateProject }) {
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">Projects</h1>
+            <p className="text-gray-300">You: {currentUser}</p>
           </div>
-        `;
-        return;
-      }
-      
-      container.innerHTML = patterns.map(pattern => {
-        return `
-          <div class="pattern-card" onclick="showPatternModal('${pattern.id}')">
-            <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 8px;">
-              <div>
-                <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${pattern.name}</div>
-                <div class="chain-visual">
-                  ${pattern.chain_topology.map((r, i) => {
-                    const op = OPERATORS.find(o => o.id === r.operator_type);
-                    return `
-                      <span class="chain-node">${r.role_name} : ${op?.name}</span>
-                      ${i < pattern.chain_topology.length - 1 ? '<span class="chain-arrow">→</span>' : ''}
-                    `;
-                  }).join('')}
+          <button
+            onClick={onCreateProject}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Project
+          </button>
+        </div>
+
+        {projects.length === 0 ? (
+          <div className="text-center py-20">
+            <Layers className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 mb-4">No projects yet</p>
+            <button
+              onClick={onCreateProject}
+              className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
+            >
+              Create Your First Project
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map(project => (
+              <div
+                key={project.id}
+                onClick={() => onSelectProject(project)}
+                className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
+              >
+                <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
+                <p className="text-sm text-gray-300 mb-4">
+                  Team: {project.team.join(', ')}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">{project.flows.length} flows</span>
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FlowsView({ project, currentUser, onBack, onSelectFlow, onCreateFlow }) {
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <div className="max-w-7xl mx-auto p-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Projects
+        </button>
+
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">{project.name}</h1>
+            <p className="text-gray-300">Coordination Flows</p>
+          </div>
+          <button
+            onClick={onCreateFlow}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Flow
+          </button>
+        </div>
+
+        {project.flows.length === 0 ? (
+          <div className="text-center py-20">
+            <GitBranch className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 mb-4">No flows yet</p>
+            <button
+              onClick={onCreateFlow}
+              className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
+            >
+              Create Your First Flow
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {project.flows.map(flow => {
+              const completedActivities = flow.activities.filter(a => a.status === 'completed').length;
+              const totalActivities = flow.activities.length;
+              
+              return (
+                <div
+                  key={flow.id}
+                  onClick={() => onSelectFlow(flow)}
+                  className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
+                >
+                  <h3 className="text-lg font-semibold mb-2">{flow.name}</h3>
+                  {flow.description && (
+                    <p className="text-sm text-gray-300 mb-4">{flow.description}</p>
+                  )}
+                  
+                  <div className="mb-4">
+                    <div className="text-xs text-gray-400 mb-2">Deliverables:</div>
+                    <div className="space-y-1">
+                      {flow.deliverables.map((deliverable, idx) => (
+                        <div key={idx} className="text-sm text-gray-200">
+                          • {deliverable}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">
+                      {totalActivities} activities ({completedActivities} completed)
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onClaimActivity, onCompleteActivity }) {
+  const groupedActivities = {};
+  
+  OPERATORS.forEach(op => {
+    groupedActivities[op.id] = flow.activities.filter(activity => {
+      const role = roles.find(r => r.id === activity.roleId);
+      return role?.operatorType === op.id;
+    });
+  });
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <div className="max-w-7xl mx-auto p-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Flows
+        </button>
+
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <div className="text-sm text-gray-400 mb-1">{project.name}</div>
+              <h1 className="text-2xl font-bold mb-2">{flow.name}</h1>
+              {flow.description && (
+                <p className="text-gray-300">{flow.description}</p>
+              )}
             </div>
-            <div class="pattern-stats">
-              <div class="pattern-stat">
-                <span>✓</span>
-                <span>${pattern.success_count} completions</span>
+            <button
+              onClick={onCreateActivity}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Activity
+            </button>
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-300 mb-2">Flow Deliverables:</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {flow.deliverables.map((deliverable, idx) => (
+                <div key={idx} className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-200">
+                  {deliverable}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {OPERATORS.map(operator => (
+            <div key={operator.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-semibold">{operator.seq}. {operator.name}</h3>
+                  <span className="text-xs bg-gray-800 px-2 py-1 rounded">
+                    {groupedActivities[operator.id]?.length || 0}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-300">{operator.desc}</p>
+                <div className="text-xs text-gray-400 mt-1">
+                  Contributes to: {operator.deliverableType} deliverables
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {groupedActivities[operator.id]?.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">No activities</p>
+                ) : (
+                  groupedActivities[operator.id]?.map(activity => {
+                    const role = roles.find(r => r.id === activity.roleId);
+                    return (
+                      <ActivityCard
+                        key={activity.id}
+                        activity={activity}
+                        role={role}
+                        currentUser={currentUser}
+                        onClaim={onClaimActivity}
+                        onComplete={onCompleteActivity}
+                      />
+                    );
+                  })
+                )}
               </div>
             </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActivityCard({ activity, role, currentUser, onClaim, onComplete }) {
+  const isMine = activity.claimedBy === currentUser;
+  const canClaim = activity.status === 'unclaimed' && role?.people.includes(currentUser);
+
+  const getTimingDisplay = () => {
+    if (!activity.timing) return null;
+    if (activity.timing.type === 'estimated') {
+      return `~${activity.timing.hours}h`;
+    } else {
+      const date = new Date(activity.timing.date);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="font-medium text-sm">{activity.title}</h4>
+        <span className={`text-xs px-2 py-0.5 rounded ${
+          activity.status === 'completed' ? 'bg-green-900 text-green-300' :
+          isMine ? 'bg-blue-900 text-blue-300' :
+          activity.claimedBy ? 'bg-gray-700 text-gray-300' :
+          'bg-gray-700 text-gray-300'
+        }`}>
+          {activity.status === 'completed' ? '✓ Done' :
+           isMine ? 'You' :
+           activity.claimedBy || 'Available'}
+        </span>
+      </div>
+
+      {role && (
+        <div className="text-xs text-gray-300 mb-2">
+          {role.name} • {role.people.join(', ')}
+        </div>
+      )}
+
+      {activity.deliverable && (
+        <div className="text-xs text-gray-200 mb-2">
+          <span className="text-gray-400">Delivers:</span> {activity.deliverable}
+        </div>
+      )}
+
+      {activity.accountabilities && activity.accountabilities.length > 0 && (
+        <div className="text-xs text-gray-300 mb-2">
+          <div className="text-gray-400 mb-1">Accountabilities:</div>
+          <ul className="space-y-0.5 ml-3">
+            {activity.accountabilities.slice(0, 2).map((acc, idx) => (
+              <li key={idx} className="list-disc">{acc}</li>
+            ))}
+            {activity.accountabilities.length > 2 && (
+              <li className="text-gray-400">+{activity.accountabilities.length - 2} more</li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {activity.timing && (
+        <div className="text-xs text-gray-400 mb-2">
+          {getTimingDisplay()}
+        </div>
+      )}
+
+      <div className="flex gap-2 mt-2">
+        {canClaim && (
+          <button
+            onClick={() => onClaim(activity.id)}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors"
+          >
+            Claim
+          </button>
+        )}
+        {isMine && activity.status === 'claimed' && (
+          <button
+            onClick={() => onComplete(activity.id)}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors"
+          >
+            Complete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CreateProjectModal({ onClose, onCreate }) {
+  const [name, setName] = useState('');
+  const [team, setTeam] = useState('');
+
+  return (
+    <Modal onClose={onClose} title="Create Project">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm text-gray-200 mb-2">Project name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Marketing, Product Development"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
+          <input
+            type="text"
+            value={team}
+            onChange={(e) => setTeam(e.target.value)}
+            placeholder="e.g., alex, pat, sam"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+          />
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (name) {
+                const teamList = team ? team.split(',').map(s => s.trim()) : [];
+                onCreate(name, teamList);
+              }
+            }}
+            disabled={!name}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+          >
+            Create Project
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function CreateFlowModal({ onClose, onCreate }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [deliverables, setDeliverables] = useState(['', '', '']);
+
+  return (
+    <Modal onClose={onClose} title="Create Flow" size="large">
+      <div className="space-y-4">
+        <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
+          <p className="text-sm text-gray-100">
+            Flows represent complete coordination cycles through the nine-operator sequence. Define up to three deliverables that this flow will produce.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-200 mb-2">Flow name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Newsletter Creation, Product Launch"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-200 mb-2">Description (optional)</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Brief description of this coordination cycle"
+            rows={2}
+            className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-200 mb-2">
+            Flow Deliverables (1-3 required)
+          </label>
+          <div className="space-y-2">
+            {deliverables.map((deliverable, idx) => (
+              <input
+                key={idx}
+                type="text"
+                value={deliverable}
+                onChange={(e) => {
+                  const updated = [...deliverables];
+                  updated[idx] = e.target.value;
+                  setDeliverables(updated);
+                }}
+                placeholder={
+                  idx === 0 ? 'e.g., Published article' :
+                  idx === 1 ? 'e.g., Social media promotion package' :
+                  'e.g., Performance analytics report'
+                }
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400"
+              />
+            ))}
           </div>
-        `;
-      }).join('');
-    }
-    
-    function selectOperator(containerId, operatorId) {
-      selectedOperator = operatorId;
-      document.querySelectorAll(`#${containerId} .operator-card`).forEach(card => {
-        card.classList.toggle('selected', card.dataset.operator === operatorId);
-      });
-    }
-    
-    // ========================================
-    // MODALS - NEW ACTIVITY
-    // ========================================
-    
-    function showNewActivityModal() {
-      const roles = Object.values(projectRoles());
-      const select = document.getElementById('newActivityRole');
-      
-      select.innerHTML = '<option value="_new">⭐ Create new role...</option>' +
-        roles.map(r => {
-          const op = OPERATORS.find(o => o.id === r.operator_type);
-          return `<option value="${r.id}">${r.name} : ${op?.name}</option>`;
-        }).join('');
-      
-      // Add change listener to open role modal
-      select.onchange = function() {
-        if (this.value === '_new') {
-          showQuickRoleModal();
-        }
-      };
-      
-      document.getElementById('newActivityModal').classList.add('active');
-    }
-    
-    function closeNewActivityModal() {
-      document.getElementById('newActivityModal').classList.remove('active');
-      document.getElementById('newActivityTitle').value = '';
-      document.getElementById('newActivityRole').value = '_new';
-    }
-    
-    function showQuickRoleModal() {
-      const container = document.getElementById('quickOperatorGrid');
-      container.innerHTML = OPERATORS.map(op => `
-        <div class="operator-card" data-operator="${op.id}" onclick="selectOperator('quickOperatorGrid', '${op.id}')">
-          <div class="operator-name">${op.seq}. ${op.name}</div>
-          <div class="operator-desc">${op.desc}</div>
+          <p className="text-xs text-gray-300 mt-2">
+            Activities will implicitly contribute to these deliverables through their operator types.
+          </p>
         </div>
-      `).join('');
-      
-      document.getElementById('quickRoleModal').classList.add('active');
-    }
-    
-    function closeQuickRoleModal() {
-      document.getElementById('quickRoleModal').classList.remove('active');
-      document.getElementById('quickRoleName').value = '';
-      selectedOperator = null;
-      
-      // Reset activity role select to first real role or _new
-      const select = document.getElementById('newActivityRole');
-      const firstRealOption = select.querySelector('option:not([value="_new"])');
-      if (firstRealOption) {
-        select.value = firstRealOption.value;
-      } else {
-        select.value = '_new';
-      }
-    }
-    
-    function createQuickRole() {
-      const roleName = document.getElementById('quickRoleName').value.trim();
-      
-      if (!roleName || !selectedOperator) {
-        alert('Please enter role name and select operator type');
-        return;
-      }
-      
-      const roleId = 'role-' + Date.now();
-      recordEvent({
-        type: 'role_created',
-        role_id: roleId,
-        role_name: roleName,
-        operator_type: selectedOperator,
-        people: [currentUser],
-        actor: currentUser,
-        ops: [OPCODES.DES, OPCODES.INS]
-      });
-      
-      recordEvent({
-        type: 'person_joined_role',
-        role_id: roleId,
-        person: currentUser,
-        actor: currentUser,
-        ops: [OPCODES.CON]
-      });
-      
-      closeQuickRoleModal();
-      
-      // Refresh the activity modal's role list
-      const roles = Object.values(projectRoles());
-      const select = document.getElementById('newActivityRole');
-      select.innerHTML = '<option value="_new">⭐ Create new role...</option>' +
-        roles.map(r => {
-          const op = OPERATORS.find(o => o.id === r.operator_type);
-          return `<option value="${r.id}">${r.name} : ${op?.name}</option>`;
-        }).join('');
-      
-      // Select the newly created role
-      select.value = roleId;
-    }
-    
-    function createActivity() {
-      const title = document.getElementById('newActivityTitle').value.trim();
-      const roleSelect = document.getElementById('newActivityRole').value;
-      
-      if (!title) {
-        alert('Please enter an activity name');
-        return;
-      }
-      
-      if (roleSelect === '_new') {
-        alert('Please select a role or create one');
-        return;
-      }
-      
-      const activityId = 'activity-' + Date.now();
-      recordEvent({
-        type: 'activity_created',
-        activity_id: activityId,
-        title: title,
-        role_id: roleSelect,
-        actor: currentUser,
-        ops: [OPCODES.DES, OPCODES.INS]
-      });
-      
-      closeNewActivityModal();
-      renderAll();
-    }
-    
-    // ========================================
-    // MODALS - CREATE ROLE
-    // ========================================
-    
-    function showCreateRoleModal() {
-      const container = document.getElementById('createRoleOperatorGrid');
-      container.innerHTML = OPERATORS.map(op => `
-        <div class="operator-card" data-operator="${op.id}" onclick="selectOperator('createRoleOperatorGrid', '${op.id}')">
-          <div class="operator-name">${op.seq}. ${op.name}</div>
-          <div class="operator-desc">${op.desc}</div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              const validDeliverables = deliverables.filter(d => d.trim());
+              if (name && validDeliverables.length > 0) {
+                onCreate(name, validDeliverables, description);
+              }
+            }}
+            disabled={!name || !deliverables.some(d => d.trim())}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+          >
+            Create Flow
+          </button>
         </div>
-      `).join('');
-      
-      document.getElementById('createRoleModal').classList.add('active');
+      </div>
+    </Modal>
+  );
+}
+
+function CreateActivityModal({ project, flow, roles, onClose, onCreate, onCreateRole }) {
+  const [step, setStep] = useState('role');
+  const [title, setTitle] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [newRoleName, setNewRoleName] = useState('');
+  const [selectedOperator, setSelectedOperator] = useState('');
+  const [accountabilities, setAccountabilities] = useState(['']);
+  const [deliverable, setDeliverable] = useState('');
+  const [timingType, setTimingType] = useState('estimated');
+  const [estimatedHours, setEstimatedHours] = useState('');
+  const [dueDate, setDueDate] = useState('');
+
+  const handleCreateRole = () => {
+    if (newRoleName && selectedOperator) {
+      const role = onCreateRole(newRoleName, selectedOperator);
+      setSelectedRole(role.id);
+      setStep('activity');
     }
-    
-    function closeCreateRoleModal() {
-      document.getElementById('createRoleModal').classList.remove('active');
-      document.getElementById('createRoleName').value = '';
-      document.getElementById('createRolePeople').value = '';
-      selectedOperator = null;
+  };
+
+  const handleSelectExistingRole = () => {
+    if (selectedRole) {
+      setStep('activity');
     }
-    
-    function createRole() {
-      const name = document.getElementById('createRoleName').value.trim();
-      const peopleStr = document.getElementById('createRolePeople').value.trim();
+  };
+
+  const handleCreateActivity = () => {
+    if (title && selectedRole) {
+      const validAccountabilities = accountabilities.filter(a => a.trim());
+      const timing = timingType === 'estimated' 
+        ? { type: 'estimated', hours: parseFloat(estimatedHours) || 0 }
+        : { type: 'dueDate', date: dueDate };
       
-      if (!name || !selectedOperator) {
-        alert('Please enter role name and select operator type');
-        return;
-      }
-      
-      const people = peopleStr ? peopleStr.split(',').map(s => s.trim()) : [];
-      
-      const roleId = 'role-' + Date.now();
-      recordEvent({
-        type: 'role_created',
-        role_id: roleId,
-        role_name: name,
-        operator_type: selectedOperator,
-        people: people,
-        actor: currentUser,
-        ops: [OPCODES.DES, OPCODES.INS]
-      });
-      
-      people.forEach(person => {
-        recordEvent({
-          type: 'person_joined_role',
-          role_id: roleId,
-          person: person,
-          actor: currentUser,
-          ops: [OPCODES.CON]
-        });
-      });
-      
-      closeCreateRoleModal();
-      renderAll();
+      onCreate(title, selectedRole, validAccountabilities, deliverable, timing);
     }
-    
-    // ========================================
-    // MODALS - CLAIM & COMPLETE
-    // ========================================
-    
-    function showClaimModal(activityId) {
-      currentActivity = activityId;
-      const activity = projectActivity(activityId);
-      const roles = projectRoles();
-      const role = roles[activity.role_id];
-      const operator = OPERATORS.find(op => op.id === role?.operator_type);
-      
-      document.getElementById('claimActivityTitle').textContent = activity.title;
-      document.getElementById('claimActivityRole').textContent = role ? `Role: ${role.name} : ${operator?.name}` : '';
-      
-      const endOfWeek = new Date();
-      endOfWeek.setDate(endOfWeek.getDate() + (5 - endOfWeek.getDay()));
-      document.getElementById('estimatedDate').value = endOfWeek.toISOString().split('T')[0];
-      
-      document.getElementById('claimActivityModal').classList.add('active');
-    }
-    
-    function closeClaimModal() {
-      document.getElementById('claimActivityModal').classList.remove('active');
-      currentActivity = null;
-    }
-    
-    function claimActivity() {
-      if (!currentActivity) return;
-      
-      const priority = document.querySelector('input[name="priority"]:checked').value;
-      const estimatedDate = document.getElementById('estimatedDate').value;
-      
-      recordEvent({
-        type: 'activity_claimed',
-        activity_id: currentActivity,
-        person: currentUser,
-        priority: priority,
-        estimated_completion: estimatedDate,
-        actor: currentUser,
-        ops: [OPCODES.CON, OPCODES.DES]
-      });
-      
-      closeClaimModal();
-      renderAll();
-    }
-    
-    function showCompleteModal(activityId) {
-      currentActivity = activityId;
-      const activity = projectActivity(activityId);
-      const roles = projectRoles();
-      const role = roles[activity.role_id];
-      const operator = OPERATORS.find(op => op.id === role?.operator_type);
-      
-      document.getElementById('completeActivityTitle').textContent = activity.title;
-      
-      let content = `
-        <div style="margin-bottom: 20px;">
-          <strong>Role:</strong> ${role?.name} : ${operator?.name}<br>
-          <strong>Priority:</strong> ${activity.priority || 'Not set'}
-        </div>
-        <div class="info-box">
-          When you complete this activity, you can create a flow to another activity.
-          Flows can be sequential (→) or loops (↻) for revision cycles.
-        </div>
-      `;
-      
-      document.getElementById('completeActivityContent').innerHTML = content;
-      document.getElementById('completeActivityModal').classList.add('active');
-    }
-    
-    function closeCompleteModal() {
-      document.getElementById('completeActivityModal').classList.remove('active');
-      currentActivity = null;
-    }
-    
-    function completeActivity() {
-      if (!currentActivity) return;
-      
-      recordEvent({
-        type: 'activity_completed',
-        activity_id: currentActivity,
-        person: currentUser,
-        actor: currentUser,
-        ops: [OPCODES.ALT]
-      });
-      
-      closeCompleteModal();
-      
-      if (confirm('Do you want to create a flow to another activity?')) {
-        showFlowModal(currentActivity);
-      } else {
-        currentActivity = null;
-        renderAll();
-      }
-    }
-    
-    // ========================================
-    // MODALS - FLOW
-    // ========================================
-    
-    function showFlowModal(fromActivityId) {
-      currentActivity = fromActivityId;
-      
-      const activity = projectActivity(fromActivityId);
-      const roles = projectRoles();
-      const currentRole = roles[activity.role_id];
-      
-      // Get next operator types in sequence
-      const nextOperators = getNextOperatorTypes(currentRole?.operator_type);
-      
-      // Filter roles by next operator types
-      const nextRoles = Object.values(roles).filter(r => 
-        nextOperators.some(op => op.id === r.operator_type)
-      );
-      
-      const select = document.getElementById('nextActivityRole');
-      select.innerHTML = '<option value="_new">+ Create new role</option>' +
-        nextRoles.map(r => {
-          const op = OPERATORS.find(o => o.id === r.operator_type);
-          return `<option value="${r.id}">${r.name} : ${op?.name}</option>`;
-        }).join('');
-      
-      // Pre-populate operator grid with next operators
-      const container = document.getElementById('flowOperatorGrid');
-      container.innerHTML = nextOperators.map(op => `
-        <div class="operator-card" data-operator="${op.id}" onclick="selectOperator('flowOperatorGrid', '${op.id}')">
-          <div class="operator-name">${op.name} (${op.seq})</div>
-          <div class="operator-desc">${op.desc}</div>
-        </div>
-      `).join('');
-      
-      // Auto-select first operator if only one option
-      if (nextOperators.length === 1) {
-        selectOperator('flowOperatorGrid', nextOperators[0].id);
-      }
-      
-      // Update sequence info
-      const currentOp = OPERATORS.find(op => op.id === currentRole?.operator_type);
-      const infoBox = document.getElementById('flowSequenceInfo');
-      infoBox.innerHTML = `
-        🔄 <strong>Operator Sequence:</strong> You're at step ${currentOp?.seq || '?'} (${currentOp?.name || 'Unknown'}).
-        Next step: ${nextOperators.map(op => `${op.seq}. ${op.name}`).join(' or ')}.
-      `;
-      
-      // Show new role section by default if no matching roles exist
-      document.getElementById('flowNewRoleSection').style.display = nextRoles.length === 0 ? 'block' : 'none';
-      
-      document.getElementById('createFlowModal').classList.add('active');
-    }
-    
-    function closeFlowModal() {
-      document.getElementById('createFlowModal').classList.remove('active');
-      document.getElementById('nextActivityTitle').value = '';
-      document.getElementById('nextActivityRole').value = '_new';
-      document.getElementById('flowNewRoleSection').style.display = 'none';
-      document.getElementById('flowNewRoleName').value = '';
-      document.getElementById('flowContract').value = '';
-      currentActivity = null;
-      selectedOperator = null;
-    }
-    
-    function handleFlowRoleSelectChange() {
-      const isNew = document.getElementById('nextActivityRole').value === '_new';
-      document.getElementById('flowNewRoleSection').style.display = isNew ? 'block' : 'none';
-    }
-    
-    function createFlow() {
-      if (!currentActivity) return;
-      
-      const nextTitle = document.getElementById('nextActivityTitle').value.trim();
-      const roleSelect = document.getElementById('nextActivityRole').value;
-      const flowType = document.querySelector('input[name="flowType"]:checked').value;
-      const contract = document.getElementById('flowContract').value.trim();
-      
-      if (!nextTitle) {
-        alert('Please enter next activity name');
-        return;
-      }
-      
-      let roleId;
-      let nextOperatorType;
-      
-      if (roleSelect === '_new') {
-        const roleName = document.getElementById('flowNewRoleName').value.trim();
-        if (!roleName) {
-          alert('Please enter role name');
-          return;
-        }
-        
-        if (!selectedOperator) {
-          alert('Please select operator type');
-          return;
-        }
-        
-        nextOperatorType = selectedOperator;
-        
-        // Validate sequence
-        const activity = projectActivity(currentActivity);
-        const roles = projectRoles();
-        const currentRole = roles[activity.role_id];
-        const expectedNext = getNextOperatorTypes(currentRole?.operator_type);
-        
-        if (!expectedNext.some(op => op.id === nextOperatorType)) {
-          const currentOp = OPERATORS.find(op => op.id === currentRole?.operator_type);
-          if (!confirm(`⚠️ This breaks the operator sequence! Current: ${currentOp?.name} (${currentOp?.seq}), Expected next: ${expectedNext.map(op => `${op.name} (${op.seq})`).join(' or ')}. Continue anyway?`)) {
-            return;
-          }
-        }
-        
-        // Create the new role
-        roleId = 'role-' + Date.now();
-        recordEvent({
-          type: 'role_created',
-          role_id: roleId,
-          role_name: roleName,
-          operator_type: selectedOperator,
-          people: [],
-          actor: currentUser,
-          ops: [OPCODES.DES, OPCODES.INS]
-        });
-      } else {
-        roleId = roleSelect;
-        const nextRole = projectRoles()[roleId];
-        nextOperatorType = nextRole.operator_type;
-      }
-      
-      const nextActivityId = 'activity-' + Date.now();
-      recordEvent({
-        type: 'activity_created',
-        activity_id: nextActivityId,
-        title: nextTitle,
-        role_id: roleId,
-        actor: currentUser,
-        ops: [OPCODES.DES, OPCODES.INS]
-      });
-      
-      recordEvent({
-        type: 'flow_created',
-        activity_id: currentActivity,
-        next_activity_id: nextActivityId,
-        flow_type: flowType,
-        actor: currentUser,
-        ops: [OPCODES.CON]
-      });
-      
-      const chainId = 'chain-' + Date.now();
-      recordEvent({
-        type: 'chain_proposed',
-        chain_id: chainId,
-        from_activity_id: currentActivity,
-        to_activity_id: nextActivityId,
-        contract: contract || null,
-        actor: currentUser,
-        ops: [OPCODES.CON]
-      });
-      
-      closeFlowModal();
-      renderAll();
-      
-      alert('Flow proposed! The receiving role must consent before work can flow through.');
-    }
-    
-    // ========================================
-    // MODALS - CONSENT
-    // ========================================
-    
-    function showConsentModal(chainId) {
-      currentChain = chainId;
-      const chain = projectChain(chainId);
-      const fromActivity = projectActivity(chain.from_activity_id);
-      const toActivity = projectActivity(chain.to_activity_id);
-      const roles = projectRoles();
-      const fromRole = roles[fromActivity?.role_id];
-      const toRole = roles[toActivity?.role_id];
-      const fromOp = OPERATORS.find(op => op.id === fromRole?.operator_type);
-      const toOp = OPERATORS.find(op => op.id === toRole?.operator_type);
-      
-      let content = `
-        <div style="margin-bottom: 20px;">
-          <div style="font-weight: 600; margin-bottom: 12px;">Flow Proposal</div>
-          <div class="chain-visual">
-            <span class="chain-node">${fromActivity?.title}</span>
-            <span class="chain-arrow">→</span>
-            <span class="chain-node">${toActivity?.title}</span>
-          </div>
-          <div style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);">
-            <strong>From:</strong> ${fromRole?.name} : ${fromOp?.name} (${fromActivity?.claimed_by || 'unclaimed'})<br>
-            <strong>To:</strong> ${toRole?.name} : ${toOp?.name} (you)<br>
-            <strong>Proposed by:</strong> ${chain.proposed_by}
-          </div>
-          ${chain.contract ? `
-            <div class="consent-contract" style="margin-top: 12px;">
-              <strong>Interface Contract:</strong><br>
-              ${chain.contract}
+  };
+
+  const addAccountability = () => {
+    setAccountabilities([...accountabilities, '']);
+  };
+
+  const removeAccountability = (index) => {
+    setAccountabilities(accountabilities.filter((_, i) => i !== index));
+  };
+
+  const updateAccountability = (index, value) => {
+    const updated = [...accountabilities];
+    updated[index] = value;
+    setAccountabilities(updated);
+  };
+
+  const selectedOperatorObj = OPERATORS.find(op => op.id === selectedOperator);
+
+  return (
+    <Modal onClose={onClose} title="Create Activity" size="large">
+      <div className="space-y-4">
+        {step === 'role' ? (
+          <>
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4">
+              <p className="text-sm text-gray-100">
+                Each activity requires a role. The role defines who performs the work and what type of operator it represents in the coordination sequence.
+              </p>
             </div>
-          ` : ''}
+
+            {roles.length > 0 && (
+              <>
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Select an existing role</label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
+                  >
+                    <option value="">Choose a role...</option>
+                    {roles.map(role => {
+                      const op = OPERATORS.find(o => o.id === role.operatorType);
+                      return (
+                        <option key={role.id} value={role.id}>
+                          {role.name} ({op?.name}) - {role.people.join(', ')}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {selectedRole && (
+                  <button
+                    onClick={handleSelectExistingRole}
+                    className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors"
+                  >
+                    Continue with Selected Role
+                  </button>
+                )}
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-700"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-gray-900 text-gray-300">or create a new role</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">New role name</label>
+              <input
+                type="text"
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                placeholder="e.g., Content Writer"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Select operator type</label>
+              <div className="grid grid-cols-3 gap-2">
+                {OPERATORS.map(op => (
+                  <button
+                    key={op.id}
+                    onClick={() => setSelectedOperator(op.id)}
+                    className={`p-3 border rounded text-left transition-colors ${
+                      selectedOperator === op.id
+                        ? 'border-blue-500 bg-blue-500/20'
+                        : 'border-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium text-sm">{op.seq}. {op.name}</div>
+                    <div className="text-xs text-gray-300 mt-1">{op.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateRole}
+                disabled={!newRoleName || !selectedOperator}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+              >
+                Create Role & Continue
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-gray-800 rounded p-3 mb-4">
+              <div className="text-sm text-gray-300">Role selected:</div>
+              <div className="font-medium text-gray-100">
+                {roles.find(r => r.id === selectedRole)?.name}
+              </div>
+              {selectedOperatorObj && (
+                <div className="text-xs text-gray-400 mt-1">
+                  Contributes to: {selectedOperatorObj.deliverableType} deliverables
+                </div>
+              )}
+              <button
+                onClick={() => setStep('role')}
+                className="text-xs text-blue-400 hover:text-blue-300 mt-1"
+              >
+                Change role
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Activity name</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Write housing article"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">
+                Accountabilities
+                <span className="ml-1 text-gray-400">(What needs to be done?)</span>
+              </label>
+              <div className="space-y-2">
+                {accountabilities.map((accountability, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={accountability}
+                      onChange={(e) => updateAccountability(index, e.target.value)}
+                      placeholder="e.g., Research local housing trends"
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400"
+                    />
+                    {accountabilities.length > 1 && (
+                      <button
+                        onClick={() => removeAccountability(index)}
+                        className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={addAccountability}
+                className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+              >
+                + Add accountability
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">
+                Deliverable
+                <span className="ml-1 text-gray-400">(What gets produced?)</span>
+              </label>
+              <input
+                type="text"
+                value={deliverable}
+                onChange={(e) => setDeliverable(e.target.value)}
+                placeholder="e.g., 800-word article with 2 images"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Timeline</label>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                  <input
+                    type="radio"
+                    name="timingType"
+                    value="estimated"
+                    checked={timingType === 'estimated'}
+                    onChange={(e) => setTimingType(e.target.value)}
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm text-gray-100 block mb-1">Estimated time to complete</span>
+                    {timingType === 'estimated' && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={estimatedHours}
+                          onChange={(e) => setEstimatedHours(e.target.value)}
+                          placeholder="0"
+                          min="0"
+                          step="0.5"
+                          className="w-20 bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
+                        />
+                        <span className="text-sm text-gray-300">hours</span>
+                      </div>
+                    )}
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                  <input
+                    type="radio"
+                    name="timingType"
+                    value="dueDate"
+                    checked={timingType === 'dueDate'}
+                    onChange={(e) => setTimingType(e.target.value)}
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm text-gray-100 block mb-1">Specific due date</span>
+                    {timingType === 'dueDate' && (
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
+                      />
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setStep('role')}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleCreateActivity}
+                disabled={!title}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+              >
+                Create Activity
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function ClaimActivityModal({ activity, roles, onClose, onClaim }) {
+  const [priority, setPriority] = useState('medium');
+  
+  const role = roles.find(r => r.id === activity?.roleId);
+  const operator = OPERATORS.find(op => op.id === role?.operatorType);
+
+  return (
+    <Modal onClose={onClose} title="Claim Activity">
+      <div className="space-y-4">
+        <div className="bg-gray-900 rounded-lg p-4">
+          <h3 className="font-medium mb-2 text-gray-100">{activity?.title}</h3>
+          {role && (
+            <p className="text-sm text-gray-300">
+              Role: {role.name} ({operator?.name})
+            </p>
+          )}
         </div>
-      `;
-      
-      document.getElementById('consentContent').innerHTML = content;
-      
-      document.querySelectorAll('input[name="consentDecision"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-          document.getElementById('rejectReasonSection').style.display = 
-            e.target.value === 'reject' ? 'block' : 'none';
-        });
-      });
-      
-      document.getElementById('consentModal').classList.add('active');
-    }
-    
-    function closeConsentModal() {
-      document.getElementById('consentModal').classList.remove('active');
-      currentChain = null;
-    }
-    
-    function submitConsent() {
-      if (!currentChain) return;
-      
-      const decision = document.querySelector('input[name="consentDecision"]:checked').value;
-      
-      if (decision === 'accept') {
-        recordEvent({
-          type: 'chain_accepted',
-          chain_id: currentChain,
-          actor: currentUser,
-          ops: [OPCODES.CON, OPCODES.ALT]
-        });
-      } else {
-        const reason = document.getElementById('rejectReason').value;
-        const notes = document.getElementById('rejectNotes').value.trim();
-        
-        recordEvent({
-          type: 'chain_rejected',
-          chain_id: currentChain,
-          reason: reason,
-          notes: notes || null,
-          actor: currentUser,
-          ops: [OPCODES.SEG]
-        });
-      }
-      
-      closeConsentModal();
-      renderAll();
-    }
-    
-    // ========================================
-    // MODALS - PATTERN
-    // ========================================
-    
-    function showPatternModal(patternId) {
-      currentPattern = patternId;
-      const pattern = projectPattern(patternId);
-      
-      document.getElementById('patternModalTitle').textContent = pattern.name;
-      
-      let content = `
-        <div style="margin-bottom: 20px;">
-          <div class="chain-visual">
-            ${pattern.chain_topology.map((r, i) => {
-              const op = OPERATORS.find(o => o.id === r.operator_type);
-              return `
-                <span class="chain-node">${r.role_name} : ${op?.name}</span>
-                ${i < pattern.chain_topology.length - 1 ? '<span class="chain-arrow">→</span>' : ''}
-              `;
-            }).join('')}
+
+        <div>
+          <label className="block text-sm text-gray-200 mb-3">Priority</label>
+          <div className="space-y-2">
+            {[
+              { value: 'high', label: 'High - I will focus on this' },
+              { value: 'medium', label: 'Medium - Among other work' },
+              { value: 'low', label: 'Low - When I have space' }
+            ].map(opt => (
+              <label
+                key={opt.value}
+                className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"
+              >
+                <input
+                  type="radio"
+                  name="priority"
+                  value={opt.value}
+                  checked={priority === opt.value}
+                  onChange={(e) => setPriority(e.target.value)}
+                />
+                <span className="text-sm text-gray-100">{opt.label}</span>
+              </label>
+            ))}
           </div>
-          <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
-            This pattern has completed successfully ${pattern.success_count} times.
-          </div>
         </div>
-        <div class="info-box">
-          💡 Instantiating this pattern will create a flow with the same role structure.
-          Activities will be created with placeholder names that you can customize.
+
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onClaim(priority)}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors"
+          >
+            Claim Activity
+          </button>
         </div>
-      `;
-      
-      document.getElementById('patternModalContent').innerHTML = content;
-      document.getElementById('instantiatePatternModal').classList.add('active');
-    }
-    
-    function closePatternModal() {
-      document.getElementById('instantiatePatternModal').classList.remove('active');
-      currentPattern = null;
-    }
-    
-    function instantiatePattern() {
-      if (!currentPattern) return;
-      
-      const pattern = projectPattern(currentPattern);
-      const roles = projectRoles();
-      
-      const activityIds = [];
-      
-      for (let i = 0; i < pattern.chain_topology.length; i++) {
-        const roleSpec = pattern.chain_topology[i];
-        
-        let roleId = Object.values(roles).find(r => 
-          r.operator_type === roleSpec.operator_type && r.name === roleSpec.role_name
-        )?.id;
-        
-        if (!roleId) {
-          roleId = 'role-' + Date.now() + '-' + i;
-          recordEvent({
-            type: 'role_created',
-            role_id: roleId,
-            role_name: roleSpec.role_name,
-            operator_type: roleSpec.operator_type,
-            people: [],
-            actor: currentUser,
-            ops: [OPCODES.DES, OPCODES.INS]
-          });
-        }
-        
-        const activityId = 'activity-' + Date.now() + '-' + i;
-        recordEvent({
-          type: 'activity_created',
-          activity_id: activityId,
-          title: `${roleSpec.role_name} work (from pattern)`,
-          role_id: roleId,
-          actor: currentUser,
-          ops: [OPCODES.DES, OPCODES.INS]
-        });
-        
-        activityIds.push(activityId);
-      }
-      
-      for (let i = 0; i < activityIds.length - 1; i++) {
-        recordEvent({
-          type: 'flow_created',
-          activity_id: activityIds[i],
-          next_activity_id: activityIds[i + 1],
-          flow_type: 'sequential',
-          actor: currentUser,
-          ops: [OPCODES.CON]
-        });
-        
-        const chainId = 'chain-' + Date.now() + '-' + i;
-        recordEvent({
-          type: 'chain_proposed',
-          chain_id: chainId,
-          from_activity_id: activityIds[i],
-          to_activity_id: activityIds[i + 1],
-          contract: null,
-          actor: currentUser,
-          ops: [OPCODES.CON]
-        });
-      }
-      
-      recordEvent({
-        type: 'pattern_instantiated',
-        pattern_id: currentPattern,
-        actor: currentUser,
-        ops: [OPCODES.DES, OPCODES.INS]
-      });
-      
-      closePatternModal();
-      switchTab('work');
-      renderAll();
-    }
-    
-    function joinRole(roleId) {
-      recordEvent({
-        type: 'person_joined_role',
-        role_id: roleId,
-        person: currentUser,
-        actor: currentUser,
-        ops: [OPCODES.CON]
-      });
-      renderAll();
-    }
-    
-    // ========================================
-    // INITIALIZATION
-    // ========================================
-    
-    const projectEvent = eventStore.find(e => e.type === 'project_created');
-    if (projectEvent) {
-      project = {
-        name: projectEvent.project_name,
-        team: projectEvent.team
-      };
-      currentUser = projectEvent.created_by;
-      
-      document.getElementById('headerTitle').textContent = project.name;
-      document.getElementById('headerSubtitle').textContent = `Team: ${project.team.join(', ')}`;
-      document.getElementById('operatorSequence').style.display = 'flex';
-      
-      document.getElementById('setupView').style.display = 'none';
-      document.getElementById('mainView').style.display = 'block';
-      renderAll();
-    }
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('estimatedDate')?.setAttribute('min', today);
-  </script>
-</body>
-</html>
+      </div>
+    </Modal>
+  );
+}
+
+function Modal({ children, onClose, title, size = 'medium' }) {
+  const sizeClasses = {
+    medium: 'max-w-2xl',
+    large: 'max-w-4xl'
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+      <div className={`bg-gray-900 rounded-lg border border-gray-800 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
+        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-300 hover:text-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
