@@ -31,12 +31,26 @@
     .logo-text{font-size:16px;font-weight:700;color:var(--text-primary)}
     .nav{padding:12px 8px;overflow:auto;flex:1}
     .nav-section{margin-bottom:24px}
-    .nav-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);padding:0 12px 8px;display:flex;align-items:center;justify-content:space-between}
+    .nav-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary)}
+    .nav-section-header{display:flex;align-items:center;justify-content:space-between;padding:0 8px 8px}
+    .nav-section-title{display:flex;align-items:center;gap:6px}
+    .nav-section-controls{display:flex;align-items:center;gap:6px}
+    .section-toggle{border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:transform .15s;padding:2px}
+    .section-toggle[data-collapsed="true"]{transform:rotate(-90deg)}
     .nav-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin:2px 0;cursor:pointer;color:var(--text-secondary);border-radius:6px;transition:all .15s;font-size:14px}
     .nav-item:hover{background:var(--bg-hover);color:var(--text-primary)}
     .nav-item.active{background:var(--accent);color:#fff;font-weight:500}
     .nav-item.active .badge{background:rgba(255,255,255,.2);color:#fff}
     .badge{font-size:12px;background:var(--bg-tertiary);color:var(--text-tertiary);padding:2px 8px;border-radius:12px;font-weight:500;min-width:24px;text-align:center}
+    .nav-items{padding:0 4px}
+    .nav-section.collapsed .nav-items{display:none}
+    .nav-folder{margin:2px 0}
+    .nav-folder-header{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;color:var(--text-secondary);cursor:pointer;transition:all .15s}
+    .nav-folder-header:hover{background:var(--bg-hover);color:var(--text-primary)}
+    .nav-folder-header .folder-label{display:flex;align-items:center;gap:6px}
+    .nav-folder-header .folder-chevron{font-size:11px;color:var(--text-tertiary)}
+    .nav-folder-header.drag-over,.nav-items.drag-over{background:var(--bg-hover);border-radius:6px}
+    .nav-children{margin-left:12px}
     
     /* Header */
     .header{height:60px;background:var(--bg-primary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
@@ -183,20 +197,41 @@
         <button class="btn icon ghost" id="themeToggle" title="Toggle theme">🌙</button>
       </div>
       <nav class="nav" id="navRoot">
-        <div class="nav-section">
-          <div class="nav-label">VIEWS</div>
-          <div class="nav-item" data-view="status"><span>My Board</span><span class="badge" id="statusCount">0</span></div>
-          <div class="nav-item" data-view="tasks"><span>All Tasks</span><span class="badge" id="allTasksCount">0</span></div>
-          <div class="nav-item" data-view="roles"><span>Roles</span><span class="badge" id="rolesCount">0</span></div>
-          <div class="nav-item" data-view="workflows"><span>Workflows</span><span class="badge" id="workflowsCount">0</span></div>
+        <div class="nav-section" data-section="views">
+          <div class="nav-section-header">
+            <div class="nav-section-title">
+              <button class="section-toggle" data-section-toggle="views" aria-label="Toggle views">▾</button>
+              <span class="nav-label">VIEWS</span>
+            </div>
+            <div class="nav-section-controls">
+              <button class="btn ghost sm" data-new-folder="views">+ New Folder</button>
+            </div>
+          </div>
+          <div class="nav-items" data-section-items="views" data-drop-root="views"></div>
         </div>
-        <div class="nav-section">
-          <div class="nav-label">BY ROLE</div>
-          <div id="roleNavItems"></div>
+        <div class="nav-section" data-section="roles">
+          <div class="nav-section-header">
+            <div class="nav-section-title">
+              <button class="section-toggle" data-section-toggle="roles" aria-label="Toggle roles">▾</button>
+              <span class="nav-label">BY ROLE</span>
+            </div>
+            <div class="nav-section-controls">
+              <button class="btn ghost sm" data-new-folder="roles">+ New Folder</button>
+            </div>
+          </div>
+          <div class="nav-items" data-section-items="roles" data-drop-root="roles"></div>
         </div>
-        <div class="nav-section">
-          <div class="nav-label">BY WORKFLOW</div>
-          <div id="workflowNavItems"></div>
+        <div class="nav-section" data-section="workflows">
+          <div class="nav-section-header">
+            <div class="nav-section-title">
+              <button class="section-toggle" data-section-toggle="workflows" aria-label="Toggle workflows">▾</button>
+              <span class="nav-label">BY WORKFLOW</span>
+            </div>
+            <div class="nav-section-controls">
+              <button class="btn ghost sm" data-new-folder="workflows">+ New Folder</button>
+            </div>
+          </div>
+          <div class="nav-items" data-section-items="workflows" data-drop-root="workflows"></div>
         </div>
       </nav>
     </aside>
@@ -254,6 +289,154 @@
     // =============================
     // Data Model
     // =============================
+    const SIDEBAR_STATE_KEY = 'eo_pm_sidebar_state_v1';
+    const NAV_SECTION_KEYS = ['views','roles','workflows'];
+
+    function defaultSidebarState(){
+      return {
+        sections: {
+          views: { collapsed:false, tree:[] },
+          roles: { collapsed:false, tree:[] },
+          workflows: { collapsed:false, tree:[] }
+        }
+      };
+    }
+
+    function loadSidebarState(){
+      try{
+        const raw = localStorage.getItem(SIDEBAR_STATE_KEY);
+        if(!raw) return defaultSidebarState();
+        const parsed = JSON.parse(raw);
+        if(parsed && typeof parsed==='object' && parsed.sections) return parsed;
+      }catch(err){ console.warn('Failed to load sidebar state', err); }
+      return defaultSidebarState();
+    }
+
+    function persistSidebarState(){
+      localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(sidebarState));
+    }
+
+    function ensureSectionState(state, section){
+      if(!state.sections[section]){
+        state.sections[section] = { collapsed:false, tree:[] };
+      }
+      const node = state.sections[section];
+      node.tree = node.tree||[];
+      return node;
+    }
+
+    function findNode(nodes, predicate){
+      for(const node of nodes){
+        if(predicate(node)) return { node, parent:nodes };
+        if(node.type==='folder' && node.children){
+          const found = findNode(node.children, predicate);
+          if(found) return found;
+        }
+      }
+      return null;
+    }
+
+    function detachNode(nodes, predicate){
+      for(let i=0;i<nodes.length;i++){
+        const node = nodes[i];
+        if(predicate(node)){
+          nodes.splice(i,1);
+          return node;
+        }
+        if(node.type==='folder' && node.children){
+          const found = detachNode(node.children, predicate);
+          if(found) return found;
+        }
+      }
+      return null;
+    }
+
+    function ensureItemNode(sectionState, itemId, itemType){
+      const existing = findNode(sectionState.tree, n=>n.type==='item' && n.itemId===itemId);
+      if(existing) return existing.node;
+      const node = { type:'item', itemId, itemType };
+      sectionState.tree.push(node);
+      return node;
+    }
+
+    function findParentFolderId(sectionState, itemId){
+      function search(nodes, parentId){
+        for(const node of nodes){
+          if(node.type==='item' && node.itemId===itemId) return parentId;
+          if(node.type==='folder' && node.children){
+            const res = search(node.children, node.id);
+            if(res!==undefined) return res;
+          }
+        }
+        return undefined;
+      }
+      return search(sectionState.tree, null);
+    }
+
+    function moveItemNode(sectionState, itemId, itemType, targetFolderId){
+      const existingNode = detachNode(sectionState.tree, n=>n.type==='item' && n.itemId===itemId);
+      const node = existingNode || { type:'item', itemId, itemType };
+      if(targetFolderId){
+        const folder = findNode(sectionState.tree, n=>n.type==='folder' && n.id===targetFolderId);
+        if(folder){
+          folder.node.children = folder.node.children||[];
+          if(!findNode(folder.node.children, n=>n.type==='item' && n.itemId===itemId)){
+            folder.node.children.push(node);
+          }
+        } else {
+          sectionState.tree.push(node);
+        }
+      } else {
+        if(!findNode(sectionState.tree, n=>n.type==='item' && n.itemId===itemId)){
+          sectionState.tree.push(node);
+        }
+      }
+    }
+
+    function applySidebarEvent(state, evt){
+      if(!evt || !evt.type) return;
+      if(evt.section && !NAV_SECTION_KEYS.includes(evt.section)) return;
+      if(evt.type==='folder_created'){
+        const section = ensureSectionState(state, evt.section);
+        if(findNode(section.tree, n=>n.type==='folder' && n.id===evt.folder_id)) return;
+        const folderNode = { type:'folder', id:evt.folder_id, name:evt.name||'Folder', children:[] };
+        if(evt.parent_folder_id){
+          const parent = findNode(section.tree, n=>n.type==='folder' && n.id===evt.parent_folder_id);
+          if(parent){
+            parent.node.children = parent.node.children||[];
+            parent.node.children.push(folderNode);
+          } else {
+            section.tree.push(folderNode);
+          }
+        } else {
+          section.tree.push(folderNode);
+        }
+      }
+      if(evt.type==='folder_item_added'){
+        const section = ensureSectionState(state, evt.section);
+        const itemType = evt.item_type || (evt.section==='roles'?'role':evt.section==='workflows'?'workflow':'view');
+        ensureItemNode(section, evt.item_id, itemType);
+        const currentParent = findParentFolderId(section, evt.item_id);
+        const targetFolderId = evt.folder_id||null;
+        if((currentParent||null) === targetFolderId) return;
+        moveItemNode(section, evt.item_id, itemType, targetFolderId);
+      }
+      if(evt.type==='section_collapsed'){
+        const section = ensureSectionState(state, evt.section);
+        section.collapsed = !!evt.collapsed;
+      }
+    }
+
+    function sidebarEventTypes(){
+      return ['folder_created','folder_item_added','section_collapsed'];
+    }
+
+    function hydrateSidebarState(){
+      const state = loadSidebarState();
+      const events = eventStore.filter(e=>sidebarEventTypes().includes(e.type)).sort((a,b)=>a.ts-b.ts);
+      events.forEach(evt=>applySidebarEvent(state, evt));
+      return state;
+    }
     const operators = [
       {id:'starter',name:'Starter'}, {id:'connector',name:'Connector'}, {id:'coordinator',name:'Coordinator'},
       {id:'doer',name:'Doer'}, {id:'reviewer',name:'Reviewer'}, {id:'documenter',name:'Documenter'},
@@ -280,6 +463,9 @@
         ]
       }
     };
+
+    let sidebarState = hydrateSidebarState();
+    persistSidebarState();
 
     // =============================
     // Seed Data
@@ -357,9 +543,10 @@
 
     const $ = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const navRoot = $('#navRoot');
 
     function render(){
-      updateNavCounts();
+      renderSidebar();
       updateViewTitle();
       if(currentView.type==='status'){ return renderStatusBoard(); }
       if(currentView.type==='tasks'){ return renderAllTasks(); }
@@ -381,25 +568,273 @@
       $('#viewTitle').textContent = titles[currentView.type] || 'View';
     }
 
-    function updateNavCounts(){
-      $('#allTasksCount').textContent = taskIds().length;
-      $('#statusCount').textContent = taskIds().length;
-      $('#rolesCount').textContent = Object.keys(roles).length;
-      $('#workflowsCount').textContent = Object.keys(workflows).length;
-      
-      const roleHTML = Object.values(roles).map(r=>{
-        const count = tasksAtRole(r.id).length;
-        return `<div class="nav-item" data-view="role" data-role="${r.id}"><span>${r.name}</span><span class="badge">${count}</span></div>`;
-      }).join('');
-      $('#roleNavItems').innerHTML = roleHTML || '<div class="empty-state"><div class="empty-state-text">No roles</div></div>';
-      
-      const wfHTML = Object.values(workflows).map(wf=>{
-        const count = tasksInWorkflow(wf.id).length;
-        return `<div class="nav-item" data-view="workflow" data-workflow="${wf.id}"><span>${wf.name}</span><span class="badge">${count}</span></div>`;
-      }).join('');
-      $('#workflowNavItems').innerHTML = wfHTML || '<div class="empty-state"><div class="empty-state-text">No workflows</div></div>';
-      
-      attachNavListeners();
+    function getSectionItems(sectionKey){
+      if(sectionKey==='views'){
+        const totalTasks = taskIds().length;
+        return [
+          { id:'status', type:'view', label:'My Board', badge:totalTasks, dataset:{ view:'status' } },
+          { id:'tasks', type:'view', label:'All Tasks', badge:totalTasks, dataset:{ view:'tasks' } },
+          { id:'roles', type:'view', label:'Roles', badge:Object.keys(roles).length, dataset:{ view:'roles' } },
+          { id:'workflows', type:'view', label:'Workflows', badge:Object.keys(workflows).length, dataset:{ view:'workflows' } }
+        ];
+      }
+      if(sectionKey==='roles'){
+        return Object.values(roles).map(r=>({
+          id:r.id,
+          type:'role',
+          label:r.name,
+          badge:tasksAtRole(r.id).length,
+          dataset:{ view:'role', role:r.id },
+          draggable:true
+        }));
+      }
+      if(sectionKey==='workflows'){
+        return Object.values(workflows).map(wf=>({
+          id:wf.id,
+          type:'workflow',
+          label:wf.name,
+          badge:tasksInWorkflow(wf.id).length,
+          dataset:{ view:'workflow', workflow:wf.id },
+          draggable:true
+        }));
+      }
+      return [];
+    }
+
+    function syncSectionTree(sectionKey, items){
+      const sectionState = ensureSectionState(sidebarState, sectionKey);
+      const validIds = new Set(items.map(i=>i.id));
+      let changed = false;
+
+      function filterNodes(nodes){
+        const result = [];
+        nodes.forEach(node=>{
+          if(node.type==='item'){
+            if(validIds.has(node.itemId)){
+              result.push(node);
+            } else {
+              changed = true;
+            }
+          } else if(node.type==='folder'){
+            node.children = filterNodes(node.children||[]);
+            result.push(node);
+          }
+        });
+        return result;
+      }
+
+      const filtered = filterNodes(sectionState.tree||[]);
+      if(filtered.length !== sectionState.tree.length) changed = true;
+      sectionState.tree = filtered;
+
+      const existing = new Set();
+      function collect(nodes){
+        nodes.forEach(node=>{
+          if(node.type==='item'){
+            existing.add(node.itemId);
+            if(!node.itemType){
+              const match = items.find(i=>i.id===node.itemId);
+              if(match) node.itemType = match.type;
+            }
+          }
+          if(node.type==='folder' && node.children) collect(node.children);
+        });
+      }
+      collect(sectionState.tree);
+
+      items.forEach(item=>{
+        if(!existing.has(item.id)){
+          sectionState.tree.push({ type:'item', itemId:item.id, itemType:item.type });
+          changed = true;
+        }
+      });
+
+      if(changed) persistSidebarState();
+    }
+
+    function createNavNodeElement(sectionKey, node, depth, itemMap){
+      if(node.type==='folder'){
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nav-folder';
+        wrapper.dataset.section = sectionKey;
+        wrapper.dataset.folderId = node.id;
+
+        const header = document.createElement('div');
+        header.className = 'nav-folder-header';
+        header.dataset.section = sectionKey;
+        header.dataset.folderId = node.id;
+        header.style.paddingLeft = `${12 + depth*16}px`;
+
+        const label = document.createElement('div');
+        label.className = 'folder-label';
+        const chevron = document.createElement('span');
+        chevron.className = 'folder-chevron';
+        chevron.textContent = '▾';
+        const name = document.createElement('span');
+        name.textContent = node.name || 'Folder';
+        label.appendChild(chevron);
+        label.appendChild(name);
+        header.appendChild(label);
+
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'nav-children';
+        (node.children||[]).forEach(child=>{
+          const childEl = createNavNodeElement(sectionKey, child, depth+1, itemMap);
+          if(childEl) childrenContainer.appendChild(childEl);
+        });
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(childrenContainer);
+        return wrapper;
+      }
+
+      if(node.type==='item'){
+        const item = itemMap.get(node.itemId);
+        if(!item) return null;
+        const el = document.createElement('div');
+        el.className = 'nav-item nav-link';
+        el.style.paddingLeft = `${12 + depth*16}px`;
+        el.dataset.section = sectionKey;
+        el.dataset.itemId = item.id;
+        el.dataset.itemType = item.type;
+        if(item.draggable) el.dataset.draggable = 'true';
+        const dataset = item.dataset||{};
+        Object.keys(dataset).forEach(key=>{
+          if(dataset[key]!==undefined && dataset[key]!==null){
+            el.dataset[key] = dataset[key];
+          }
+        });
+
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = item.label;
+        const badgeSpan = document.createElement('span');
+        badgeSpan.className = 'badge';
+        if(item.badge!==undefined && item.badge!==null){
+          badgeSpan.textContent = item.badge;
+          badgeSpan.style.visibility = 'visible';
+        } else {
+          badgeSpan.textContent = '';
+          badgeSpan.style.visibility = 'hidden';
+        }
+
+        const viewType = dataset.view;
+        let isActive = false;
+        if(viewType==='role'){
+          isActive = currentView.type==='role' && currentView.id===dataset.role;
+        } else if(viewType==='workflow'){
+          isActive = currentView.type==='workflow' && currentView.id===dataset.workflow;
+        } else if(viewType){
+          isActive = currentView.type===viewType;
+        }
+        if(isActive) el.classList.add('active');
+
+        el.appendChild(labelSpan);
+        el.appendChild(badgeSpan);
+        return el;
+      }
+      return null;
+    }
+
+    function renderSidebar(){
+      NAV_SECTION_KEYS.forEach(sectionKey=>{
+        const container = document.querySelector(`[data-section-items="${sectionKey}"]`);
+        if(!container) return;
+        const items = getSectionItems(sectionKey);
+        syncSectionTree(sectionKey, items);
+        container.innerHTML = '';
+        const map = new Map(items.map(item=>[item.id, item]));
+        const sectionState = ensureSectionState(sidebarState, sectionKey);
+        sectionState.tree.forEach(node=>{
+          const el = createNavNodeElement(sectionKey, node, 0, map);
+          if(el) container.appendChild(el);
+        });
+        const sectionEl = container.closest('.nav-section');
+        if(sectionEl){
+          sectionEl.classList.toggle('collapsed', !!sectionState.collapsed);
+          const toggle = sectionEl.querySelector('[data-section-toggle]');
+          if(toggle) toggle.setAttribute('data-collapsed', sectionState.collapsed?'true':'false');
+        }
+      });
+      bindSidebarDragAndDrop();
+    }
+
+    function sidebarDragPayload(section, itemId, itemType){
+      return JSON.stringify({ section, itemId, itemType });
+    }
+
+    function bindSidebarDragAndDrop(){
+      $$('.nav-item.nav-link[data-draggable="true"]').forEach(item=>{
+        item.setAttribute('draggable','true');
+        item.addEventListener('dragstart', e=>{
+          const section = item.dataset.section;
+          const itemId = item.dataset.itemId;
+          const itemType = item.dataset.itemType;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('application/x-epo-nav', sidebarDragPayload(section, itemId, itemType));
+        });
+      });
+
+      $$('.nav-folder-header').forEach(folder=>{
+        folder.addEventListener('dragover', e=>{
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          folder.classList.add('drag-over');
+        });
+        folder.addEventListener('dragleave', ()=>{
+          folder.classList.remove('drag-over');
+        });
+        folder.addEventListener('drop', e=>{
+          e.preventDefault();
+          folder.classList.remove('drag-over');
+          const data = e.dataTransfer.getData('application/x-epo-nav');
+          if(!data) return;
+          let payload = null;
+          try{ payload = JSON.parse(data); }catch(err){ return; }
+          if(payload.section !== folder.dataset.section) return;
+          handleSidebarItemMove(payload.section, payload.itemId, payload.itemType, folder.dataset.folderId);
+        });
+      });
+
+      $$('.nav-items[data-drop-root]').forEach(container=>{
+        container.addEventListener('dragover', e=>{
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          container.classList.add('drag-over');
+        });
+        container.addEventListener('dragleave', ()=>{
+          container.classList.remove('drag-over');
+        });
+        container.addEventListener('drop', e=>{
+          e.preventDefault();
+          container.classList.remove('drag-over');
+          const data = e.dataTransfer.getData('application/x-epo-nav');
+          if(!data) return;
+          let payload = null;
+          try{ payload = JSON.parse(data); }catch(err){ return; }
+          const sectionKey = container.getAttribute('data-drop-root');
+          if(payload.section !== sectionKey) return;
+          handleSidebarItemMove(payload.section, payload.itemId, payload.itemType, null);
+        });
+      });
+    }
+
+    function handleSidebarItemMove(sectionKey, itemId, itemType, folderId){
+      const sectionState = ensureSectionState(sidebarState, sectionKey);
+      const currentParent = findParentFolderId(sectionState, itemId);
+      const normalizedTarget = folderId||null;
+      if((currentParent||null) === normalizedTarget) return;
+      const effectiveType = itemType || (sectionKey==='roles'?'role':sectionKey==='workflows'?'workflow':'view');
+      const evt = recordEvent({
+        type:'folder_item_added',
+        section:sectionKey,
+        folder_id:normalizedTarget,
+        item_id:itemId,
+        item_type:effectiveType,
+        from_folder_id:currentParent||null
+      });
+      applySidebarEvent(sidebarState, evt);
+      persistSidebarState();
+      renderSidebar();
     }
 
     function card(task, showWorkflow=false, showRole=false){
@@ -700,18 +1135,69 @@
     // =============================
     // Interactions
     // =============================
-    function attachNavListeners(){
-      $$('.nav-item').forEach(n=>{
-        n.onclick = ()=>{
-          $$('.nav-item').forEach(x=>x.classList.remove('active'));
-          n.classList.add('active');
-          currentView = {
-            type: n.dataset.view,
-            id: n.dataset.role || n.dataset.workflow || n.dataset.person || null
-          };
-          render();
-        };
+    function setupSidebarInteractions(){
+      if(!navRoot) return;
+      navRoot.addEventListener('click', e=>{
+        const newFolderBtn = e.target.closest('[data-new-folder]');
+        if(newFolderBtn){
+          e.preventDefault();
+          e.stopPropagation();
+          const sectionKey = newFolderBtn.getAttribute('data-new-folder');
+          handleNewFolder(sectionKey, null);
+          return;
+        }
+
+        const toggleBtn = e.target.closest('[data-section-toggle]');
+        if(toggleBtn){
+          e.preventDefault();
+          e.stopPropagation();
+          const sectionKey = toggleBtn.getAttribute('data-section-toggle');
+          handleSectionToggle(sectionKey);
+          return;
+        }
+
+        const navItem = e.target.closest('.nav-item.nav-link');
+        if(navItem){
+          handleNavSelection(navItem);
+        }
       });
+    }
+
+    function handleNavSelection(navItem){
+      const viewType = navItem.dataset.view;
+      if(!viewType) return;
+      currentView = {
+        type: viewType,
+        id: navItem.dataset.role || navItem.dataset.workflow || navItem.dataset.person || null
+      };
+      render();
+    }
+
+    function handleNewFolder(sectionKey, parentFolderId){
+      if(!sectionKey) return;
+      const name = prompt('Folder name:');
+      if(!name) return;
+      const folderId = 'folder-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+      const evt = recordEvent({
+        type:'folder_created',
+        section:sectionKey,
+        folder_id:folderId,
+        name,
+        parent_folder_id:parentFolderId||null
+      });
+      applySidebarEvent(sidebarState, evt);
+      persistSidebarState();
+      renderSidebar();
+    }
+
+    function handleSectionToggle(sectionKey){
+      if(!sectionKey) return;
+      const sectionState = ensureSectionState(sidebarState, sectionKey);
+      const nextState = !sectionState.collapsed;
+      const evt = recordEvent({ type:'section_collapsed', section:sectionKey, collapsed:nextState });
+      applySidebarEvent(sidebarState, evt);
+      persistSidebarState();
+      renderSidebar();
     }
 
     $$('.view-toggle .btn').forEach(b=> b.addEventListener('click', ()=>{
@@ -839,8 +1325,7 @@
     }
 
     // Init
-    attachNavListeners();
-    $$('.nav-item')[0]?.classList.add('active');
+    setupSidebarInteractions();
     render();
   </script>
 </body>
