@@ -1,1332 +1,2258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EO Project Manager</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EVENT_OPERATOR - Activity Flows</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root[data-theme="dark"] {
-      --bg-primary:#0f0f0f; --bg-secondary:#1a1a1a; --bg-tertiary:#252525; --bg-hover:#2a2a2a;
-      --border:#333; --border-light:#404040; --text-primary:#f5f5f5; --text-secondary:#b4b4b4; 
-      --text-tertiary:#757575; --accent:#3b82f6; --accent-hover:#2563eb; --accent-light:#1e40af;
-      --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --purple:#a855f7; --card-shadow:0 1px 3px rgba(0,0,0,.3);
+    
+    :root {
+      --bg-primary: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #252525;
+      --bg-hover: #2a2a2a;
+      --border: #333;
+      --text-primary: #f5f5f5;
+      --text-secondary: #b4b4b4;
+      --text-tertiary: #757575;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
     }
-    :root[data-theme="light"] {
-      --bg-primary:#fff; --bg-secondary:#f9fafb; --bg-tertiary:#f3f4f6; --bg-hover:#e5e7eb;
-      --border:#e5e7eb; --border-light:#f3f4f6; --text-primary:#111827; --text-secondary:#6b7280; 
-      --text-tertiary:#9ca3af; --accent:#3b82f6; --accent-hover:#2563eb; --accent-light:#60a5fa;
-      --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --purple:#a855f7; --card-shadow:0 1px 3px rgba(0,0,0,.1);
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
     }
     
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;overflow:hidden;font-size:14px;line-height:1.5}
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
     
-    /* Layout */
-    .app{display:flex;height:100vh}
-    .sidebar{width:240px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-    .main{flex:1;display:flex;flex-direction:column;min-width:0}
+    .header {
+      margin-bottom: 32px;
+    }
     
-    /* Sidebar */
-    .logo{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-    .logo-text{font-size:16px;font-weight:700;color:var(--text-primary)}
-    .nav{padding:12px 8px;overflow:auto;flex:1}
-    .nav-section{margin-bottom:24px}
-    .nav-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary)}
-    .nav-section-header{display:flex;align-items:center;justify-content:space-between;padding:0 8px 8px}
-    .nav-section-title{display:flex;align-items:center;gap:6px}
-    .nav-section-controls{display:flex;align-items:center;gap:6px}
-    .section-toggle{border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:transform .15s;padding:2px}
-    .section-toggle[data-collapsed="true"]{transform:rotate(-90deg)}
-    .nav-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin:2px 0;cursor:pointer;color:var(--text-secondary);border-radius:6px;transition:all .15s;font-size:14px}
-    .nav-item:hover{background:var(--bg-hover);color:var(--text-primary)}
-    .nav-item.active{background:var(--accent);color:#fff;font-weight:500}
-    .nav-item.active .badge{background:rgba(255,255,255,.2);color:#fff}
-    .badge{font-size:12px;background:var(--bg-tertiary);color:var(--text-tertiary);padding:2px 8px;border-radius:12px;font-weight:500;min-width:24px;text-align:center}
-    .nav-items{padding:0 4px}
-    .nav-section.collapsed .nav-items{display:none}
-    .nav-folder{margin:2px 0}
-    .nav-folder-header{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;color:var(--text-secondary);cursor:pointer;transition:all .15s}
-    .nav-folder-header:hover{background:var(--bg-hover);color:var(--text-primary)}
-    .nav-folder-header .folder-label{display:flex;align-items:center;gap:6px}
-    .nav-folder-header .folder-chevron{font-size:11px;color:var(--text-tertiary)}
-    .nav-folder-header.drag-over,.nav-items.drag-over{background:var(--bg-hover);border-radius:6px}
-    .nav-children{margin-left:12px}
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
     
-    /* Header */
-    .header{height:60px;background:var(--bg-primary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
-    .header-left{display:flex;align-items:center;gap:16px}
-    .header-title{font-size:18px;font-weight:600;color:var(--text-primary)}
-    .view-toggle{display:flex;gap:4px;background:var(--bg-secondary);padding:4px;border-radius:8px}
-    .view-toggle .btn{background:transparent;border:none;padding:6px 12px;font-size:13px}
-    .view-toggle .btn.active{background:var(--bg-primary);box-shadow:var(--card-shadow)}
+    .header p {
+      color: var(--text-secondary);
+    }
     
-    /* Buttons */
-    .btn{padding:8px 16px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
-    .btn:hover{background:var(--bg-hover);border-color:var(--border-light)}
-    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-    .btn.primary:hover{background:var(--accent-hover)}
-    .btn.sm{padding:6px 12px;font-size:13px}
-    .btn.ghost{background:transparent;border:none}
-    .btn.ghost:hover{background:var(--bg-hover)}
-    .btn.icon{padding:6px;width:32px;height:32px;justify-content:center}
+    .operator-sequence {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 16px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
     
-    /* Content area */
-    .content{flex:1;overflow:auto;padding:24px;background:var(--bg-secondary)}
+    .operator-sequence-item {
+      padding: 4px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
     
-    /* Board */
-    .board{display:flex;gap:16px;overflow:auto;padding-bottom:16px;min-height:100%;align-items:flex-start}
-    .column{flex:0 0 320px;min-width:320px;background:var(--bg-tertiary);border-radius:8px;display:flex;flex-direction:column;max-height:calc(100vh - 140px)}
-    .column-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    .column-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
-    .column-count{font-size:13px;color:var(--text-tertiary);font-weight:500}
-    .column-body{padding:12px;display:flex;flex-direction:column;gap:10px;overflow:auto;flex:1}
+    .operator-sequence-arrow {
+      color: var(--text-tertiary);
+    }
     
-    /* Cards */
-    .card{background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;transition:all .2s;box-shadow:var(--card-shadow)}
-    .card:hover{border-color:var(--accent-light);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
-    .card.ready{border-left:3px solid var(--success)}
-    .card-id{font-size:12px;color:var(--text-tertiary);font-weight:500;margin-bottom:6px}
-    .card-title{font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:10px;line-height:1.4}
-    .card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-    .pill{font-size:12px;padding:4px 10px;background:var(--bg-tertiary);border-radius:4px;color:var(--text-secondary);font-weight:500;display:inline-flex;align-items:center;gap:4px}
-    .pill.ready{background:var(--success);color:#fff}
-    .pill.status-todo{background:#f59e0b22;color:var(--warning)}
-    .pill.status-doing{background:#3b82f622;color:var(--accent)}
-    .pill.status-done{background:#10b98122;color:var(--success)}
+    .section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
     
-    /* Modal */
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:24px;z-index:100}
-    .overlay.active{display:flex}
-    .modal{width:min(960px,100%);max-height:90vh;background:var(--bg-primary);border-radius:12px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden}
-    .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    .modal-title{font-size:18px;font-weight:600;color:var(--text-primary)}
-    .modal-body{padding:24px;overflow:auto;flex:1}
-    .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end;flex-shrink:0;background:var(--bg-secondary)}
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
     
-    /* Modal sections */
-    .section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px}
-    .section:last-child{margin-bottom:0}
-    .section-header{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);margin-bottom:12px}
-    .section-content{color:var(--text-primary)}
-    .info-grid{display:grid;gap:16px}
-    .info-row{display:flex;align-items:flex-start;gap:12px}
-    .info-row.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-    .info-label{font-size:12px;color:var(--text-tertiary);font-weight:500;margin-bottom:4px}
-    .info-value{font-size:14px;color:var(--text-primary)}
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
     
-    /* Form elements */
-    .input,select.input{padding:10px 12px;width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:14px;transition:all .15s}
-    .input:focus,select.input:focus{outline:none;border-color:var(--accent);background:var(--bg-primary)}
-    .input::placeholder{color:var(--text-tertiary)}
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
     
-    /* Timeline */
-    .timeline{display:flex;flex-direction:column;gap:12px}
-    .timeline-item{display:flex;gap:12px;padding:12px;background:var(--bg-tertiary);border-radius:6px}
-    .timeline-item.highlight{border-left:3px solid var(--accent)}
-    .timeline-time{font-size:12px;color:var(--text-tertiary);white-space:nowrap;min-width:60px}
-    .timeline-content{flex:1}
-    .timeline-actor{color:var(--accent);font-weight:600;font-size:13px}
-    .timeline-desc{color:var(--text-secondary);font-size:13px}
+    .btn:hover {
+      background: var(--bg-hover);
+    }
     
-    /* List view */
-    .list-container{background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-    .list-header{display:grid;grid-template-columns:100px 1fr 180px 140px 100px;gap:16px;padding:12px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em}
-    .list-row{display:grid;grid-template-columns:100px 1fr 180px 140px 100px;gap:16px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;align-items:center}
-    .list-row:last-child{border-bottom:none}
-    .list-row:hover{background:var(--bg-hover)}
-    .list-cell{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .list-cell.id{color:var(--text-tertiary);font-weight:500}
-    .list-cell.title{color:var(--text-primary);font-weight:500}
-    .list-cell.meta{color:var(--text-secondary)}
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
     
-    /* Empty state */
-    .empty-state{text-align:center;padding:60px 24px;color:var(--text-tertiary)}
-    .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:.5}
-    .empty-state-title{font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
-    .empty-state-text{font-size:14px}
+    .btn.primary:hover {
+      background: var(--accent-hover);
+    }
     
-    /* Checkpoint list */
-    .checkpoint-list{display:flex;flex-direction:column;gap:10px}
-    .checkpoint-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-tertiary);border-radius:6px}
-    .checkpoint-status{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-    .checkpoint-status.met{background:var(--success);color:#fff}
-    .checkpoint-status.unmet{background:var(--bg-secondary);border:2px solid var(--border);color:var(--text-tertiary)}
-    .checkpoint-info{flex:1}
-    .checkpoint-text{font-size:14px;color:var(--text-primary);font-weight:500;margin-bottom:2px}
-    .checkpoint-evidence{font-size:12px;color:var(--text-tertiary)}
+    .btn.small {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
     
-    /* Artifacts */
-    .artifact-list{display:flex;flex-direction:column;gap:8px}
-    .artifact-item{display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-tertiary);border-radius:6px}
-    .artifact-icon{font-size:20px}
-    .artifact-info{flex:1}
-    .artifact-name{font-size:14px;color:var(--text-primary);font-weight:500}
-    .artifact-meta{font-size:12px;color:var(--text-tertiary)}
+    .input, select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
     
-    /* Role/Workflow display */
-    .detail-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
-    .detail-card{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;padding:16px}
-    .detail-card-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px}
-    .detail-card-content{color:var(--text-secondary);font-size:14px}
-    .workflow-chain{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
-    .workflow-step{padding:8px 14px;background:var(--bg-secondary);border-radius:6px;font-size:13px;font-weight:500}
-    .workflow-arrow{color:var(--text-tertiary)}
+    .input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
     
-    /* Utilities */
-    .row{display:flex;gap:12px;align-items:center}
-    .space-between{justify-content:space-between}
-    .mt-1{margin-top:8px}
-    .mt-2{margin-top:16px}
-    .text-sm{font-size:13px}
-    .text-xs{font-size:12px}
-    .font-semibold{font-weight:600}
-    .text-muted{color:var(--text-secondary)}
+    select {
+      cursor: pointer;
+    }
     
-    /* Scrollbar */
-    ::-webkit-scrollbar{width:8px;height:8px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-    ::-webkit-scrollbar-thumb:hover{background:var(--text-tertiary)}
+    .activity-pool {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .activity-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .activity-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    
+    .activity-card.claimed {
+      border-left: 3px solid var(--success);
+    }
+    
+    .activity-card.in-flow {
+      border-left: 3px solid var(--purple);
+    }
+    
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+    
+    .activity-title {
+      font-weight: 500;
+      font-size: 15px;
+    }
+    
+    .activity-status {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--bg-secondary);
+      color: var(--text-tertiary);
+      white-space: nowrap;
+    }
+    
+    .activity-status.claimed {
+      background: var(--success);
+      color: white;
+    }
+    
+    .activity-meta {
+      color: var(--text-secondary);
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1000;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .radio-option:hover {
+      border-color: var(--accent);
+    }
+    
+    .radio-option input[type="radio"] {
+      cursor: pointer;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--text-tertiary);
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .role-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    
+    .role-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .role-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .role-badge {
+      font-size: 12px;
+      padding: 4px 8px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      color: var(--text-tertiary);
+    }
+    
+    .role-type {
+      font-size: 12px;
+      padding: 4px 8px;
+      background: var(--accent);
+      color: white;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    
+    .role-people {
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    
+    .badge.success {
+      background: var(--success);
+      color: white;
+    }
+    
+    .badge.purple {
+      background: var(--purple);
+      color: white;
+    }
+    
+    .operator-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .operator-card {
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .operator-card:hover {
+      border-color: var(--accent);
+    }
+    
+    .operator-card.selected {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    
+    .operator-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .operator-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .columns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    
+    .info-box {
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    
+    .tab:hover {
+      color: var(--text-primary);
+    }
+    
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    
+    .consent-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warning);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    
+    .consent-card.accepted {
+      border-left-color: var(--success);
+    }
+    
+    .consent-card.rejected {
+      border-left-color: var(--danger);
+    }
+    
+    .consent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    
+    .consent-flow {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    
+    .consent-contract {
+      background: var(--bg-secondary);
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    
+    .pattern-card {
+      background: var(--bg-tertiary);
+      border: 2px solid var(--purple);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pattern-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    
+    .pattern-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .pattern-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .chain-visual {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+      font-size: 12px;
+      overflow-x: auto;
+      padding: 8px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+    }
+    
+    .chain-node {
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    
+    .chain-arrow {
+      color: var(--text-tertiary);
+    }
+    
+    .notification-badge {
+      display: inline-block;
+      background: var(--danger);
+      color: white;
+      border-radius: 10px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="logo">
-        <div class="logo-text">EVENT_OPERATOR</div>
-        <button class="btn icon ghost" id="themeToggle" title="Toggle theme">🌙</button>
+    <div class="header">
+      <h1 id="headerTitle">EVENT_OPERATOR</h1>
+      <p id="headerSubtitle">Activities first, roles emerge, flows connect</p>
+      <div class="operator-sequence" id="operatorSequence" style="display: none;">
+        <span style="color: var(--text-secondary); margin-right: 8px;">Nine-Operator Flow:</span>
+        <span class="operator-sequence-item">1. Starter</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">2. Doer</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">3. Connector</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">4. Reviewer</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">5. Approver</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">6. Documenter</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">7. Convener</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">8. Steward</span>
+        <span class="operator-sequence-arrow">→</span>
+        <span class="operator-sequence-item">9. Coordinator</span>
+        <span class="operator-sequence-arrow">↻</span>
       </div>
-      <nav class="nav" id="navRoot">
-        <div class="nav-section" data-section="views">
-          <div class="nav-section-header">
-            <div class="nav-section-title">
-              <button class="section-toggle" data-section-toggle="views" aria-label="Toggle views">▾</button>
-              <span class="nav-label">VIEWS</span>
-            </div>
-            <div class="nav-section-controls">
-              <button class="btn ghost sm" data-new-folder="views">+ New Folder</button>
-            </div>
-          </div>
-          <div class="nav-items" data-section-items="views" data-drop-root="views"></div>
-        </div>
-        <div class="nav-section" data-section="roles">
-          <div class="nav-section-header">
-            <div class="nav-section-title">
-              <button class="section-toggle" data-section-toggle="roles" aria-label="Toggle roles">▾</button>
-              <span class="nav-label">BY ROLE</span>
-            </div>
-            <div class="nav-section-controls">
-              <button class="btn ghost sm" data-new-folder="roles">+ New Folder</button>
-            </div>
-          </div>
-          <div class="nav-items" data-section-items="roles" data-drop-root="roles"></div>
-        </div>
-        <div class="nav-section" data-section="workflows">
-          <div class="nav-section-header">
-            <div class="nav-section-title">
-              <button class="section-toggle" data-section-toggle="workflows" aria-label="Toggle workflows">▾</button>
-              <span class="nav-label">BY WORKFLOW</span>
-            </div>
-            <div class="nav-section-controls">
-              <button class="btn ghost sm" data-new-folder="workflows">+ New Folder</button>
-            </div>
-          </div>
-          <div class="nav-items" data-section-items="workflows" data-drop-root="workflows"></div>
-        </div>
-      </nav>
-    </aside>
+    </div>
     
-    <main class="main">
-      <div class="header">
-        <div class="header-left">
-          <div class="header-title" id="viewTitle">My Board</div>
-        </div>
-        <div class="row">
-          <div class="view-toggle">
-            <button class="btn sm active" data-layout="board">Board</button>
-            <button class="btn sm" data-layout="list">List</button>
+    <!-- Setup View -->
+    <div id="setupView" class="section">
+      <div class="section-header">
+        <div class="section-title">Start a New Project</div>
+      </div>
+      <div class="form-group">
+        <label>What do you want to work on?</label>
+        <input type="text" id="projectName" class="input" placeholder="e.g., Community Newsletter" />
+      </div>
+      <div class="form-group">
+        <label>Who's working on this? (comma separated)</label>
+        <input type="text" id="teamMembers" class="input" placeholder="e.g., alex, pat, sam, jordan" />
+      </div>
+      <div class="form-group">
+        <label>What's your name?</label>
+        <input type="text" id="currentUser" class="input" placeholder="Your name" />
+      </div>
+      <button class="btn primary" onclick="createProject()">Create Project</button>
+    </div>
+    
+    <!-- Main View -->
+    <div id="mainView" style="display: none;">
+      
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('work')">Your Work</button>
+        <button class="tab" onclick="switchTab('consent')">Consent Queue<span id="consentBadge"></span></button>
+        <button class="tab" onclick="switchTab('patterns')">Pattern Library</button>
+        <button class="tab" onclick="switchTab('roles')">Roles</button>
+      </div>
+      
+      <!-- Work Tab -->
+      <div id="workTab" class="tab-content">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Your Claimed Activities</div>
+            <button class="btn small primary" onclick="showNewActivityModal()">+ New Activity</button>
           </div>
-          <button class="btn sm" id="newCheckpoint">+ Checkpoint</button>
-          <button class="btn primary sm" id="newTask">+ New Task</button>
+          <div id="myActivities"></div>
+        </div>
+        
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">All Activities</div>
+          </div>
+          <div id="allActivities"></div>
         </div>
       </div>
-      <section class="content" id="main"></section>
-    </main>
-  </div>
-
-  <!-- Modal -->
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title" id="modalTitle">#TASK</div>
-        <button class="btn icon ghost" id="closeModal">✕</button>
+      
+      <!-- Consent Queue Tab -->
+      <div id="consentTab" class="tab-content" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Consent Queue</div>
+          </div>
+          <div class="info-box">
+            💡 Activities chain into other activities. The receiving role must consent before work flows through.
+          </div>
+          <div id="consentQueue"></div>
+        </div>
       </div>
-      <div class="modal-body" id="modalBody"></div>
-      <div class="modal-footer">
-        <button class="btn" id="overrideBtn">Override & Move</button>
-        <button class="btn primary" id="moveBtn">Mark Ready & Move</button>
+      
+      <!-- Pattern Library Tab -->
+      <div id="patternsTab" class="tab-content" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Pattern Library</div>
+          </div>
+          <div class="info-box">
+            🔄 Flows that have completed successfully 3+ times become reusable patterns.
+          </div>
+          <div id="patternsList"></div>
+        </div>
+      </div>
+      
+      <!-- Roles Tab -->
+      <div id="rolesTab" class="tab-content" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Roles</div>
+            <button class="btn small" onclick="showCreateRoleModal()">+ Create Role</button>
+          </div>
+          <div id="rolesList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- New Activity Modal -->
+  <div id="newActivityModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create New Activity</h2>
+        <p style="color: var(--text-secondary); font-size: 14px;">What work needs to be done?</p>
+      </div>
+      <div class="form-group">
+        <label>Activity name</label>
+        <input type="text" id="newActivityTitle" class="input" placeholder="e.g., Write housing article" />
+      </div>
+      <div class="form-group">
+        <label>Which role does this work?</label>
+        <select id="newActivityRole" class="input">
+          <option value="_new">⭐ Create new role...</option>
+        </select>
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeNewActivityModal()">Cancel</button>
+        <button class="btn primary" onclick="createActivity()">Create Activity</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Quick Role Creation Modal -->
+  <div id="quickRoleModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create New Role</h2>
+        <p style="color: var(--text-secondary); font-size: 14px;">Define the role for this activity</p>
+      </div>
+      <div class="info-box" style="background: var(--accent); color: white;">
+        ⭐ <strong>Creating a New Role</strong><br>
+        Roles are typed by operators. Select which type of work this role performs in the nine-operator sequence.
+      </div>
+      <div class="form-group">
+        <label>Role name</label>
+        <input type="text" id="quickRoleName" class="input" placeholder="e.g., Content Writer" />
+      </div>
+      <div class="form-group">
+        <label>What operator type is this role?</label>
+        <div id="quickOperatorGrid" class="operator-grid"></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeQuickRoleModal()">Cancel</button>
+        <button class="btn primary" onclick="createQuickRole()">Create Role</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Create Role Modal -->
+  <div id="createRoleModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create New Role</h2>
+        <p style="color: var(--text-secondary); font-size: 14px;">Roles are typed by operators</p>
+      </div>
+      <div class="form-group">
+        <label>Role name</label>
+        <input type="text" id="createRoleName" class="input" placeholder="e.g., Content Reviewer" />
+      </div>
+      <div class="form-group">
+        <label>Which operator type is this?</label>
+        <div id="createRoleOperatorGrid" class="operator-grid"></div>
+      </div>
+      <div class="form-group">
+        <label>Who's in this role? (comma separated)</label>
+        <input type="text" id="createRolePeople" class="input" placeholder="e.g., pat, jordan" />
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeCreateRoleModal()">Cancel</button>
+        <button class="btn primary" onclick="createRole()">Create Role</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Claim Activity Modal -->
+  <div id="claimActivityModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="claimActivityTitle">Activity</h2>
+        <p id="claimActivityRole" style="color: var(--text-secondary); font-size: 14px;"></p>
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="priority" value="high" />
+            <span>High - I'll focus on this</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="priority" value="medium" checked />
+            <span>Medium - Among other work</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="priority" value="low" />
+            <span>Low - When I have space</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>When can you complete this?</label>
+        <input type="date" id="estimatedDate" class="input" />
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeClaimModal()">Cancel</button>
+        <button class="btn primary" onclick="claimActivity()">Start Working</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Complete Activity Modal -->
+  <div id="completeActivityModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="completeActivityTitle">Complete Activity</h2>
+      </div>
+      <div id="completeActivityContent"></div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeCompleteModal()">Cancel</button>
+        <button class="btn primary" onclick="completeActivity()">Done</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Create Flow Modal -->
+  <div id="createFlowModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create Flow</h2>
+        <p style="color: var(--text-secondary); font-size: 14px;">What happens next?</p>
+      </div>
+      <div class="info-box" id="flowSequenceInfo">
+        🔄 Following the nine-operator sequence...
+      </div>
+      <div class="form-group">
+        <label>Next activity name</label>
+        <input type="text" id="nextActivityTitle" class="input" placeholder="e.g., Review article" />
+      </div>
+      <div class="form-group">
+        <label>Which role handles this? (filtered by next operator in sequence)</label>
+        <select id="nextActivityRole" class="input" onchange="handleFlowRoleSelectChange()">
+          <option value="_new">+ Create new role</option>
+        </select>
+      </div>
+      <div id="flowNewRoleSection" style="display: none;">
+        <div class="form-group">
+          <label>New role name</label>
+          <input type="text" id="flowNewRoleName" class="input" placeholder="e.g., Content Reviewer" />
+        </div>
+        <div class="form-group">
+          <label>Operator type (next in sequence)</label>
+          <div id="flowOperatorGrid" class="operator-grid"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Flow type</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="flowType" value="sequential" checked />
+            <span>Sequential → (one-way to next activity)</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="flowType" value="loop" />
+            <span>Loop ↻ (can return to previous activity)</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Interface Contract (optional)</label>
+        <input type="text" id="flowContract" class="input" placeholder="e.g., Article draft + test evidence, complete within 48h" />
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeFlowModal()">Cancel</button>
+        <button class="btn primary" onclick="createFlow()">Propose Flow</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Consent Decision Modal -->
+  <div id="consentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Review Chain Proposal</h2>
+      </div>
+      <div id="consentContent"></div>
+      <div class="form-group">
+        <label>Response</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="consentDecision" value="accept" checked />
+            <span>✓ Accept - Work can flow through</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="consentDecision" value="reject" />
+            <span>✗ Reject - Needs clarification</span>
+          </label>
+        </div>
+      </div>
+      <div id="rejectReasonSection" style="display: none;">
+        <div class="form-group">
+          <label>Rejection reason</label>
+          <select id="rejectReason" class="input">
+            <option value="scope">Scope unclear or misaligned</option>
+            <option value="quality">Quality standards not met</option>
+            <option value="timing">Timing or cadence mismatch</option>
+            <option value="capacity">Insufficient capacity</option>
+            <option value="jurisdiction">Outside my authority</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" id="rejectNotes" class="input" placeholder="Additional context..." />
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="closeConsentModal()">Cancel</button>
+        <button class="btn primary" onclick="submitConsent()">Submit Decision</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Instantiate Pattern Modal -->
+  <div id="instantiatePatternModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="patternModalTitle">Instantiate Pattern</h2>
+      </div>
+      <div id="patternModalContent"></div>
+      <div class="btn-group">
+        <button class="btn" onclick="closePatternModal()">Cancel</button>
+        <button class="btn primary" onclick="instantiatePattern()">Create Flow</button>
       </div>
     </div>
   </div>
 
   <script>
-    // =============================
-    // Storage & Event Sourcing
-    // =============================
-    const STORAGE_KEY = 'eo_pm_eventstore_v03';
-    const eventStore = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-
-    function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(eventStore)); }
-
-    function recordEvent(evt){
-      const e = { id: 'evt-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), ts: Date.now(), v:3, ...evt };
-      eventStore.push(e); persist();
-      return e;
-    }
-
-    function op(opcode){ return opcode; }
-
-    // =============================
-    // Data Model
-    // =============================
-    const SIDEBAR_STATE_KEY = 'eo_pm_sidebar_state_v1';
-    const NAV_SECTION_KEYS = ['views','roles','workflows'];
-
-    function defaultSidebarState(){
-      return {
-        sections: {
-          views: { collapsed:false, tree:[] },
-          roles: { collapsed:false, tree:[] },
-          workflows: { collapsed:false, tree:[] }
-        }
-      };
-    }
-
-    function loadSidebarState(){
-      try{
-        const raw = localStorage.getItem(SIDEBAR_STATE_KEY);
-        if(!raw) return defaultSidebarState();
-        const parsed = JSON.parse(raw);
-        if(parsed && typeof parsed==='object' && parsed.sections) return parsed;
-      }catch(err){ console.warn('Failed to load sidebar state', err); }
-      return defaultSidebarState();
-    }
-
-    function persistSidebarState(){
-      localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(sidebarState));
-    }
-
-    function ensureSectionState(state, section){
-      if(!state.sections[section]){
-        state.sections[section] = { collapsed:false, tree:[] };
-      }
-      const node = state.sections[section];
-      node.tree = node.tree||[];
-      return node;
-    }
-
-    function findNode(nodes, predicate){
-      for(const node of nodes){
-        if(predicate(node)) return { node, parent:nodes };
-        if(node.type==='folder' && node.children){
-          const found = findNode(node.children, predicate);
-          if(found) return found;
-        }
-      }
-      return null;
-    }
-
-    function detachNode(nodes, predicate){
-      for(let i=0;i<nodes.length;i++){
-        const node = nodes[i];
-        if(predicate(node)){
-          nodes.splice(i,1);
-          return node;
-        }
-        if(node.type==='folder' && node.children){
-          const found = detachNode(node.children, predicate);
-          if(found) return found;
-        }
-      }
-      return null;
-    }
-
-    function ensureItemNode(sectionState, itemId, itemType){
-      const existing = findNode(sectionState.tree, n=>n.type==='item' && n.itemId===itemId);
-      if(existing) return existing.node;
-      const node = { type:'item', itemId, itemType };
-      sectionState.tree.push(node);
-      return node;
-    }
-
-    function findParentFolderId(sectionState, itemId){
-      function search(nodes, parentId){
-        for(const node of nodes){
-          if(node.type==='item' && node.itemId===itemId) return parentId;
-          if(node.type==='folder' && node.children){
-            const res = search(node.children, node.id);
-            if(res!==undefined) return res;
-          }
-        }
-        return undefined;
-      }
-      return search(sectionState.tree, null);
-    }
-
-    function moveItemNode(sectionState, itemId, itemType, targetFolderId){
-      const existingNode = detachNode(sectionState.tree, n=>n.type==='item' && n.itemId===itemId);
-      const node = existingNode || { type:'item', itemId, itemType };
-      if(targetFolderId){
-        const folder = findNode(sectionState.tree, n=>n.type==='folder' && n.id===targetFolderId);
-        if(folder){
-          folder.node.children = folder.node.children||[];
-          if(!findNode(folder.node.children, n=>n.type==='item' && n.itemId===itemId)){
-            folder.node.children.push(node);
-          }
-        } else {
-          sectionState.tree.push(node);
-        }
-      } else {
-        if(!findNode(sectionState.tree, n=>n.type==='item' && n.itemId===itemId)){
-          sectionState.tree.push(node);
-        }
-      }
-    }
-
-    function applySidebarEvent(state, evt){
-      if(!evt || !evt.type) return;
-      if(evt.section && !NAV_SECTION_KEYS.includes(evt.section)) return;
-      if(evt.type==='folder_created'){
-        const section = ensureSectionState(state, evt.section);
-        if(findNode(section.tree, n=>n.type==='folder' && n.id===evt.folder_id)) return;
-        const folderNode = { type:'folder', id:evt.folder_id, name:evt.name||'Folder', children:[] };
-        if(evt.parent_folder_id){
-          const parent = findNode(section.tree, n=>n.type==='folder' && n.id===evt.parent_folder_id);
-          if(parent){
-            parent.node.children = parent.node.children||[];
-            parent.node.children.push(folderNode);
-          } else {
-            section.tree.push(folderNode);
-          }
-        } else {
-          section.tree.push(folderNode);
-        }
-      }
-      if(evt.type==='folder_item_added'){
-        const section = ensureSectionState(state, evt.section);
-        const itemType = evt.item_type || (evt.section==='roles'?'role':evt.section==='workflows'?'workflow':'view');
-        ensureItemNode(section, evt.item_id, itemType);
-        const currentParent = findParentFolderId(section, evt.item_id);
-        const targetFolderId = evt.folder_id||null;
-        if((currentParent||null) === targetFolderId) return;
-        moveItemNode(section, evt.item_id, itemType, targetFolderId);
-      }
-      if(evt.type==='section_collapsed'){
-        const section = ensureSectionState(state, evt.section);
-        section.collapsed = !!evt.collapsed;
-      }
-    }
-
-    function sidebarEventTypes(){
-      return ['folder_created','folder_item_added','section_collapsed'];
-    }
-
-    function hydrateSidebarState(){
-      const state = loadSidebarState();
-      const events = eventStore.filter(e=>sidebarEventTypes().includes(e.type)).sort((a,b)=>a.ts-b.ts);
-      events.forEach(evt=>applySidebarEvent(state, evt));
-      return state;
-    }
-    const operators = [
-      {id:'starter',name:'Starter'}, {id:'connector',name:'Connector'}, {id:'coordinator',name:'Coordinator'},
-      {id:'doer',name:'Doer'}, {id:'reviewer',name:'Reviewer'}, {id:'documenter',name:'Documenter'},
-      {id:'approver',name:'Approver'}, {id:'steward',name:'Steward'}, {id:'convener',name:'Convener'}
+    // ========================================
+    // OPERATORS & OPCODES
+    // ========================================
+    
+    const OPERATORS = [
+      { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', opcode: 'DES', seq: 1 },
+      { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', opcode: 'INS', seq: 2 },
+      { id: 'connector', name: 'Connector', desc: 'Links work across contexts', opcode: 'CON', seq: 3 },
+      { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', opcode: 'SEG', seq: 4 },
+      { id: 'approver', name: 'Approver', desc: 'Alters state with authority', opcode: 'ALT', seq: 5 },
+      { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', opcode: 'REC', seq: 6 },
+      { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', opcode: 'CON', seq: 7 },
+      { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', opcode: 'SUP', seq: 8 },
+      { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', opcode: 'CON', seq: 9 }
     ];
-
-    const roles = {
-      'content-writer': { id:'content-writer', name:'Content Writer', operator:'doer', people:['alex','sam'], power:{institutional:1,epistemic:2,action:2,narrative:2} },
-      'sm-reviewer': { id:'sm-reviewer', name:'SM Reviewer', operator:'reviewer', people:['pat'], power:{institutional:2,epistemic:3,action:1,narrative:2} },
-      'sm-approver': { id:'sm-approver', name:'SM Approver', operator:'approver', people:['casey'], power:{institutional:3,epistemic:2,action:3,narrative:2} }
-    };
-
-    const workflows = {
-      'social-media': {
-        id:'social-media', name:'Social Media Creation', frame_id:'content_ops_quarterly',
-        description:'How we create social media content',
-        chain:[
-          { role:'content-writer', handoff_rules:[
-              { id:'has_draft', text:'Draft complete', auto_detect:(t)=>t.artifacts.some(a=>/draft/i.test(a.name)) },
-              { id:'has_images', text:'Has images', auto_detect:(t)=>t.artifacts.some(a=>a.type==='image') }
-          ]},
-          { role:'sm-reviewer', handoff_rules:[ { id:'review_complete', text:'Review complete', auto_detect:null } ] },
-          { role:'sm-approver', handoff_rules:[ { id:'approved', text:'Approved for publish', auto_detect:null } ] }
-        ]
+    
+    function getNextOperatorTypes(currentOperatorType) {
+      const current = OPERATORS.find(op => op.id === currentOperatorType);
+      if (!current) return OPERATORS;
+      
+      const nextSeq = current.seq + 1;
+      if (nextSeq > 9) {
+        // Loop back to start
+        return OPERATORS.filter(op => op.seq === 1);
       }
-    };
-
-    let sidebarState = hydrateSidebarState();
-    persistSidebarState();
-
-    // =============================
-    // Seed Data
-    // =============================
-    if(eventStore.length===0){
-      recordEvent({ type:'task_created', task_id:'TASK-001', title:'Housing blog post', workflow:'social-media', initial_role:'content-writer', actor:'alex', ops:[op('DES'),op('INS')] });
-      recordEvent({ type:'task_status_set', task_id:'TASK-001', status:'todo', prev_status:null, actor:'alex', ops:[op('ALT')] });
-      recordEvent({ type:'task_created', task_id:'TASK-002', title:'Climate action post', workflow:'social-media', initial_role:'content-writer', actor:'alex', ops:[op('DES'),op('INS')] });
-      recordEvent({ type:'task_status_set', task_id:'TASK-002', status:'doing', prev_status:'todo', actor:'alex', ops:[op('ALT')] });
-      recordEvent({ type:'artifact_added', task_id:'TASK-002', artifact_name:'draft.md', artifact_type:'document', actor:'alex', ops:[op('INS')] });
-      recordEvent({ type:'artifact_added', task_id:'TASK-002', artifact_name:'climate-graph.png', artifact_type:'image', actor:'alex', ops:[op('INS')] });
-      recordEvent({ type:'checkpoint_detected', task_id:'TASK-002', checkpoint:'has_draft', evidence:'draft.md attached', source:'auto', ops:[op('SEG')] });
-      recordEvent({ type:'checkpoint_detected', task_id:'TASK-002', checkpoint:'has_images', evidence:'1 image attached', source:'auto', ops:[op('SEG')] });
-      recordEvent({ type:'task_created', task_id:'TASK-003', title:'Mutual aid guide', workflow:'social-media', initial_role:'content-writer', actor:'sam', ops:[op('DES'),op('INS')] });
-      recordEvent({ type:'task_status_set', task_id:'TASK-003', status:'doing', prev_status:'todo', actor:'sam', ops:[op('ALT')] });
-      recordEvent({ type:'artifact_added', task_id:'TASK-003', artifact_name:'guide-draft.md', artifact_type:'document', actor:'sam', ops:[op('INS')] });
-      recordEvent({ type:'role_transitioned', task_id:'TASK-003', from_role:'content-writer', to_role:'sm-reviewer', actor:'sam', ops:[op('CON')] });
-      recordEvent({ type:'task_created', task_id:'TASK-004', title:'Community calendar', workflow:'social-media', initial_role:'content-writer', actor:'jordan', ops:[op('DES'),op('INS')] });
-      recordEvent({ type:'task_status_set', task_id:'TASK-004', status:'done', prev_status:'doing', actor:'jordan', ops:[op('ALT')] });
-      recordEvent({ type:'artifact_added', task_id:'TASK-004', artifact_name:'calendar-final.md', artifact_type:'document', actor:'jordan', ops:[op('INS')] });
-      recordEvent({ type:'role_transitioned', task_id:'TASK-004', from_role:'content-writer', to_role:'sm-reviewer', actor:'jordan', ops:[op('CON')] });
-      recordEvent({ type:'checkpoint_detected', task_id:'TASK-004', checkpoint:'review_complete', evidence:'Reviewer marked complete', source:'manual', ops:[op('SEG')] });
-      recordEvent({ type:'role_transitioned', task_id:'TASK-004', from_role:'sm-reviewer', to_role:'sm-approver', actor:'pat', ops:[op('CON')] });
+      
+      return OPERATORS.filter(op => op.seq === nextSeq);
     }
-
-    // =============================
-    // Projections
-    // =============================
-    function taskIds(){ const s=new Set(); eventStore.forEach(e=>e.task_id && s.add(e.task_id)); return [...s]; }
-
-    function project(taskId){
-      const events = eventStore.filter(e=>e.task_id===taskId).sort((a,b)=>a.ts-b.ts);
-      const state = { id:taskId, title:'', workflow:null, frame_id:null, current_role:null, status:'todo', artifacts:[], checkpoints:{}, timeline:[] };
-      for(const e of events){
-        if(e.type==='task_created'){ state.title=e.title; state.workflow=e.workflow; state.frame_id=workflows[e.workflow]?.frame_id||null; state.current_role=e.initial_role; }
-        if(e.type==='artifact_added'){ state.artifacts.push({name:e.artifact_name, type:e.artifact_type, added_by:e.actor, added_at:e.ts}); }
-        if(e.type==='role_transitioned'){ state.current_role=e.to_role; }
-        if(e.type==='checkpoint_detected'){ state.checkpoints[e.checkpoint] = { met:true, evidence:e.evidence, source:e.source||'manual' }; }
-        if(e.type==='checkpoint_cleared'){ delete state.checkpoints[e.checkpoint]; }
-        if(e.type==='task_status_set'){ state.status=e.status; }
-        state.timeline.push({ ts:e.ts, type:e.type, who:e.actor||'system', desc:describe(e) });
+    
+    const OPCODES = {
+      DES: 'DES', INS: 'INS', SEG: 'SEG', CON: 'CON',
+      ALT: 'ALT', REC: 'REC', SUP: 'SUP'
+    };
+    
+    // ========================================
+    // EVENT SOURCING & STORAGE
+    // ========================================
+    
+    const STORAGE_KEY = 'eo_pm_events_v7';
+    let eventStore = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let currentActivity = null;
+    let currentChain = null;
+    let currentPattern = null;
+    let currentUser = '';
+    let project = null;
+    let selectedOperator = null;
+    let activeTab = 'work';
+    
+    function recordEvent(event) {
+      const evt = {
+        id: 'evt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        ts: Date.now(),
+        ...event
+      };
+      eventStore.push(evt);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(eventStore));
+      return evt;
+    }
+    
+    // ========================================
+    // STATE PROJECTION
+    // ========================================
+    
+    function projectRoles() {
+      const roles = {};
+      
+      eventStore.forEach(e => {
+        if (e.type === 'role_created') {
+          roles[e.role_id] = {
+            id: e.role_id,
+            name: e.role_name,
+            operator_type: e.operator_type,
+            people: e.people || [],
+            created_by: e.actor
+          };
+        }
+        if (e.type === 'person_joined_role') {
+          if (roles[e.role_id] && !roles[e.role_id].people.includes(e.person)) {
+            roles[e.role_id].people.push(e.person);
+          }
+        }
+      });
+      
+      return roles;
+    }
+    
+    function projectActivity(activityId) {
+      const events = eventStore.filter(e => e.activity_id === activityId).sort((a, b) => a.ts - b.ts);
+      const state = {
+        id: activityId,
+        title: '',
+        role_id: null,
+        status: 'unclaimed',
+        claimed_by: null,
+        priority: null,
+        estimated_completion: null,
+        completed_at: null,
+        next_activity: null,
+        flow_type: null,
+        created_by: null
+      };
+      
+      for (const e of events) {
+        if (e.type === 'activity_created') {
+          state.title = e.title;
+          state.role_id = e.role_id;
+          state.created_by = e.actor;
+        }
+        if (e.type === 'activity_claimed') {
+          state.status = 'claimed';
+          state.claimed_by = e.person;
+          state.priority = e.priority;
+          state.estimated_completion = e.estimated_completion;
+        }
+        if (e.type === 'activity_completed') {
+          state.status = 'completed';
+          state.completed_at = e.ts;
+        }
+        if (e.type === 'flow_created') {
+          state.next_activity = e.next_activity_id;
+          state.flow_type = e.flow_type;
+        }
       }
+      
       return state;
     }
-
-    function describe(e){
-      switch(e.type){
-        case 'task_created': return `created task "${e.title}"`;
-        case 'artifact_added': return `added ${e.artifact_name}`;
-        case 'role_transitioned': return `moved to ${roles[e.to_role]?.name||e.to_role}`;
-        case 'checkpoint_detected': return `checkpoint "${e.checkpoint}" met`;
-        case 'checkpoint_cleared': return `checkpoint "${e.checkpoint}" cleared`;
-        case 'ready_marked': return `marked ready`;
-        case 'override_move': return `override move → ${roles[e.to_role]?.name||e.to_role} (reason: ${e.reason})`;
-        case 'task_status_set': return `status → ${e.status}`;
-        default: return e.type;
-      }
+    
+    function getAllActivities() {
+      const activityIds = new Set();
+      eventStore.forEach(e => {
+        if (e.activity_id) activityIds.add(e.activity_id);
+      });
+      return Array.from(activityIds).map(projectActivity);
     }
-
-    function tasksAtRole(roleId){ return taskIds().map(project).filter(t=>t.current_role===roleId); }
-    function tasksInWorkflow(wfId){ return taskIds().map(project).filter(t=>t.workflow===wfId); }
-
-    function isReady(task){
-      const wf = workflows[task.workflow]; if(!wf) return false;
-      const idx = wf.chain.findIndex(s=>s.role===task.current_role); if(idx<0) return false;
-      const step = wf.chain[idx]; if(!step.handoff_rules || step.handoff_rules.length===0) return true;
-      return step.handoff_rules.every(rule => rule.auto_detect ? !!rule.auto_detect(task) : !!task.checkpoints[rule.id]);
-    }
-
-    // =============================
-    // Rendering
-    // =============================
-    let currentView = { type:'status' };
-    let layout = 'board';
-
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
-    const navRoot = $('#navRoot');
-
-    function render(){
-      renderSidebar();
-      updateViewTitle();
-      if(currentView.type==='status'){ return renderStatusBoard(); }
-      if(currentView.type==='tasks'){ return renderAllTasks(); }
-      if(currentView.type==='roles'){ return renderRoles(); }
-      if(currentView.type==='workflows'){ return renderWorkflows(); }
-      if(layout==='board') return renderBoard();
-      return renderList();
-    }
-
-    function updateViewTitle(){
-      const titles = {
-        'status': 'My Board',
-        'tasks': 'All Tasks',
-        'roles': 'Roles',
-        'workflows': 'Workflows',
-        'role': roles[currentView.id]?.name || 'Role',
-        'workflow': workflows[currentView.id]?.name || 'Workflow'
+    
+    function projectChain(chainId) {
+      const events = eventStore.filter(e => e.chain_id === chainId).sort((a, b) => a.ts - b.ts);
+      const state = {
+        id: chainId,
+        from_activity_id: null,
+        to_activity_id: null,
+        contract: null,
+        status: 'pending',
+        proposed_by: null,
+        decided_by: null,
+        reject_reason: null,
+        reject_notes: null,
+        created_at: null
       };
-      $('#viewTitle').textContent = titles[currentView.type] || 'View';
-    }
-
-    function getSectionItems(sectionKey){
-      if(sectionKey==='views'){
-        const totalTasks = taskIds().length;
-        return [
-          { id:'status', type:'view', label:'My Board', badge:totalTasks, dataset:{ view:'status' } },
-          { id:'tasks', type:'view', label:'All Tasks', badge:totalTasks, dataset:{ view:'tasks' } },
-          { id:'roles', type:'view', label:'Roles', badge:Object.keys(roles).length, dataset:{ view:'roles' } },
-          { id:'workflows', type:'view', label:'Workflows', badge:Object.keys(workflows).length, dataset:{ view:'workflows' } }
-        ];
-      }
-      if(sectionKey==='roles'){
-        return Object.values(roles).map(r=>({
-          id:r.id,
-          type:'role',
-          label:r.name,
-          badge:tasksAtRole(r.id).length,
-          dataset:{ view:'role', role:r.id },
-          draggable:true
-        }));
-      }
-      if(sectionKey==='workflows'){
-        return Object.values(workflows).map(wf=>({
-          id:wf.id,
-          type:'workflow',
-          label:wf.name,
-          badge:tasksInWorkflow(wf.id).length,
-          dataset:{ view:'workflow', workflow:wf.id },
-          draggable:true
-        }));
-      }
-      return [];
-    }
-
-    function syncSectionTree(sectionKey, items){
-      const sectionState = ensureSectionState(sidebarState, sectionKey);
-      const validIds = new Set(items.map(i=>i.id));
-      let changed = false;
-
-      function filterNodes(nodes){
-        const result = [];
-        nodes.forEach(node=>{
-          if(node.type==='item'){
-            if(validIds.has(node.itemId)){
-              result.push(node);
-            } else {
-              changed = true;
-            }
-          } else if(node.type==='folder'){
-            node.children = filterNodes(node.children||[]);
-            result.push(node);
-          }
-        });
-        return result;
-      }
-
-      const filtered = filterNodes(sectionState.tree||[]);
-      if(filtered.length !== sectionState.tree.length) changed = true;
-      sectionState.tree = filtered;
-
-      const existing = new Set();
-      function collect(nodes){
-        nodes.forEach(node=>{
-          if(node.type==='item'){
-            existing.add(node.itemId);
-            if(!node.itemType){
-              const match = items.find(i=>i.id===node.itemId);
-              if(match) node.itemType = match.type;
-            }
-          }
-          if(node.type==='folder' && node.children) collect(node.children);
-        });
-      }
-      collect(sectionState.tree);
-
-      items.forEach(item=>{
-        if(!existing.has(item.id)){
-          sectionState.tree.push({ type:'item', itemId:item.id, itemType:item.type });
-          changed = true;
-        }
-      });
-
-      if(changed) persistSidebarState();
-    }
-
-    function createNavNodeElement(sectionKey, node, depth, itemMap){
-      if(node.type==='folder'){
-        const wrapper = document.createElement('div');
-        wrapper.className = 'nav-folder';
-        wrapper.dataset.section = sectionKey;
-        wrapper.dataset.folderId = node.id;
-
-        const header = document.createElement('div');
-        header.className = 'nav-folder-header';
-        header.dataset.section = sectionKey;
-        header.dataset.folderId = node.id;
-        header.style.paddingLeft = `${12 + depth*16}px`;
-
-        const label = document.createElement('div');
-        label.className = 'folder-label';
-        const chevron = document.createElement('span');
-        chevron.className = 'folder-chevron';
-        chevron.textContent = '▾';
-        const name = document.createElement('span');
-        name.textContent = node.name || 'Folder';
-        label.appendChild(chevron);
-        label.appendChild(name);
-        header.appendChild(label);
-
-        const childrenContainer = document.createElement('div');
-        childrenContainer.className = 'nav-children';
-        (node.children||[]).forEach(child=>{
-          const childEl = createNavNodeElement(sectionKey, child, depth+1, itemMap);
-          if(childEl) childrenContainer.appendChild(childEl);
-        });
-
-        wrapper.appendChild(header);
-        wrapper.appendChild(childrenContainer);
-        return wrapper;
-      }
-
-      if(node.type==='item'){
-        const item = itemMap.get(node.itemId);
-        if(!item) return null;
-        const el = document.createElement('div');
-        el.className = 'nav-item nav-link';
-        el.style.paddingLeft = `${12 + depth*16}px`;
-        el.dataset.section = sectionKey;
-        el.dataset.itemId = item.id;
-        el.dataset.itemType = item.type;
-        if(item.draggable) el.dataset.draggable = 'true';
-        const dataset = item.dataset||{};
-        Object.keys(dataset).forEach(key=>{
-          if(dataset[key]!==undefined && dataset[key]!==null){
-            el.dataset[key] = dataset[key];
-          }
-        });
-
-        const labelSpan = document.createElement('span');
-        labelSpan.textContent = item.label;
-        const badgeSpan = document.createElement('span');
-        badgeSpan.className = 'badge';
-        if(item.badge!==undefined && item.badge!==null){
-          badgeSpan.textContent = item.badge;
-          badgeSpan.style.visibility = 'visible';
-        } else {
-          badgeSpan.textContent = '';
-          badgeSpan.style.visibility = 'hidden';
-        }
-
-        const viewType = dataset.view;
-        let isActive = false;
-        if(viewType==='role'){
-          isActive = currentView.type==='role' && currentView.id===dataset.role;
-        } else if(viewType==='workflow'){
-          isActive = currentView.type==='workflow' && currentView.id===dataset.workflow;
-        } else if(viewType){
-          isActive = currentView.type===viewType;
-        }
-        if(isActive) el.classList.add('active');
-
-        el.appendChild(labelSpan);
-        el.appendChild(badgeSpan);
-        return el;
-      }
-      return null;
-    }
-
-    function renderSidebar(){
-      NAV_SECTION_KEYS.forEach(sectionKey=>{
-        const container = document.querySelector(`[data-section-items="${sectionKey}"]`);
-        if(!container) return;
-        const items = getSectionItems(sectionKey);
-        syncSectionTree(sectionKey, items);
-        container.innerHTML = '';
-        const map = new Map(items.map(item=>[item.id, item]));
-        const sectionState = ensureSectionState(sidebarState, sectionKey);
-        sectionState.tree.forEach(node=>{
-          const el = createNavNodeElement(sectionKey, node, 0, map);
-          if(el) container.appendChild(el);
-        });
-        const sectionEl = container.closest('.nav-section');
-        if(sectionEl){
-          sectionEl.classList.toggle('collapsed', !!sectionState.collapsed);
-          const toggle = sectionEl.querySelector('[data-section-toggle]');
-          if(toggle) toggle.setAttribute('data-collapsed', sectionState.collapsed?'true':'false');
-        }
-      });
-      bindSidebarDragAndDrop();
-    }
-
-    function sidebarDragPayload(section, itemId, itemType){
-      return JSON.stringify({ section, itemId, itemType });
-    }
-
-    function bindSidebarDragAndDrop(){
-      $$('.nav-item.nav-link[data-draggable="true"]').forEach(item=>{
-        item.setAttribute('draggable','true');
-        item.addEventListener('dragstart', e=>{
-          const section = item.dataset.section;
-          const itemId = item.dataset.itemId;
-          const itemType = item.dataset.itemType;
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('application/x-epo-nav', sidebarDragPayload(section, itemId, itemType));
-        });
-      });
-
-      $$('.nav-folder-header').forEach(folder=>{
-        folder.addEventListener('dragover', e=>{
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          folder.classList.add('drag-over');
-        });
-        folder.addEventListener('dragleave', ()=>{
-          folder.classList.remove('drag-over');
-        });
-        folder.addEventListener('drop', e=>{
-          e.preventDefault();
-          folder.classList.remove('drag-over');
-          const data = e.dataTransfer.getData('application/x-epo-nav');
-          if(!data) return;
-          let payload = null;
-          try{ payload = JSON.parse(data); }catch(err){ return; }
-          if(payload.section !== folder.dataset.section) return;
-          handleSidebarItemMove(payload.section, payload.itemId, payload.itemType, folder.dataset.folderId);
-        });
-      });
-
-      $$('.nav-items[data-drop-root]').forEach(container=>{
-        container.addEventListener('dragover', e=>{
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          container.classList.add('drag-over');
-        });
-        container.addEventListener('dragleave', ()=>{
-          container.classList.remove('drag-over');
-        });
-        container.addEventListener('drop', e=>{
-          e.preventDefault();
-          container.classList.remove('drag-over');
-          const data = e.dataTransfer.getData('application/x-epo-nav');
-          if(!data) return;
-          let payload = null;
-          try{ payload = JSON.parse(data); }catch(err){ return; }
-          const sectionKey = container.getAttribute('data-drop-root');
-          if(payload.section !== sectionKey) return;
-          handleSidebarItemMove(payload.section, payload.itemId, payload.itemType, null);
-        });
-      });
-    }
-
-    function handleSidebarItemMove(sectionKey, itemId, itemType, folderId){
-      const sectionState = ensureSectionState(sidebarState, sectionKey);
-      const currentParent = findParentFolderId(sectionState, itemId);
-      const normalizedTarget = folderId||null;
-      if((currentParent||null) === normalizedTarget) return;
-      const effectiveType = itemType || (sectionKey==='roles'?'role':sectionKey==='workflows'?'workflow':'view');
-      const evt = recordEvent({
-        type:'folder_item_added',
-        section:sectionKey,
-        folder_id:normalizedTarget,
-        item_id:itemId,
-        item_type:effectiveType,
-        from_folder_id:currentParent||null
-      });
-      applySidebarEvent(sidebarState, evt);
-      persistSidebarState();
-      renderSidebar();
-    }
-
-    function card(task, showWorkflow=false, showRole=false){
-      const ready = isReady(task);
-      const wf = workflows[task.workflow];
-      const role = roles[task.current_role];
       
-      return `<div class="card ${ready?'ready':''}" data-open="${task.id}" draggable="true">
-        <div class="card-id">${task.id}</div>
-        <div class="card-title">${task.title}</div>
-        <div class="card-meta">
-          ${showWorkflow?`<span class="pill">${wf?.name||task.workflow}</span>`:''}
-          ${showRole?`<span class="pill">${role?.name||task.current_role}</span>`:''}
-          <span class="pill status-${task.status}">${task.status}</span>
-          ${task.artifacts.length>0?`<span class="pill">${task.artifacts.length} ${task.artifacts.length===1?'file':'files'}</span>`:''}
-          ${ready?`<span class="pill ready">✓ Ready</span>`:''}
+      for (const e of events) {
+        if (e.type === 'chain_proposed') {
+          state.from_activity_id = e.from_activity_id;
+          state.to_activity_id = e.to_activity_id;
+          state.contract = e.contract;
+          state.proposed_by = e.actor;
+          state.created_at = e.ts;
+        }
+        if (e.type === 'chain_accepted') {
+          state.status = 'accepted';
+          state.decided_by = e.actor;
+        }
+        if (e.type === 'chain_rejected') {
+          state.status = 'rejected';
+          state.decided_by = e.actor;
+          state.reject_reason = e.reason;
+          state.reject_notes = e.notes;
+        }
+      }
+      
+      return state;
+    }
+    
+    function getAllChains() {
+      const chainIds = new Set();
+      eventStore.forEach(e => {
+        if (e.chain_id) chainIds.add(e.chain_id);
+      });
+      return Array.from(chainIds).map(projectChain);
+    }
+    
+    function getPendingChainsForUser(person) {
+      const roles = projectRoles();
+      const myRoleIds = Object.values(roles)
+        .filter(r => r.people.includes(person))
+        .map(r => r.id);
+      
+      return getAllChains().filter(chain => {
+        if (chain.status !== 'pending') return false;
+        const toActivity = projectActivity(chain.to_activity_id);
+        return myRoleIds.includes(toActivity.role_id);
+      });
+    }
+    
+    function projectPattern(patternId) {
+      const events = eventStore.filter(e => e.pattern_id === patternId).sort((a, b) => a.ts - b.ts);
+      const state = {
+        id: patternId,
+        name: null,
+        chain_topology: [],
+        success_count: 0,
+        avg_cycle_time: null,
+        created_at: null
+      };
+      
+      for (const e of events) {
+        if (e.type === 'pattern_promoted') {
+          state.name = e.pattern_name;
+          state.chain_topology = e.chain_topology;
+          state.success_count = e.success_count;
+          state.created_at = e.ts;
+        }
+        if (e.type === 'pattern_instantiated') {
+          state.success_count++;
+        }
+      }
+      
+      return state;
+    }
+    
+    function getAllPatterns() {
+      const patternIds = new Set();
+      eventStore.forEach(e => {
+        if (e.pattern_id) patternIds.add(e.pattern_id);
+      });
+      return Array.from(patternIds).map(projectPattern);
+    }
+    
+    function detectPatternPromotion() {
+      const completedFlows = {};
+      
+      eventStore.forEach(e => {
+        if (e.type === 'flow_created') {
+          const fromActivity = projectActivity(e.activity_id);
+          const toActivity = projectActivity(e.next_activity_id);
+          if (!fromActivity || !toActivity) return;
+          
+          const fromRole = projectRoles()[fromActivity.role_id];
+          const toRole = projectRoles()[toActivity.role_id];
+          if (!fromRole || !toRole) return;
+          
+          const topologyKey = `${fromRole.operator_type}->${toRole.operator_type}`;
+          
+          if (!completedFlows[topologyKey]) {
+            completedFlows[topologyKey] = {
+              count: 0,
+              roles: [fromRole, toRole],
+              examples: []
+            };
+          }
+          
+          completedFlows[topologyKey].count++;
+          completedFlows[topologyKey].examples.push({
+            from: fromActivity.title,
+            to: toActivity.title
+          });
+        }
+      });
+      
+      Object.entries(completedFlows).forEach(([key, data]) => {
+        if (data.count >= 3) {
+          const existingPattern = getAllPatterns().find(p => 
+            p.chain_topology.map(r => r.operator_type).join('->') === key
+          );
+          
+          if (!existingPattern) {
+            const patternId = 'pattern-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+            const patternName = `${data.roles[0].name} → ${data.roles[1].name} Flow`;
+            
+            recordEvent({
+              type: 'pattern_promoted',
+              pattern_id: patternId,
+              pattern_name: patternName,
+              chain_topology: data.roles.map(r => ({
+                operator_type: r.operator_type,
+                role_name: r.name
+              })),
+              success_count: data.count,
+              actor: 'system',
+              ops: [OPCODES.REC, OPCODES.SUP]
+            });
+          }
+        }
+      });
+    }
+    
+    function getActivitiesForRole(roleId) {
+      return getAllActivities().filter(a => a.role_id === roleId && a.status !== 'completed');
+    }
+    
+    function getMyActivities(person) {
+      return getAllActivities().filter(a => a.claimed_by === person && a.status === 'claimed');
+    }
+    
+    function canClaimActivity(activity, person) {
+      if (activity.status !== 'unclaimed') return false;
+      const roles = projectRoles();
+      const role = roles[activity.role_id];
+      return role && role.people.includes(person);
+    }
+    
+    // ========================================
+    // UI RENDERING
+    // ========================================
+    
+    function createProject() {
+      const name = document.getElementById('projectName').value.trim();
+      const teamStr = document.getElementById('teamMembers').value.trim();
+      const user = document.getElementById('currentUser').value.trim();
+      
+      if (!name || !user) {
+        alert('Please fill in project name and your name');
+        return;
+      }
+      
+      currentUser = user;
+      const team = teamStr ? teamStr.split(',').map(s => s.trim()) : [user];
+      
+      project = { name, team };
+      
+      recordEvent({
+        type: 'project_created',
+        project_name: name,
+        team: team,
+        created_by: user,
+        ops: [OPCODES.DES, OPCODES.INS]
+      });
+      
+      document.getElementById('headerTitle').textContent = name;
+      document.getElementById('headerSubtitle').textContent = `Team: ${team.join(', ')}`;
+      document.getElementById('operatorSequence').style.display = 'flex';
+      
+      document.getElementById('setupView').style.display = 'none';
+      document.getElementById('mainView').style.display = 'block';
+      
+      renderAll();
+    }
+    
+    function renderAll() {
+      detectPatternPromotion();
+      renderMyActivities();
+      renderAllActivities();
+      renderRoles();
+      renderConsentQueue();
+      renderPatterns();
+      updateConsentBadge();
+    }
+    
+    function switchTab(tab) {
+      activeTab = tab;
+      const allTabs = document.querySelectorAll('.tab');
+      const allContent = document.querySelectorAll('.tab-content');
+      
+      allTabs.forEach(t => t.classList.remove('active'));
+      allContent.forEach(t => t.style.display = 'none');
+      
+      if (tab === 'work') {
+        allTabs[0].classList.add('active');
+        document.getElementById('workTab').style.display = 'block';
+      } else if (tab === 'consent') {
+        allTabs[1].classList.add('active');
+        document.getElementById('consentTab').style.display = 'block';
+      } else if (tab === 'patterns') {
+        allTabs[2].classList.add('active');
+        document.getElementById('patternsTab').style.display = 'block';
+      } else if (tab === 'roles') {
+        allTabs[3].classList.add('active');
+        document.getElementById('rolesTab').style.display = 'block';
+      }
+    }
+    
+    function updateConsentBadge() {
+      const pending = getPendingChainsForUser(currentUser);
+      const badge = document.getElementById('consentBadge');
+      if (pending.length > 0) {
+        badge.innerHTML = `<span class="notification-badge">${pending.length}</span>`;
+      } else {
+        badge.innerHTML = '';
+      }
+    }
+    
+    function renderMyActivities() {
+      const myActivities = getMyActivities(currentUser);
+      const container = document.getElementById('myActivities');
+      
+      if (myActivities.length === 0) {
+        container.innerHTML = `
+          <div style="color: var(--text-secondary); font-size: 14px;">
+            No activities claimed yet. Claim an activity from below or create a new one.
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = '<div class="activity-pool">' + myActivities.map(renderActivityCard).join('') + '</div>';
+    }
+    
+    function renderAllActivities() {
+      const activities = getAllActivities();
+      const container = document.getElementById('allActivities');
+      
+      if (activities.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div>No activities yet. Create your first activity to get started!</div>
+          </div>
+        `;
+        return;
+      }
+      
+      const unclaimed = activities.filter(a => a.status === 'unclaimed');
+      const claimed = activities.filter(a => a.status === 'claimed');
+      const completed = activities.filter(a => a.status === 'completed');
+      
+      let html = '';
+      
+      if (unclaimed.length > 0) {
+        html += '<h3 style="margin-bottom: 12px; color: var(--text-secondary);">Available to Claim</h3>';
+        html += '<div class="activity-pool">' + unclaimed.map(renderActivityCard).join('') + '</div>';
+      }
+      
+      if (claimed.length > 0) {
+        html += '<h3 style="margin: 24px 0 12px; color: var(--text-secondary);">In Progress</h3>';
+        html += '<div class="activity-pool">' + claimed.map(renderActivityCard).join('') + '</div>';
+      }
+      
+      if (completed.length > 0) {
+        html += '<h3 style="margin: 24px 0 12px; color: var(--text-secondary);">Completed</h3>';
+        html += '<div class="activity-pool">' + completed.slice(-5).reverse().map(renderActivityCard).join('') + '</div>';
+      }
+      
+      container.innerHTML = html;
+    }
+    
+    function renderActivityCard(activity) {
+      const roles = projectRoles();
+      const role = roles[activity.role_id];
+      const isMine = activity.claimed_by === currentUser;
+      const canClaim = canClaimActivity(activity, currentUser);
+      const canChain = activity.status !== 'completed' && !activity.next_activity;
+      
+      const onclick = canClaim ? `showClaimModal('${activity.id}')` :
+                      isMine ? `showCompleteModal('${activity.id}')` :
+                      '';
+      
+      let statusText = '';
+      let statusClass = '';
+      
+      if (activity.status === 'completed') {
+        statusText = '✓ Done';
+      } else if (isMine) {
+        statusText = 'You';
+        statusClass = 'claimed';
+      } else if (activity.claimed_by) {
+        statusText = activity.claimed_by;
+        statusClass = 'claimed';
+      } else {
+        statusText = 'Available';
+      }
+      
+      let meta = '';
+      if (role) {
+        const operator = OPERATORS.find(op => op.id === role.operator_type);
+        meta += `<span class="badge">${role.name} : ${operator?.name}</span> `;
+        meta += `<span class="badge" style="background: var(--accent); color: white;">${operator?.seq}</span> `;
+      }
+      if (activity.priority) {
+        meta += `<span class="badge">${activity.priority}</span> `;
+      }
+      if (activity.next_activity) {
+        const nextActivity = projectActivity(activity.next_activity);
+        const nextRole = roles[nextActivity?.role_id];
+        const flowIcon = activity.flow_type === 'loop' ? '↻' : '→';
+        meta += `<span class="badge purple">Flow ${flowIcon} ${nextRole?.name || 'next'}</span>`;
+      }
+      
+      const cardClass = activity.next_activity ? 'in-flow' : (statusClass || '');
+      
+      return `
+        <div class="activity-card ${cardClass}" ${onclick ? `onclick="${onclick}"` : ''} style="${!onclick ? 'cursor: default;' : ''}">
+          <div class="activity-header">
+            <div class="activity-title">${activity.title}</div>
+            <div class="activity-status ${statusClass}">${statusText}</div>
+          </div>
+          ${meta ? `<div class="activity-meta">${meta}</div>` : ''}
+          ${canChain && (isMine || activity.status === 'unclaimed') ? `
+            <div style="margin-top: 12px;">
+              <button class="btn small" onclick="event.stopPropagation(); showFlowModal('${activity.id}')">⛓️ Chain to Next</button>
+            </div>
+          ` : ''}
         </div>
-      </div>`;
+      `;
     }
-
-    function renderStatusBoard(){
-      const all = taskIds().map(project);
-      const todo = all.filter(t => t.status === 'todo');
-      const doing = all.filter(t => t.status === 'doing');
-      const done = all.filter(t => t.status === 'done');
+    
+    function renderRoles() {
+      const roles = Object.values(projectRoles());
+      const container = document.getElementById('rolesList');
       
-      const cols = [
-        { name: 'To Do', tasks: todo, status: 'todo' },
-        { name: 'In Progress', tasks: doing, status: 'doing' },
-        { name: 'Completed', tasks: done, status: 'done' }
-      ].map(col => `
-        <div class="column">
-          <div class="column-header">
-            <div class="column-title">${col.name}</div>
-            <div class="column-count">${col.tasks.length}</div>
+      if (roles.length === 0) {
+        container.innerHTML = `
+          <div style="color: var(--text-secondary);">
+            No roles yet. Create an activity - roles will emerge.
           </div>
-          <div class="column-body" data-drop-status="${col.status}">
-            ${col.tasks.length ? col.tasks.map(t => card(t, true, true)).join('') : '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}
+        `;
+        return;
+      }
+      
+      container.innerHTML = '<div class="columns">' + roles.map(role => {
+        const operator = OPERATORS.find(op => op.id === role.operator_type);
+        const activities = getActivitiesForRole(role.id);
+        
+        return `
+          <div class="role-card">
+            <div class="role-header">
+              <div>
+                <div class="role-title">${role.name} : ${operator?.name}</div>
+                ${operator ? `<div class="role-type">Step ${operator.seq}</div>` : ''}
+              </div>
+              <div class="role-badge">${activities.length} activit${activities.length !== 1 ? 'ies' : 'y'}</div>
+            </div>
+            <div class="role-people">
+              ${role.people.length > 0 ? role.people.join(', ') : 'No one assigned'}
+            </div>
+            ${!role.people.includes(currentUser) ? `<button class="btn small" onclick="joinRole('${role.id}')" style="margin-top: 8px;">Join Role</button>` : ''}
           </div>
+        `;
+      }).join('') + '</div>';
+    }
+    
+    function renderConsentQueue() {
+      const container = document.getElementById('consentQueue');
+      const roles = projectRoles();
+      const myRoleIds = Object.values(roles)
+        .filter(r => r.people.includes(currentUser))
+        .map(r => r.id);
+      
+      const allChains = getAllChains();
+      const myChains = allChains.filter(chain => {
+        const toActivity = projectActivity(chain.to_activity_id);
+        return myRoleIds.includes(toActivity.role_id);
+      });
+      
+      const pending = myChains.filter(c => c.status === 'pending');
+      const accepted = myChains.filter(c => c.status === 'accepted');
+      const rejected = myChains.filter(c => c.status === 'rejected');
+      
+      if (myChains.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔗</div>
+            <div>No chain proposals yet. Complete activities and create flows to see them here.</div>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      
+      if (pending.length > 0) {
+        html += '<h3 style="margin-bottom: 12px; color: var(--warning);">⏳ Pending Your Decision</h3>';
+        html += pending.map(renderConsentCard).join('');
+      }
+      
+      if (accepted.length > 0) {
+        html += '<h3 style="margin: 24px 0 12px; color: var(--success);">✓ Accepted</h3>';
+        html += accepted.slice(-3).reverse().map(renderConsentCard).join('');
+      }
+      
+      if (rejected.length > 0) {
+        html += '<h3 style="margin: 24px 0 12px; color: var(--danger);">✗ Rejected</h3>';
+        html += rejected.slice(-3).reverse().map(renderConsentCard).join('');
+      }
+      
+      container.innerHTML = html;
+    }
+    
+    function renderConsentCard(chain) {
+      const fromActivity = projectActivity(chain.from_activity_id);
+      const toActivity = projectActivity(chain.to_activity_id);
+      const roles = projectRoles();
+      const fromRole = roles[fromActivity?.role_id];
+      const toRole = roles[toActivity?.role_id];
+      const fromOp = OPERATORS.find(op => op.id === fromRole?.operator_type);
+      const toOp = OPERATORS.find(op => op.id === toRole?.operator_type);
+      
+      const isPending = chain.status === 'pending';
+      const statusClass = chain.status;
+      
+      return `
+        <div class="consent-card ${statusClass}">
+          <div class="consent-header">
+            <div>
+              <div style="font-weight: 600; margin-bottom: 4px;">
+                ${fromActivity?.title || 'Unknown'} → ${toActivity?.title || 'Unknown'}
+              </div>
+              <div class="consent-flow">
+                <span class="badge">${fromRole?.name} : ${fromOp?.name}</span> →
+                <span class="badge">${toRole?.name} : ${toOp?.name}</span>
+              </div>
+            </div>
+          </div>
+          ${chain.contract ? `
+            <div class="consent-contract">
+              <strong>Contract:</strong> ${chain.contract}
+            </div>
+          ` : ''}
+          ${chain.status === 'rejected' ? `
+            <div style="margin-top: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 13px;">
+              <strong>Reason:</strong> ${chain.reject_reason}<br>
+              ${chain.reject_notes ? `<strong>Notes:</strong> ${chain.reject_notes}` : ''}
+            </div>
+          ` : ''}
+          ${isPending ? `
+            <div style="margin-top: 12px;">
+              <button class="btn small primary" onclick="showConsentModal('${chain.id}')">Review</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+    
+    function renderPatterns() {
+      const container = document.getElementById('patternsList');
+      const patterns = getAllPatterns();
+      
+      if (patterns.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔄</div>
+            <div>No patterns yet. Complete similar flows 3+ times to promote them into reusable patterns.</div>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = patterns.map(pattern => {
+        return `
+          <div class="pattern-card" onclick="showPatternModal('${pattern.id}')">
+            <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 8px;">
+              <div>
+                <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${pattern.name}</div>
+                <div class="chain-visual">
+                  ${pattern.chain_topology.map((r, i) => {
+                    const op = OPERATORS.find(o => o.id === r.operator_type);
+                    return `
+                      <span class="chain-node">${r.role_name} : ${op?.name}</span>
+                      ${i < pattern.chain_topology.length - 1 ? '<span class="chain-arrow">→</span>' : ''}
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="pattern-stats">
+              <div class="pattern-stat">
+                <span>✓</span>
+                <span>${pattern.success_count} completions</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function selectOperator(containerId, operatorId) {
+      selectedOperator = operatorId;
+      document.querySelectorAll(`#${containerId} .operator-card`).forEach(card => {
+        card.classList.toggle('selected', card.dataset.operator === operatorId);
+      });
+    }
+    
+    // ========================================
+    // MODALS - NEW ACTIVITY
+    // ========================================
+    
+    function showNewActivityModal() {
+      const roles = Object.values(projectRoles());
+      const select = document.getElementById('newActivityRole');
+      
+      select.innerHTML = '<option value="_new">⭐ Create new role...</option>' +
+        roles.map(r => {
+          const op = OPERATORS.find(o => o.id === r.operator_type);
+          return `<option value="${r.id}">${r.name} : ${op?.name}</option>`;
+        }).join('');
+      
+      // Add change listener to open role modal
+      select.onchange = function() {
+        if (this.value === '_new') {
+          showQuickRoleModal();
+        }
+      };
+      
+      document.getElementById('newActivityModal').classList.add('active');
+    }
+    
+    function closeNewActivityModal() {
+      document.getElementById('newActivityModal').classList.remove('active');
+      document.getElementById('newActivityTitle').value = '';
+      document.getElementById('newActivityRole').value = '_new';
+    }
+    
+    function showQuickRoleModal() {
+      const container = document.getElementById('quickOperatorGrid');
+      container.innerHTML = OPERATORS.map(op => `
+        <div class="operator-card" data-operator="${op.id}" onclick="selectOperator('quickOperatorGrid', '${op.id}')">
+          <div class="operator-name">${op.seq}. ${op.name}</div>
+          <div class="operator-desc">${op.desc}</div>
         </div>
       `).join('');
       
-      $('#main').innerHTML = `<div class="board">${cols}</div>`;
-      enableStatusDragDrop();
-      bindOpen();
+      document.getElementById('quickRoleModal').classList.add('active');
     }
-
-    function renderAllTasks(){
-      const all = taskIds().map(project);
-      if(layout === 'board'){
-        $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">All Tasks</div><div class="column-count">${all.length}</div></div><div class="column-body">${all.map(t=>card(t,true,true)).join('')}</div></div></div>`;
-        bindOpen();
-      } else {
-        renderList();
-      }
-    }
-
-    function renderBoard(){
-      if(currentView.type==='role'){
-        const rId=currentView.id, list=tasksAtRole(rId), role=roles[rId], op = operators.find(o=>o.id===role?.operator);
-        $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">${role?.name||rId} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${list.length}</div></div><div class="column-body">${list.length?list.map(t=>card(t,true)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div></div>`;
-        bindOpen();
-      }
-      else if(currentView.type==='workflow'){
-        const wf = workflows[currentView.id];
-        const tasks = tasksInWorkflow(wf.id);
-        const cols = wf.chain.map(step=>{
-          const r = roles[step.role];
-          const rs = tasks.filter(t=>t.current_role===step.role);
-          const op = operators.find(o=>o.id===r?.operator);
-          return `<div class="column"><div class="column-header"><div class="column-title">${r?.name||step.role} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${rs.length}</div></div><div class="column-body" data-drop="${step.role}">${rs.length?rs.map(t=>card(t)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div>`;
-        }).join('');
-        $('#main').innerHTML = `<div class="board">${cols}</div>`;
-        enableDragDrop();
-        bindOpen();
-      }
-    }
-
-    function renderList(){
-      const rows = taskIds().map(project).map(t=>{
-        const wf=workflows[t.workflow], role=roles[t.current_role];
-        return `<div class="list-row" data-open="${t.id}">
-          <div class="list-cell id">${t.id}</div>
-          <div class="list-cell title">${t.title}</div>
-          <div class="list-cell meta">${wf?.name||t.workflow}</div>
-          <div class="list-cell meta">${role?.name||t.current_role}</div>
-          <div class="list-cell"><span class="pill status-${t.status}">${t.status}</span></div>
-        </div>`;
-      }).join('');
-      $('#main').innerHTML = `<div class="list-container">
-        <div class="list-header"><div>ID</div><div>Title</div><div>Workflow</div><div>Role</div><div>Status</div></div>
-        ${rows}
-      </div>`;
-      bindOpen();
-    }
-
-    function renderRoles(){
-      const blocks = operators.map(op=>{
-        const rs = Object.values(roles).filter(r=>r.operator===op.id);
-        return rs.map(r=>{
-          const ppl = r.people.map(p=>`<span class="pill">${p}</span>`).join('');
-          const pv = r.power?`<div class="text-xs text-muted mt-1">Power: I${r.power.institutional} E${r.power.epistemic} A${r.power.action} N${r.power.narrative}</div>`:'';
-          return `<div class="detail-card"><div class="detail-card-title">${r.name}</div><div class="text-sm text-muted">${op.name}</div><div class="row mt-1">${ppl}</div>${pv}</div>`;
-        }).join('');
-      }).join('');
-      $('#main').innerHTML = `<div class="detail-grid">${blocks||'<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">No roles yet</div></div>'}</div>`;
-    }
-
-    function renderWorkflows(){
-      const blocks = Object.values(workflows).map(wf=>{
-        const steps = wf.chain.map((s,i)=>{
-          const r = roles[s.role];
-          return `<div class="workflow-step">${r?.name||s.role}</div>${i<wf.chain.length-1?'<div class="workflow-arrow">→</div>':''}`;
-        }).join('');
-        return `<div class="detail-card"><div class="detail-card-title">${wf.name}</div><div class="text-sm text-muted">${wf.description||''}</div><div class="workflow-chain">${steps}</div></div>`;
-      }).join('');
-      $('#main').innerHTML = `<div class="detail-grid">${blocks||'<div class="empty-state"><div class="empty-state-icon">🔄</div><div class="empty-state-title">No workflows yet</div></div>'}</div>`;
-    }
-
-    // =============================
-    // Modal
-    // =============================
-    let openTaskId = null;
     
-    function bindOpen(){ 
-      $$('[data-open]').forEach(el=> {
-        el.addEventListener('click', (e)=> {
-          if(e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return;
-          openTask(el.getAttribute('data-open'));
-        });
-      });
-    }
-
-    function openTask(id){
-      openTaskId = id; 
-      const t = project(id);
-      const wf = workflows[t.workflow];
-      const idx = wf.chain.findIndex(s=>s.role===t.current_role);
-      const step = wf.chain[idx];
+    function closeQuickRoleModal() {
+      document.getElementById('quickRoleModal').classList.remove('active');
+      document.getElementById('quickRoleName').value = '';
+      selectedOperator = null;
       
-      $('#modalTitle').textContent = `${t.id} · ${t.title}`;
-      
-      const rulesHTML = (step.handoff_rules||[]).map(rule=>{
-        const met = rule.auto_detect ? !!rule.auto_detect(t) : !!t.checkpoints[rule.id];
-        const evidence = met ? (t.checkpoints[rule.id]?.evidence || 'auto-detected') : 'not met';
-        return `<div class="checkpoint-item">
-          <div class="checkpoint-status ${met?'met':'unmet'}">${met?'✓':'?'}</div>
-          <div class="checkpoint-info">
-            <div class="checkpoint-text">${rule.text}</div>
-            <div class="checkpoint-evidence">${evidence}</div>
-          </div>
-          ${!rule.auto_detect? `<button class="btn sm" data-toggle-cp="${rule.id}">${met?'Clear':'Mark'}</button>`:''}
-        </div>`;
-      }).join('');
-
-      const artHTML = t.artifacts.map(a=>`<div class="artifact-item">
-        <div class="artifact-icon">${a.type==='image'?'🖼️':'📄'}</div>
-        <div class="artifact-info">
-          <div class="artifact-name">${a.name}</div>
-          <div class="artifact-meta">Added ${ago(a.added_at)} by ${a.added_by}</div>
-        </div>
-      </div>`).join('') || '<div class="empty-state"><div class="empty-state-text">No artifacts yet</div></div>';
-
-      const timeline = t.timeline.sort((a,b)=>b.ts-a.ts).map(ev=>`<div class="timeline-item ${ev.type==='role_transitioned'?'highlight':''}">
-        <div class="timeline-time">${ago(ev.ts)}</div>
-        <div class="timeline-content">
-          <div class="timeline-actor">${ev.who}</div>
-          <div class="timeline-desc">${ev.desc}</div>
-        </div>
-      </div>`).join('');
-
-      $('#modalBody').innerHTML = `
-        <div class="info-grid">
-          <div class="info-row grid">
-            <div class="section">
-              <div class="section-header">Details</div>
-              <div class="section-content">
-                <div class="info-label">Workflow</div>
-                <div class="info-value">${wf?.name||t.workflow}</div>
-                <div class="info-label mt-1">Current Role</div>
-                <div class="info-value">${roles[t.current_role]?.name||t.current_role}</div>
-                <div class="info-label mt-1">Frame</div>
-                <div class="info-value">${t.frame_id||'—'}</div>
-              </div>
-            </div>
-            <div class="section">
-              <div class="section-header">Status</div>
-              <div class="section-content">
-                <select id="statusSelect" class="input">
-                  <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
-                  <option value="doing" ${t.status==='doing'?'selected':''}>In Progress</option>
-                  <option value="done" ${t.status==='done'?'selected':''}>Completed</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <div class="section-header">Checkpoints</div>
-            <div class="checkpoint-list">${rulesHTML || '<div class="empty-state-text">No checkpoints for this step</div>'}</div>
-          </div>
-          
-          <div class="section">
-            <div class="section-header">Artifacts</div>
-            <div class="info-row grid" style="margin-bottom:12px">
-              <input id="artName" class="input" placeholder="filename.md or image.png"/>
-              <button class="btn" id="addArtBtn">+ Add Artifact</button>
-            </div>
-            <div class="artifact-list">${artHTML}</div>
-          </div>
-          
-          <div class="section">
-            <div class="section-header">Activity</div>
-            <div class="timeline">${timeline}</div>
-          </div>
-        </div>
-      `;
-
-      $('#overlay').classList.add('active');
-      
-      $('#statusSelect')?.addEventListener('change', (e)=>{
-        const newStatus = e.target.value;
-        if(newStatus !== t.status){
-          recordEvent({ type:'task_status_set', task_id:openTaskId, status:newStatus, prev_status:t.status, actor:'alex', ops:[op('ALT')] });
-          openTask(openTaskId); render();
-        }
-      });
-      
-      $('#addArtBtn')?.addEventListener('click', ()=>{
-        const name = $('#artName').value?.trim(); if(!name) return;
-        const type = /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(name) ? 'image' : 'document';
-        recordEvent({ type:'artifact_added', task_id:openTaskId, artifact_name:name, artifact_type:type, actor:'alex', ops:[op('INS')] });
-        autoDetectCheckpoints(openTaskId);
-        openTask(openTaskId); render();
-      });
-      
-      $$('#modalBody [data-toggle-cp]').forEach(btn=> btn.addEventListener('click', ()=> toggleCheckpoint(btn.getAttribute('data-toggle-cp'))));
-    }
-
-    function closeModal(){ $('#overlay').classList.remove('active'); openTaskId=null; }
-    $('#closeModal').addEventListener('click', closeModal);
-
-    function toggleCheckpoint(id){
-      if(!openTaskId) return; 
-      const t = project(openTaskId);
-      const met = !!t.checkpoints[id];
-      if(met){ 
-        recordEvent({ type:'checkpoint_cleared', task_id:openTaskId, checkpoint:id, actor:'alex', ops:[op('SEG')] }); 
-      } else { 
-        recordEvent({ type:'checkpoint_detected', task_id:openTaskId, checkpoint:id, evidence:'manual', source:'manual', actor:'alex', ops:[op('SEG')] }); 
+      // Reset activity role select to first real role or _new
+      const select = document.getElementById('newActivityRole');
+      const firstRealOption = select.querySelector('option:not([value="_new"])');
+      if (firstRealOption) {
+        select.value = firstRealOption.value;
+      } else {
+        select.value = '_new';
       }
-      openTask(openTaskId); render();
     }
-
-    function autoDetectCheckpoints(taskId){
-      const t = project(taskId); 
-      const wf = workflows[t.workflow]; 
-      const idx = wf.chain.findIndex(s=>s.role===t.current_role); 
-      if(idx<0) return;
-      const step = wf.chain[idx]; 
-      (step.handoff_rules||[]).forEach(rule=>{
-        if(rule.auto_detect && rule.auto_detect(t) && !t.checkpoints[rule.id]){
-          recordEvent({ type:'checkpoint_detected', task_id:taskId, checkpoint:rule.id, evidence:'auto-detected', source:'auto', ops:[op('SEG')] });
-        }
-      });
-    }
-
-    $('#moveBtn').addEventListener('click', ()=>{
-      if(!openTaskId) return; 
-      const t = project(openTaskId); 
-      const wf=workflows[t.workflow]; 
-      const idx = wf.chain.findIndex(s=>s.role===t.current_role);
-      if(idx>=wf.chain.length-1) return;
-      if(!isReady(t)) { 
-        alert('Task is not ready. Please meet all checkpoints or use Override & Move.'); 
-        return; 
-      }
-      const next = wf.chain[idx+1];
-      recordEvent({ type:'ready_marked', task_id:openTaskId, actor:'alex', ops:[op('ALT')] });
-      recordEvent({ type:'role_transitioned', task_id:openTaskId, from_role:t.current_role, to_role:next.role, actor:'alex', ops:[op('CON')] });
-      closeModal(); render();
-    });
-
-    $('#overrideBtn').addEventListener('click', ()=>{
-      if(!openTaskId) return; 
-      const reason = prompt('Override reason:'); 
-      if(!reason) return;
-      const t = project(openTaskId); 
-      const wf=workflows[t.workflow]; 
-      const idx = wf.chain.findIndex(s=>s.role===t.current_role); 
-      if(idx>=wf.chain.length-1) return;
-      const next = wf.chain[idx+1];
-      recordEvent({ type:'override_move', task_id:openTaskId, from_role:t.current_role, to_role:next.role, reason, actor:'alex', ops:[op('SUP'),op('REC')] });
-      recordEvent({ type:'role_transitioned', task_id:openTaskId, from_role:t.current_role, to_role:next.role, actor:'alex', ops:[op('CON')] });
-      closeModal(); render();
-    });
-
-    // =============================
-    // Interactions
-    // =============================
-    function setupSidebarInteractions(){
-      if(!navRoot) return;
-      navRoot.addEventListener('click', e=>{
-        const newFolderBtn = e.target.closest('[data-new-folder]');
-        if(newFolderBtn){
-          e.preventDefault();
-          e.stopPropagation();
-          const sectionKey = newFolderBtn.getAttribute('data-new-folder');
-          handleNewFolder(sectionKey, null);
-          return;
-        }
-
-        const toggleBtn = e.target.closest('[data-section-toggle]');
-        if(toggleBtn){
-          e.preventDefault();
-          e.stopPropagation();
-          const sectionKey = toggleBtn.getAttribute('data-section-toggle');
-          handleSectionToggle(sectionKey);
-          return;
-        }
-
-        const navItem = e.target.closest('.nav-item.nav-link');
-        if(navItem){
-          handleNavSelection(navItem);
-        }
-      });
-    }
-
-    function handleNavSelection(navItem){
-      const viewType = navItem.dataset.view;
-      if(!viewType) return;
-      currentView = {
-        type: viewType,
-        id: navItem.dataset.role || navItem.dataset.workflow || navItem.dataset.person || null
-      };
-      render();
-    }
-
-    function handleNewFolder(sectionKey, parentFolderId){
-      if(!sectionKey) return;
-      const name = prompt('Folder name:');
-      if(!name) return;
-      const folderId = 'folder-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
-      const evt = recordEvent({
-        type:'folder_created',
-        section:sectionKey,
-        folder_id:folderId,
-        name,
-        parent_folder_id:parentFolderId||null
-      });
-      applySidebarEvent(sidebarState, evt);
-      persistSidebarState();
-      renderSidebar();
-    }
-
-    function handleSectionToggle(sectionKey){
-      if(!sectionKey) return;
-      const sectionState = ensureSectionState(sidebarState, sectionKey);
-      const nextState = !sectionState.collapsed;
-      const evt = recordEvent({ type:'section_collapsed', section:sectionKey, collapsed:nextState });
-      applySidebarEvent(sidebarState, evt);
-      persistSidebarState();
-      renderSidebar();
-    }
-
-    $$('.view-toggle .btn').forEach(b=> b.addEventListener('click', ()=>{
-      $$('.view-toggle .btn').forEach(x=>x.classList.remove('active')); 
-      b.classList.add('active'); 
-      layout=b.dataset.layout; 
-      render();
-    }));
-
-    $('#newTask').addEventListener('click', ()=>{
-      const title = prompt('Task title:'); 
-      if(!title) return;
-      const wfs = Object.values(workflows); 
-      const choice = prompt('Select workflow:\n' + wfs.map((w,i)=>`${i+1}. ${w.name}`).join('\n')); 
-      if(!choice) return;
-      const wf = wfs[parseInt(choice)-1]; 
-      if(!wf) return alert('Invalid selection');
-      const id = nextTaskId();
-      recordEvent({ type:'task_created', task_id:id, title, workflow:wf.id, initial_role:wf.chain[0].role, actor:'alex', ops:[op('DES'),op('INS')] });
-      recordEvent({ type:'task_status_set', task_id:id, status:'todo', prev_status:null, actor:'alex', ops:[op('ALT')] });
-      render();
-    });
-
-    $('#newCheckpoint').addEventListener('click', ()=>{
-      if(currentView.type!=='workflow') {
-        alert('Please open a Workflow view to add checkpoints.');
+    
+    function createQuickRole() {
+      const roleName = document.getElementById('quickRoleName').value.trim();
+      
+      if (!roleName || !selectedOperator) {
+        alert('Please enter role name and select operator type');
         return;
       }
-      const wf = workflows[currentView.id]; 
-      if(!wf) return;
-      const roleIdx = prompt('Add checkpoint after which role?\n' + wf.chain.map((s,i)=>`${i+1}. ${roles[s.role]?.name||s.role}`).join('\n')); 
-      if(!roleIdx) return;
-      const idx = parseInt(roleIdx)-1; 
-      const s = wf.chain[idx]; 
-      if(!s) return alert('Invalid selection');
-      const text = prompt('Checkpoint text:'); 
-      if(!text) return;
-      s.handoff_rules = s.handoff_rules||[]; 
-      s.handoff_rules.push({ id: text.toLowerCase().replace(/\s+/g,'-'), text, auto_detect:null });
-      recordEvent({ type:'workflow_checkpoint_added', workflow_id:wf.id, role:s.role, text, actor:'alex', ops:[op('SEG')] });
-      render();
-    });
-
-    function nextTaskId(){
-      const n = taskIds().reduce((m,id)=> Math.max(m, parseInt(id.split('-')[1],10)||0), 0) + 1;
-      return 'TASK-' + String(n).padStart(3,'0');
+      
+      const roleId = 'role-' + Date.now();
+      recordEvent({
+        type: 'role_created',
+        role_id: roleId,
+        role_name: roleName,
+        operator_type: selectedOperator,
+        people: [currentUser],
+        actor: currentUser,
+        ops: [OPCODES.DES, OPCODES.INS]
+      });
+      
+      recordEvent({
+        type: 'person_joined_role',
+        role_id: roleId,
+        person: currentUser,
+        actor: currentUser,
+        ops: [OPCODES.CON]
+      });
+      
+      closeQuickRoleModal();
+      
+      // Refresh the activity modal's role list
+      const roles = Object.values(projectRoles());
+      const select = document.getElementById('newActivityRole');
+      select.innerHTML = '<option value="_new">⭐ Create new role...</option>' +
+        roles.map(r => {
+          const op = OPERATORS.find(o => o.id === r.operator_type);
+          return `<option value="${r.id}">${r.name} : ${op?.name}</option>`;
+        }).join('');
+      
+      // Select the newly created role
+      select.value = roleId;
     }
-
-    function enableStatusDragDrop(){
-      $$('.column-body[data-drop-status]').forEach(col=>{
-        col.addEventListener('dragover', e=>{ e.preventDefault(); });
-        col.addEventListener('drop', e=>{
-          const taskId = e.dataTransfer.getData('text/plain'); 
-          if(!taskId) return;
-          const t = project(taskId); 
-          const targetStatus = col.getAttribute('data-drop-status');
-          if(t.status === targetStatus) return;
-          recordEvent({ type:'task_status_set', task_id:taskId, status:targetStatus, prev_status:t.status, actor:'alex', ops:[op('ALT')] });
-          render();
+    
+    function createActivity() {
+      const title = document.getElementById('newActivityTitle').value.trim();
+      const roleSelect = document.getElementById('newActivityRole').value;
+      
+      if (!title) {
+        alert('Please enter an activity name');
+        return;
+      }
+      
+      if (roleSelect === '_new') {
+        alert('Please select a role or create one');
+        return;
+      }
+      
+      const activityId = 'activity-' + Date.now();
+      recordEvent({
+        type: 'activity_created',
+        activity_id: activityId,
+        title: title,
+        role_id: roleSelect,
+        actor: currentUser,
+        ops: [OPCODES.DES, OPCODES.INS]
+      });
+      
+      closeNewActivityModal();
+      renderAll();
+    }
+    
+    // ========================================
+    // MODALS - CREATE ROLE
+    // ========================================
+    
+    function showCreateRoleModal() {
+      const container = document.getElementById('createRoleOperatorGrid');
+      container.innerHTML = OPERATORS.map(op => `
+        <div class="operator-card" data-operator="${op.id}" onclick="selectOperator('createRoleOperatorGrid', '${op.id}')">
+          <div class="operator-name">${op.seq}. ${op.name}</div>
+          <div class="operator-desc">${op.desc}</div>
+        </div>
+      `).join('');
+      
+      document.getElementById('createRoleModal').classList.add('active');
+    }
+    
+    function closeCreateRoleModal() {
+      document.getElementById('createRoleModal').classList.remove('active');
+      document.getElementById('createRoleName').value = '';
+      document.getElementById('createRolePeople').value = '';
+      selectedOperator = null;
+    }
+    
+    function createRole() {
+      const name = document.getElementById('createRoleName').value.trim();
+      const peopleStr = document.getElementById('createRolePeople').value.trim();
+      
+      if (!name || !selectedOperator) {
+        alert('Please enter role name and select operator type');
+        return;
+      }
+      
+      const people = peopleStr ? peopleStr.split(',').map(s => s.trim()) : [];
+      
+      const roleId = 'role-' + Date.now();
+      recordEvent({
+        type: 'role_created',
+        role_id: roleId,
+        role_name: name,
+        operator_type: selectedOperator,
+        people: people,
+        actor: currentUser,
+        ops: [OPCODES.DES, OPCODES.INS]
+      });
+      
+      people.forEach(person => {
+        recordEvent({
+          type: 'person_joined_role',
+          role_id: roleId,
+          person: person,
+          actor: currentUser,
+          ops: [OPCODES.CON]
         });
       });
-      $$('.card[draggable]').forEach(c=>{
-        c.addEventListener('dragstart', e=>{ 
-          e.dataTransfer.setData('text/plain', c.getAttribute('data-open')); 
-        });
-      });
+      
+      closeCreateRoleModal();
+      renderAll();
     }
-
-    function enableDragDrop(){
-      $$('.column-body[data-drop]').forEach(col=>{
-        col.addEventListener('dragover', e=>{ e.preventDefault(); });
-        col.addEventListener('drop', e=>{
-          const taskId = e.dataTransfer.getData('text/plain'); 
-          if(!taskId) return;
-          const t = project(taskId); 
-          const targetRole = col.getAttribute('data-drop');
-          if(t.current_role===targetRole) return;
-          const wf=workflows[t.workflow]; 
-          const idx = wf.chain.findIndex(s=>s.role===t.current_role); 
-          const next = wf.chain[idx+1]?.role;
-          if(next!==targetRole) {
-            alert('Can only move to next step in workflow');
+    
+    // ========================================
+    // MODALS - CLAIM & COMPLETE
+    // ========================================
+    
+    function showClaimModal(activityId) {
+      currentActivity = activityId;
+      const activity = projectActivity(activityId);
+      const roles = projectRoles();
+      const role = roles[activity.role_id];
+      const operator = OPERATORS.find(op => op.id === role?.operator_type);
+      
+      document.getElementById('claimActivityTitle').textContent = activity.title;
+      document.getElementById('claimActivityRole').textContent = role ? `Role: ${role.name} : ${operator?.name}` : '';
+      
+      const endOfWeek = new Date();
+      endOfWeek.setDate(endOfWeek.getDate() + (5 - endOfWeek.getDay()));
+      document.getElementById('estimatedDate').value = endOfWeek.toISOString().split('T')[0];
+      
+      document.getElementById('claimActivityModal').classList.add('active');
+    }
+    
+    function closeClaimModal() {
+      document.getElementById('claimActivityModal').classList.remove('active');
+      currentActivity = null;
+    }
+    
+    function claimActivity() {
+      if (!currentActivity) return;
+      
+      const priority = document.querySelector('input[name="priority"]:checked').value;
+      const estimatedDate = document.getElementById('estimatedDate').value;
+      
+      recordEvent({
+        type: 'activity_claimed',
+        activity_id: currentActivity,
+        person: currentUser,
+        priority: priority,
+        estimated_completion: estimatedDate,
+        actor: currentUser,
+        ops: [OPCODES.CON, OPCODES.DES]
+      });
+      
+      closeClaimModal();
+      renderAll();
+    }
+    
+    function showCompleteModal(activityId) {
+      currentActivity = activityId;
+      const activity = projectActivity(activityId);
+      const roles = projectRoles();
+      const role = roles[activity.role_id];
+      const operator = OPERATORS.find(op => op.id === role?.operator_type);
+      
+      document.getElementById('completeActivityTitle').textContent = activity.title;
+      
+      let content = `
+        <div style="margin-bottom: 20px;">
+          <strong>Role:</strong> ${role?.name} : ${operator?.name}<br>
+          <strong>Priority:</strong> ${activity.priority || 'Not set'}
+        </div>
+        <div class="info-box">
+          When you complete this activity, you can create a flow to another activity.
+          Flows can be sequential (→) or loops (↻) for revision cycles.
+        </div>
+      `;
+      
+      document.getElementById('completeActivityContent').innerHTML = content;
+      document.getElementById('completeActivityModal').classList.add('active');
+    }
+    
+    function closeCompleteModal() {
+      document.getElementById('completeActivityModal').classList.remove('active');
+      currentActivity = null;
+    }
+    
+    function completeActivity() {
+      if (!currentActivity) return;
+      
+      recordEvent({
+        type: 'activity_completed',
+        activity_id: currentActivity,
+        person: currentUser,
+        actor: currentUser,
+        ops: [OPCODES.ALT]
+      });
+      
+      closeCompleteModal();
+      
+      if (confirm('Do you want to create a flow to another activity?')) {
+        showFlowModal(currentActivity);
+      } else {
+        currentActivity = null;
+        renderAll();
+      }
+    }
+    
+    // ========================================
+    // MODALS - FLOW
+    // ========================================
+    
+    function showFlowModal(fromActivityId) {
+      currentActivity = fromActivityId;
+      
+      const activity = projectActivity(fromActivityId);
+      const roles = projectRoles();
+      const currentRole = roles[activity.role_id];
+      
+      // Get next operator types in sequence
+      const nextOperators = getNextOperatorTypes(currentRole?.operator_type);
+      
+      // Filter roles by next operator types
+      const nextRoles = Object.values(roles).filter(r => 
+        nextOperators.some(op => op.id === r.operator_type)
+      );
+      
+      const select = document.getElementById('nextActivityRole');
+      select.innerHTML = '<option value="_new">+ Create new role</option>' +
+        nextRoles.map(r => {
+          const op = OPERATORS.find(o => o.id === r.operator_type);
+          return `<option value="${r.id}">${r.name} : ${op?.name}</option>`;
+        }).join('');
+      
+      // Pre-populate operator grid with next operators
+      const container = document.getElementById('flowOperatorGrid');
+      container.innerHTML = nextOperators.map(op => `
+        <div class="operator-card" data-operator="${op.id}" onclick="selectOperator('flowOperatorGrid', '${op.id}')">
+          <div class="operator-name">${op.name} (${op.seq})</div>
+          <div class="operator-desc">${op.desc}</div>
+        </div>
+      `).join('');
+      
+      // Auto-select first operator if only one option
+      if (nextOperators.length === 1) {
+        selectOperator('flowOperatorGrid', nextOperators[0].id);
+      }
+      
+      // Update sequence info
+      const currentOp = OPERATORS.find(op => op.id === currentRole?.operator_type);
+      const infoBox = document.getElementById('flowSequenceInfo');
+      infoBox.innerHTML = `
+        🔄 <strong>Operator Sequence:</strong> You're at step ${currentOp?.seq || '?'} (${currentOp?.name || 'Unknown'}).
+        Next step: ${nextOperators.map(op => `${op.seq}. ${op.name}`).join(' or ')}.
+      `;
+      
+      // Show new role section by default if no matching roles exist
+      document.getElementById('flowNewRoleSection').style.display = nextRoles.length === 0 ? 'block' : 'none';
+      
+      document.getElementById('createFlowModal').classList.add('active');
+    }
+    
+    function closeFlowModal() {
+      document.getElementById('createFlowModal').classList.remove('active');
+      document.getElementById('nextActivityTitle').value = '';
+      document.getElementById('nextActivityRole').value = '_new';
+      document.getElementById('flowNewRoleSection').style.display = 'none';
+      document.getElementById('flowNewRoleName').value = '';
+      document.getElementById('flowContract').value = '';
+      currentActivity = null;
+      selectedOperator = null;
+    }
+    
+    function handleFlowRoleSelectChange() {
+      const isNew = document.getElementById('nextActivityRole').value === '_new';
+      document.getElementById('flowNewRoleSection').style.display = isNew ? 'block' : 'none';
+    }
+    
+    function createFlow() {
+      if (!currentActivity) return;
+      
+      const nextTitle = document.getElementById('nextActivityTitle').value.trim();
+      const roleSelect = document.getElementById('nextActivityRole').value;
+      const flowType = document.querySelector('input[name="flowType"]:checked').value;
+      const contract = document.getElementById('flowContract').value.trim();
+      
+      if (!nextTitle) {
+        alert('Please enter next activity name');
+        return;
+      }
+      
+      let roleId;
+      let nextOperatorType;
+      
+      if (roleSelect === '_new') {
+        const roleName = document.getElementById('flowNewRoleName').value.trim();
+        if (!roleName) {
+          alert('Please enter role name');
+          return;
+        }
+        
+        if (!selectedOperator) {
+          alert('Please select operator type');
+          return;
+        }
+        
+        nextOperatorType = selectedOperator;
+        
+        // Validate sequence
+        const activity = projectActivity(currentActivity);
+        const roles = projectRoles();
+        const currentRole = roles[activity.role_id];
+        const expectedNext = getNextOperatorTypes(currentRole?.operator_type);
+        
+        if (!expectedNext.some(op => op.id === nextOperatorType)) {
+          const currentOp = OPERATORS.find(op => op.id === currentRole?.operator_type);
+          if (!confirm(`⚠️ This breaks the operator sequence! Current: ${currentOp?.name} (${currentOp?.seq}), Expected next: ${expectedNext.map(op => `${op.name} (${op.seq})`).join(' or ')}. Continue anyway?`)) {
             return;
           }
-          if(!isReady(t)){
-            const ok = confirm('Task is not ready. Override move?');
-            if(!ok) return; 
-            const reason = prompt('Override reason:') || 'drag override';
-            recordEvent({ type:'override_move', task_id:taskId, from_role:t.current_role, to_role:next, reason, actor:'alex', ops:[op('SUP'),op('REC')] });
-          } else { 
-            recordEvent({ type:'ready_marked', task_id:taskId, actor:'alex', ops:[op('ALT')] }); 
-          }
-          recordEvent({ type:'role_transitioned', task_id:taskId, from_role:t.current_role, to_role:next, actor:'alex', ops:[op('CON')] });
-          render();
+        }
+        
+        // Create the new role
+        roleId = 'role-' + Date.now();
+        recordEvent({
+          type: 'role_created',
+          role_id: roleId,
+          role_name: roleName,
+          operator_type: selectedOperator,
+          people: [],
+          actor: currentUser,
+          ops: [OPCODES.DES, OPCODES.INS]
         });
+      } else {
+        roleId = roleSelect;
+        const nextRole = projectRoles()[roleId];
+        nextOperatorType = nextRole.operator_type;
+      }
+      
+      const nextActivityId = 'activity-' + Date.now();
+      recordEvent({
+        type: 'activity_created',
+        activity_id: nextActivityId,
+        title: nextTitle,
+        role_id: roleId,
+        actor: currentUser,
+        ops: [OPCODES.DES, OPCODES.INS]
       });
-      $$('.card[draggable]').forEach(c=>{
-        c.addEventListener('dragstart', e=>{ 
-          e.dataTransfer.setData('text/plain', c.getAttribute('data-open')); 
-        });
+      
+      recordEvent({
+        type: 'flow_created',
+        activity_id: currentActivity,
+        next_activity_id: nextActivityId,
+        flow_type: flowType,
+        actor: currentUser,
+        ops: [OPCODES.CON]
       });
+      
+      const chainId = 'chain-' + Date.now();
+      recordEvent({
+        type: 'chain_proposed',
+        chain_id: chainId,
+        from_activity_id: currentActivity,
+        to_activity_id: nextActivityId,
+        contract: contract || null,
+        actor: currentUser,
+        ops: [OPCODES.CON]
+      });
+      
+      closeFlowModal();
+      renderAll();
+      
+      alert('Flow proposed! The receiving role must consent before work can flow through.');
     }
-
-    // Theme
-    (function initTheme(){ 
-      const saved = localStorage.getItem('theme')||'dark'; 
-      document.documentElement.setAttribute('data-theme', saved); 
-      $('#themeToggle').textContent = saved==='dark'?'🌙':'☀️'; 
-    })();
     
-    $('#themeToggle').addEventListener('click', ()=>{ 
-      const cur=document.documentElement.getAttribute('data-theme'); 
-      const nxt=cur==='dark'?'light':'dark'; 
-      document.documentElement.setAttribute('data-theme',nxt); 
-      localStorage.setItem('theme',nxt); 
-      $('#themeToggle').textContent = nxt==='dark'?'🌙':'☀️'; 
-    });
-
-    function ago(ts){ 
-      const d=Date.now()-ts; 
-      if(d<6e4) return 'just now'; 
-      if(d<36e5) return Math.floor(d/6e4)+'m'; 
-      if(d<864e5) return Math.floor(d/36e5)+'h'; 
-      return new Date(ts).toLocaleDateString(); 
+    // ========================================
+    // MODALS - CONSENT
+    // ========================================
+    
+    function showConsentModal(chainId) {
+      currentChain = chainId;
+      const chain = projectChain(chainId);
+      const fromActivity = projectActivity(chain.from_activity_id);
+      const toActivity = projectActivity(chain.to_activity_id);
+      const roles = projectRoles();
+      const fromRole = roles[fromActivity?.role_id];
+      const toRole = roles[toActivity?.role_id];
+      const fromOp = OPERATORS.find(op => op.id === fromRole?.operator_type);
+      const toOp = OPERATORS.find(op => op.id === toRole?.operator_type);
+      
+      let content = `
+        <div style="margin-bottom: 20px;">
+          <div style="font-weight: 600; margin-bottom: 12px;">Flow Proposal</div>
+          <div class="chain-visual">
+            <span class="chain-node">${fromActivity?.title}</span>
+            <span class="chain-arrow">→</span>
+            <span class="chain-node">${toActivity?.title}</span>
+          </div>
+          <div style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);">
+            <strong>From:</strong> ${fromRole?.name} : ${fromOp?.name} (${fromActivity?.claimed_by || 'unclaimed'})<br>
+            <strong>To:</strong> ${toRole?.name} : ${toOp?.name} (you)<br>
+            <strong>Proposed by:</strong> ${chain.proposed_by}
+          </div>
+          ${chain.contract ? `
+            <div class="consent-contract" style="margin-top: 12px;">
+              <strong>Interface Contract:</strong><br>
+              ${chain.contract}
+            </div>
+          ` : ''}
+        </div>
+      `;
+      
+      document.getElementById('consentContent').innerHTML = content;
+      
+      document.querySelectorAll('input[name="consentDecision"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          document.getElementById('rejectReasonSection').style.display = 
+            e.target.value === 'reject' ? 'block' : 'none';
+        });
+      });
+      
+      document.getElementById('consentModal').classList.add('active');
     }
-
-    // Init
-    setupSidebarInteractions();
-    render();
+    
+    function closeConsentModal() {
+      document.getElementById('consentModal').classList.remove('active');
+      currentChain = null;
+    }
+    
+    function submitConsent() {
+      if (!currentChain) return;
+      
+      const decision = document.querySelector('input[name="consentDecision"]:checked').value;
+      
+      if (decision === 'accept') {
+        recordEvent({
+          type: 'chain_accepted',
+          chain_id: currentChain,
+          actor: currentUser,
+          ops: [OPCODES.CON, OPCODES.ALT]
+        });
+      } else {
+        const reason = document.getElementById('rejectReason').value;
+        const notes = document.getElementById('rejectNotes').value.trim();
+        
+        recordEvent({
+          type: 'chain_rejected',
+          chain_id: currentChain,
+          reason: reason,
+          notes: notes || null,
+          actor: currentUser,
+          ops: [OPCODES.SEG]
+        });
+      }
+      
+      closeConsentModal();
+      renderAll();
+    }
+    
+    // ========================================
+    // MODALS - PATTERN
+    // ========================================
+    
+    function showPatternModal(patternId) {
+      currentPattern = patternId;
+      const pattern = projectPattern(patternId);
+      
+      document.getElementById('patternModalTitle').textContent = pattern.name;
+      
+      let content = `
+        <div style="margin-bottom: 20px;">
+          <div class="chain-visual">
+            ${pattern.chain_topology.map((r, i) => {
+              const op = OPERATORS.find(o => o.id === r.operator_type);
+              return `
+                <span class="chain-node">${r.role_name} : ${op?.name}</span>
+                ${i < pattern.chain_topology.length - 1 ? '<span class="chain-arrow">→</span>' : ''}
+              `;
+            }).join('')}
+          </div>
+          <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
+            This pattern has completed successfully ${pattern.success_count} times.
+          </div>
+        </div>
+        <div class="info-box">
+          💡 Instantiating this pattern will create a flow with the same role structure.
+          Activities will be created with placeholder names that you can customize.
+        </div>
+      `;
+      
+      document.getElementById('patternModalContent').innerHTML = content;
+      document.getElementById('instantiatePatternModal').classList.add('active');
+    }
+    
+    function closePatternModal() {
+      document.getElementById('instantiatePatternModal').classList.remove('active');
+      currentPattern = null;
+    }
+    
+    function instantiatePattern() {
+      if (!currentPattern) return;
+      
+      const pattern = projectPattern(currentPattern);
+      const roles = projectRoles();
+      
+      const activityIds = [];
+      
+      for (let i = 0; i < pattern.chain_topology.length; i++) {
+        const roleSpec = pattern.chain_topology[i];
+        
+        let roleId = Object.values(roles).find(r => 
+          r.operator_type === roleSpec.operator_type && r.name === roleSpec.role_name
+        )?.id;
+        
+        if (!roleId) {
+          roleId = 'role-' + Date.now() + '-' + i;
+          recordEvent({
+            type: 'role_created',
+            role_id: roleId,
+            role_name: roleSpec.role_name,
+            operator_type: roleSpec.operator_type,
+            people: [],
+            actor: currentUser,
+            ops: [OPCODES.DES, OPCODES.INS]
+          });
+        }
+        
+        const activityId = 'activity-' + Date.now() + '-' + i;
+        recordEvent({
+          type: 'activity_created',
+          activity_id: activityId,
+          title: `${roleSpec.role_name} work (from pattern)`,
+          role_id: roleId,
+          actor: currentUser,
+          ops: [OPCODES.DES, OPCODES.INS]
+        });
+        
+        activityIds.push(activityId);
+      }
+      
+      for (let i = 0; i < activityIds.length - 1; i++) {
+        recordEvent({
+          type: 'flow_created',
+          activity_id: activityIds[i],
+          next_activity_id: activityIds[i + 1],
+          flow_type: 'sequential',
+          actor: currentUser,
+          ops: [OPCODES.CON]
+        });
+        
+        const chainId = 'chain-' + Date.now() + '-' + i;
+        recordEvent({
+          type: 'chain_proposed',
+          chain_id: chainId,
+          from_activity_id: activityIds[i],
+          to_activity_id: activityIds[i + 1],
+          contract: null,
+          actor: currentUser,
+          ops: [OPCODES.CON]
+        });
+      }
+      
+      recordEvent({
+        type: 'pattern_instantiated',
+        pattern_id: currentPattern,
+        actor: currentUser,
+        ops: [OPCODES.DES, OPCODES.INS]
+      });
+      
+      closePatternModal();
+      switchTab('work');
+      renderAll();
+    }
+    
+    function joinRole(roleId) {
+      recordEvent({
+        type: 'person_joined_role',
+        role_id: roleId,
+        person: currentUser,
+        actor: currentUser,
+        ops: [OPCODES.CON]
+      });
+      renderAll();
+    }
+    
+    // ========================================
+    // INITIALIZATION
+    // ========================================
+    
+    const projectEvent = eventStore.find(e => e.type === 'project_created');
+    if (projectEvent) {
+      project = {
+        name: projectEvent.project_name,
+        team: projectEvent.team
+      };
+      currentUser = projectEvent.created_by;
+      
+      document.getElementById('headerTitle').textContent = project.name;
+      document.getElementById('headerSubtitle').textContent = `Team: ${project.team.join(', ')}`;
+      document.getElementById('operatorSequence').style.display = 'flex';
+      
+      document.getElementById('setupView').style.display = 'none';
+      document.getElementById('mainView').style.display = 'block';
+      renderAll();
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('estimatedDate')?.setAttribute('min', today);
   </script>
 </body>
 </html>
