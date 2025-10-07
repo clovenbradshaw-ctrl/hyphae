@@ -31,7 +31,7 @@
     .logo-text{font-size:16px;font-weight:700;color:var(--text-primary)}
     .nav{padding:12px 8px;overflow:auto;flex:1}
     .nav-section{margin-bottom:24px}
-    .nav-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);padding:0 12px 8px;display:flex;align-items:center;justify-content:space-between}
+    .nav-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);padding:0 12px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .nav-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin:2px 0;cursor:pointer;color:var(--text-secondary);border-radius:6px;transition:all .15s;font-size:14px}
     .nav-item:hover{background:var(--bg-hover);color:var(--text-primary)}
     .nav-item.active{background:var(--accent);color:#fff;font-weight:500}
@@ -52,6 +52,7 @@
     .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
     .btn.primary:hover{background:var(--accent-hover)}
     .btn.sm{padding:6px 12px;font-size:13px}
+    .btn.xs{padding:4px 8px;font-size:12px}
     .btn.ghost{background:transparent;border:none}
     .btn.ghost:hover{background:var(--bg-hover)}
     .btn.icon{padding:6px;width:32px;height:32px;justify-content:center}
@@ -101,8 +102,8 @@
     .info-value{font-size:14px;color:var(--text-primary)}
     
     /* Form elements */
-    .input,select.input{padding:10px 12px;width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:14px;transition:all .15s}
-    .input:focus,select.input:focus{outline:none;border-color:var(--accent);background:var(--bg-primary)}
+    .input,select.input,textarea.input{padding:10px 12px;width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:14px;transition:all .15s}
+    .input:focus,select.input:focus,textarea.input:focus{outline:none;border-color:var(--accent);background:var(--bg-primary)}
     .input::placeholder{color:var(--text-tertiary)}
     
     /* Timeline */
@@ -157,6 +158,11 @@
     .workflow-chain{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
     .workflow-step{padding:8px 14px;background:var(--bg-secondary);border-radius:6px;font-size:13px;font-weight:500}
     .workflow-arrow{color:var(--text-tertiary)}
+
+    .detail-view{display:flex;flex-direction:column;gap:16px}
+    .detail-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+    .detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .description{color:var(--text-secondary);font-size:14px;margin-top:8px}
     
     /* Utilities */
     .row{display:flex;gap:12px;align-items:center}
@@ -191,11 +197,11 @@
           <div class="nav-item" data-view="workflows"><span>Workflows</span><span class="badge" id="workflowsCount">0</span></div>
         </div>
         <div class="nav-section">
-          <div class="nav-label">BY ROLE</div>
+          <div class="nav-label"><span>BY ROLE</span><button class="btn xs ghost" id="createRoleBtn">+ New Role</button></div>
           <div id="roleNavItems"></div>
         </div>
         <div class="nav-section">
-          <div class="nav-label">BY WORKFLOW</div>
+          <div class="nav-label"><span>BY WORKFLOW</span><button class="btn xs ghost" id="createWorkflowBtn">+ New Workflow</button></div>
           <div id="workflowNavItems"></div>
         </div>
       </nav>
@@ -234,6 +240,17 @@
     </div>
   </div>
 
+  <div class="overlay" id="formOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="formModalTitle"></div>
+        <button class="btn icon ghost" id="closeFormModal">✕</button>
+      </div>
+      <div class="modal-body" id="formModalBody"></div>
+      <div class="modal-footer" id="formModalFooter"></div>
+    </div>
+  </div>
+
   <script>
     // =============================
     // Storage & Event Sourcing
@@ -243,9 +260,15 @@
 
     function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(eventStore)); }
 
+    function rebuildProjections(){
+      roles = projectRoles();
+      workflows = projectWorkflows();
+    }
+
     function recordEvent(evt){
       const e = { id: 'evt-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), ts: Date.now(), v:3, ...evt };
       eventStore.push(e); persist();
+      rebuildProjections();
       return e;
     }
 
@@ -260,31 +283,174 @@
       {id:'approver',name:'Approver'}, {id:'steward',name:'Steward'}, {id:'convener',name:'Convener'}
     ];
 
-    const roles = {
-      'content-writer': { id:'content-writer', name:'Content Writer', operator:'doer', people:['alex','sam'], power:{institutional:1,epistemic:2,action:2,narrative:2} },
-      'sm-reviewer': { id:'sm-reviewer', name:'SM Reviewer', operator:'reviewer', people:['pat'], power:{institutional:2,epistemic:3,action:1,narrative:2} },
-      'sm-approver': { id:'sm-approver', name:'SM Approver', operator:'approver', people:['casey'], power:{institutional:3,epistemic:2,action:3,narrative:2} }
-    };
+    const peopleDirectory = ['alex','sam','pat','casey','jordan','morgan','blake'];
 
-    const workflows = {
-      'social-media': {
-        id:'social-media', name:'Social Media Creation', frame_id:'content_ops_quarterly',
-        description:'How we create social media content',
-        chain:[
-          { role:'content-writer', handoff_rules:[
-              { id:'has_draft', text:'Draft complete', auto_detect:(t)=>t.artifacts.some(a=>/draft/i.test(a.name)) },
-              { id:'has_images', text:'Has images', auto_detect:(t)=>t.artifacts.some(a=>a.type==='image') }
-          ]},
-          { role:'sm-reviewer', handoff_rules:[ { id:'review_complete', text:'Review complete', auto_detect:null } ] },
-          { role:'sm-approver', handoff_rules:[ { id:'approved', text:'Approved for publish', auto_detect:null } ] }
-        ]
+    function defaultPower(){
+      return { institutional:1, epistemic:1, action:1, narrative:1 };
+    }
+
+    function projectRoles(){
+      const state = {};
+      for(const e of eventStore){
+        if(e.type==='role_created'){
+          state[e.role_id] = {
+            id:e.role_id,
+            name:e.name,
+            operator:e.operator,
+            description:e.description||'',
+            people:Array.from(new Set(e.people||[])),
+            power:Object.assign(defaultPower(), e.power||{})
+          };
+        }
+        if(e.type==='role_updated' && state[e.role_id]){
+          const role = state[e.role_id];
+          if(e.name!==undefined) role.name = e.name;
+          if(e.operator!==undefined) role.operator = e.operator;
+          if(e.description!==undefined) role.description = e.description;
+          if(e.people!==undefined) role.people = Array.from(new Set(e.people));
+          if(e.power!==undefined) role.power = Object.assign({}, role.power, e.power);
+        }
+        if(e.type==='role_deleted'){
+          delete state[e.role_id];
+        }
       }
-    };
+      return state;
+    }
+
+    function projectWorkflows(){
+      const state = {};
+      const ensure = (id)=>{
+        if(!state[id]) state[id] = { id, name:'', description:'', frame_id:null, archived:false, chain:[] };
+        return state[id];
+      };
+      for(const e of eventStore){
+        if(e.type==='workflow_created'){
+          state[e.workflow_id] = {
+            id:e.workflow_id,
+            name:e.name,
+            description:e.description||'',
+            frame_id:e.frame_id||null,
+            archived:false,
+            chain:[]
+          };
+        }
+        if(e.type==='workflow_updated'){
+          const wf = ensure(e.workflow_id);
+          if(e.name!==undefined) wf.name = e.name;
+          if(e.description!==undefined) wf.description = e.description;
+          if(e.frame_id!==undefined) wf.frame_id = e.frame_id;
+        }
+        if(e.type==='workflow_archived'){
+          const wf = ensure(e.workflow_id);
+          wf.archived = true;
+        }
+        if(e.type==='workflow_restored'){
+          const wf = ensure(e.workflow_id);
+          wf.archived = false;
+        }
+        if(e.type==='workflow_deleted'){
+          delete state[e.workflow_id];
+        }
+        if(e.type==='workflow_step_added'){
+          const wf = ensure(e.workflow_id);
+          const step = {
+            id:e.step_id,
+            role:e.role_id,
+            handoff_rules:[]
+          };
+          const idx = Math.max(0, Math.min(e.position??wf.chain.length, wf.chain.length));
+          wf.chain.splice(idx, 0, step);
+        }
+        if(e.type==='workflow_step_removed'){
+          const wf = ensure(e.workflow_id);
+          wf.chain = wf.chain.filter(s=>s.id!==e.step_id);
+        }
+        if(e.type==='workflow_step_reordered'){
+          const wf = ensure(e.workflow_id);
+          const idx = wf.chain.findIndex(s=>s.id===e.step_id);
+          if(idx>=0){
+            const [step] = wf.chain.splice(idx,1);
+            const target = Math.max(0, Math.min(e.position, wf.chain.length));
+            wf.chain.splice(target,0,step);
+          }
+        }
+        if(e.type==='workflow_step_role_updated'){
+          const wf = ensure(e.workflow_id);
+          const step = wf.chain.find(s=>s.id===e.step_id);
+          if(step){ step.role = e.role_id; }
+        }
+        if(e.type==='workflow_checkpoint_added'){
+          const wf = ensure(e.workflow_id);
+          const step = wf.chain.find(s=>s.id===e.step_id);
+          if(step){
+            const rule = {
+              id:e.checkpoint_id,
+              text:e.text,
+              auto_type:e.auto_type||null,
+              auto_value:e.auto_value||null
+            };
+            const idx = Math.max(0, Math.min(e.position??step.handoff_rules.length, step.handoff_rules.length));
+            step.handoff_rules.splice(idx,0,rule);
+          }
+        }
+        if(e.type==='workflow_checkpoint_removed'){
+          const wf = ensure(e.workflow_id);
+          const step = wf.chain.find(s=>s.id===e.step_id);
+          if(step){
+            step.handoff_rules = step.handoff_rules.filter(r=>r.id!==e.checkpoint_id);
+          }
+        }
+        if(e.type==='workflow_checkpoint_updated'){
+          const wf = ensure(e.workflow_id);
+          const step = wf.chain.find(s=>s.id===e.step_id);
+          if(step){
+            const rule = step.handoff_rules.find(r=>r.id===e.checkpoint_id);
+            if(rule){
+              if(e.text!==undefined) rule.text = e.text;
+              if(e.auto_type!==undefined) rule.auto_type = e.auto_type;
+              if(e.auto_value!==undefined) rule.auto_value = e.auto_value;
+            }
+          }
+        }
+        if(e.type==='workflow_checkpoint_reordered'){
+          const wf = ensure(e.workflow_id);
+          const step = wf.chain.find(s=>s.id===e.step_id);
+          if(step){
+            const idx = step.handoff_rules.findIndex(r=>r.id===e.checkpoint_id);
+            if(idx>=0){
+              const [rule] = step.handoff_rules.splice(idx,1);
+              const target = Math.max(0, Math.min(e.position, step.handoff_rules.length));
+              step.handoff_rules.splice(target,0,rule);
+            }
+          }
+        }
+      }
+      return state;
+    }
+
+    let roles = projectRoles();
+    let workflows = projectWorkflows();
 
     // =============================
     // Seed Data
     // =============================
     if(eventStore.length===0){
+      recordEvent({ type:'role_created', role_id:'content-writer', name:'Content Writer', operator:'doer', people:['alex','sam'], power:{institutional:1,epistemic:2,action:2,narrative:2}, description:'Drafts compelling copy for campaigns.' });
+      recordEvent({ type:'role_created', role_id:'sm-reviewer', name:'SM Reviewer', operator:'reviewer', people:['pat'], power:{institutional:2,epistemic:3,action:1,narrative:2}, description:'Reviews social media content for accuracy.' });
+      recordEvent({ type:'role_created', role_id:'sm-approver', name:'SM Approver', operator:'approver', people:['casey'], power:{institutional:3,epistemic:2,action:3,narrative:2}, description:'Approves final social media content for publication.' });
+
+      recordEvent({ type:'workflow_created', workflow_id:'social-media', name:'Social Media Creation', frame_id:'content_ops_quarterly', description:'How we create social media content' });
+      const stepWriter = 'social-media-step-writer';
+      const stepReviewer = 'social-media-step-reviewer';
+      const stepApprover = 'social-media-step-approver';
+      recordEvent({ type:'workflow_step_added', workflow_id:'social-media', step_id:stepWriter, role_id:'content-writer', position:0 });
+      recordEvent({ type:'workflow_checkpoint_added', workflow_id:'social-media', step_id:stepWriter, checkpoint_id:'has_draft', text:'Draft complete', auto_type:'artifact_match', auto_value:'draft' });
+      recordEvent({ type:'workflow_checkpoint_added', workflow_id:'social-media', step_id:stepWriter, checkpoint_id:'has_images', text:'Has images', auto_type:'artifact_type', auto_value:'image' });
+      recordEvent({ type:'workflow_step_added', workflow_id:'social-media', step_id:stepReviewer, role_id:'sm-reviewer', position:1 });
+      recordEvent({ type:'workflow_checkpoint_added', workflow_id:'social-media', step_id:stepReviewer, checkpoint_id:'review_complete', text:'Review complete' });
+      recordEvent({ type:'workflow_step_added', workflow_id:'social-media', step_id:stepApprover, role_id:'sm-approver', position:2 });
+      recordEvent({ type:'workflow_checkpoint_added', workflow_id:'social-media', step_id:stepApprover, checkpoint_id:'approved', text:'Approved for publish' });
+
       recordEvent({ type:'task_created', task_id:'TASK-001', title:'Housing blog post', workflow:'social-media', initial_role:'content-writer', actor:'alex', ops:[op('DES'),op('INS')] });
       recordEvent({ type:'task_status_set', task_id:'TASK-001', status:'todo', prev_status:null, actor:'alex', ops:[op('ALT')] });
       recordEvent({ type:'task_created', task_id:'TASK-002', title:'Climate action post', workflow:'social-media', initial_role:'content-writer', actor:'alex', ops:[op('DES'),op('INS')] });
@@ -342,11 +508,538 @@
     function tasksAtRole(roleId){ return taskIds().map(project).filter(t=>t.current_role===roleId); }
     function tasksInWorkflow(wfId){ return taskIds().map(project).filter(t=>t.workflow===wfId); }
 
+    function checkpointAutoDetected(rule, task){
+      if(rule.auto_type==='artifact_match' && rule.auto_value){
+        const re = new RegExp(rule.auto_value, 'i');
+        return task.artifacts.some(a=>re.test(a.name));
+      }
+      if(rule.auto_type==='artifact_type' && rule.auto_value){
+        return task.artifacts.some(a=>a.type===rule.auto_value);
+      }
+      return false;
+    }
+
     function isReady(task){
       const wf = workflows[task.workflow]; if(!wf) return false;
       const idx = wf.chain.findIndex(s=>s.role===task.current_role); if(idx<0) return false;
       const step = wf.chain[idx]; if(!step.handoff_rules || step.handoff_rules.length===0) return true;
-      return step.handoff_rules.every(rule => rule.auto_detect ? !!rule.auto_detect(task) : !!task.checkpoints[rule.id]);
+      return step.handoff_rules.every(rule => {
+        if(rule.auto_type) return checkpointAutoDetected(rule, task);
+        return !!task.checkpoints[rule.id];
+      });
+    }
+
+    function slugify(text, fallback){
+      const slug = (text||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+      return slug || fallback;
+    }
+
+    function uniqueId(prefix){
+      return `${prefix}-${Math.random().toString(36).slice(2,10)}`;
+    }
+
+    function openRoleModal(roleId=null){
+      const editing = !!roleId;
+      const existingRole = editing ? roles[roleId] : null;
+      if(editing && !existingRole){ alert('Role not found'); return; }
+      const role = editing ? JSON.parse(JSON.stringify(existingRole)) : {
+        id:null,
+        name:'',
+        operator:operators[0]?.id||'',
+        description:'',
+        people:[],
+        power:defaultPower()
+      };
+      if(editing && !role) return;
+
+      const form = document.createElement('div');
+      form.className = 'info-grid';
+      form.innerHTML = `
+        <div>
+          <div class="info-label">Role name</div>
+          <input class="input" id="roleName" value="${role.name||''}" placeholder="Content Writer" />
+        </div>
+        <div>
+          <div class="info-label">Operator</div>
+          <select class="input" id="roleOperator">
+            ${operators.map(op=>`<option value="${op.id}" ${op.id===role.operator?'selected':''}>${op.name}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div class="info-label">Description</div>
+          <textarea class="input" id="roleDescription" rows="3" placeholder="What does this role do?">${role.description||''}</textarea>
+        </div>
+        <div>
+          <div class="info-label">People</div>
+          <div class="section-content" id="rolePeople">
+            ${peopleDirectory.map(person=>{
+              const checked = role.people?.includes(person);
+              return `<label class="row text-sm" style="justify-content:flex-start"><input type="checkbox" value="${person}" ${checked?'checked':''} style="margin-right:8px"/>${person}</label>`;
+            }).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Power vector</div>
+          <div class="info-row grid">
+            <div><div class="text-xs text-muted">Institutional</div><input class="input" type="number" id="powerInstitutional" min="0" max="5" value="${role.power?.institutional||1}" /></div>
+            <div><div class="text-xs text-muted">Epistemic</div><input class="input" type="number" id="powerEpistemic" min="0" max="5" value="${role.power?.epistemic||1}" /></div>
+            <div><div class="text-xs text-muted">Action</div><input class="input" type="number" id="powerAction" min="0" max="5" value="${role.power?.action||1}" /></div>
+            <div><div class="text-xs text-muted">Narrative</div><input class="input" type="number" id="powerNarrative" min="0" max="5" value="${role.power?.narrative||1}" /></div>
+          </div>
+        </div>
+      `;
+
+      const actions = [
+        { label:'Cancel', variant:'ghost', onClick:()=>{ closeFormModal(); } },
+        { label: editing?'Update Role':'Create Role', variant:'primary', onClick:()=>{
+            const name = form.querySelector('#roleName').value.trim();
+            if(!name){ alert('Role name is required'); return; }
+            const operator = form.querySelector('#roleOperator').value;
+            const description = form.querySelector('#roleDescription').value.trim();
+            const people = Array.from(form.querySelectorAll('#rolePeople input[type="checkbox"]:checked')).map(c=>c.value);
+            const power = {
+              institutional: parseInt(form.querySelector('#powerInstitutional').value,10)||0,
+              epistemic: parseInt(form.querySelector('#powerEpistemic').value,10)||0,
+              action: parseInt(form.querySelector('#powerAction').value,10)||0,
+              narrative: parseInt(form.querySelector('#powerNarrative').value,10)||0
+            };
+            if(editing){
+              recordEvent({ type:'role_updated', role_id:roleId, name, operator, description, people, power });
+            } else {
+              const idBase = slugify(name, 'role-' + Math.random().toString(36).slice(2,6));
+              let newId = idBase;
+              let i = 1;
+              while(roles[newId]){ newId = `${idBase}-${i++}`; }
+              recordEvent({ type:'role_created', role_id:newId, name, operator, description, people, power });
+              currentView = { type:'role', id:newId };
+            }
+            closeFormModal();
+            render();
+          }
+        }
+      ];
+
+      openFormModal({ title: editing?'Edit Role':'New Role', content: form, actions });
+    }
+
+    let workflowDraft = null;
+    let workflowWizardStep = 0;
+    let workflowEditingId = null;
+
+    function cloneWorkflow(wf){
+      return {
+        id:wf.id,
+        name:wf.name,
+        description:wf.description||'',
+        frame_id:wf.frame_id||'',
+        archived:!!wf.archived,
+        chain:(wf.chain||[]).map(step=>({
+          id:step.id,
+          role:step.role,
+          handoff_rules:(step.handoff_rules||[]).map(rule=>({
+            id:rule.id,
+            text:rule.text,
+            auto_type:rule.auto_type||null,
+            auto_value:rule.auto_value||null
+          }))
+        }))
+      };
+    }
+
+    function openWorkflowWizard(workflowId=null){
+      const editing = !!workflowId;
+      const existing = editing ? workflows[workflowId] : null;
+      if(editing && !existing){ alert('Workflow not found'); return; }
+      workflowEditingId = workflowId;
+      workflowDraft = editing ? cloneWorkflow(existing) : {
+        id:null,
+        name:'',
+        description:'',
+        frame_id:'',
+        archived:false,
+        chain:[]
+      };
+      workflowWizardStep = 0;
+      renderWorkflowWizard();
+    }
+
+    function renderWorkflowWizard(){
+      if(!workflowDraft) return;
+      const editing = !!workflowEditingId;
+      const title = `${editing?'Edit':'New'} Workflow`;
+      const content = document.createElement('div');
+      content.className = 'detail-view';
+
+      const stepper = document.createElement('div');
+      stepper.className = 'row text-sm';
+      stepper.style.justifyContent = 'space-between';
+      const steps = ['Basics','Steps','Review'];
+      stepper.innerHTML = steps.map((label,idx)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;opacity:${idx===workflowWizardStep?1:0.5}"><div style="width:28px;height:28px;border-radius:50%;background:${idx===workflowWizardStep?'var(--accent)':'var(--bg-tertiary)'};color:${idx===workflowWizardStep?'#fff':'var(--text-secondary)'};display:flex;align-items:center;justify-content:center;font-weight:600">${idx+1}</div><div>${label}</div></div>`).join('');
+      content.appendChild(stepper);
+
+      const section = document.createElement('div');
+      section.className = 'section';
+
+      if(workflowWizardStep===0){
+        section.innerHTML = `
+          <div class="section-header">Workflow basics</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-label">Name</div>
+              <input class="input" id="workflowName" value="${workflowDraft.name||''}" placeholder="Social Media Creation" />
+            </div>
+            <div>
+              <div class="info-label">Frame / context</div>
+              <input class="input" id="workflowFrame" value="${workflowDraft.frame_id||''}" placeholder="content_ops_quarterly" />
+            </div>
+            <div>
+              <div class="info-label">Description</div>
+              <textarea class="input" id="workflowDescription" rows="4" placeholder="How is this workflow used?">${workflowDraft.description||''}</textarea>
+            </div>
+          </div>
+        `;
+      }
+
+      if(workflowWizardStep===1){
+        const hasRoles = Object.keys(roles).length>0;
+        section.innerHTML = `
+          <div class="section-header">Steps & checkpoints</div>
+          ${hasRoles?'':'<div class="text-sm text-muted">Create roles before building the workflow.</div>'}
+          <div class="detail-view" id="workflowSteps">
+            ${(workflowDraft.chain.length?workflowDraft.chain.map((step,idx)=>`
+                    <div class="detail-card" data-step="${step.id}">
+                      <div class="detail-header">
+                        <div>
+                          <div class="detail-card-title">Step ${idx+1}</div>
+                          <select class="input step-role">
+                    ${roles[step.role] || !step.role ? '' : `<option value="${step.role}" selected>(Missing) ${step.role}</option>`}
+                            ${Object.values(roles).map(r=>`<option value="${r.id}" ${r.id===step.role?'selected':''}>${r.name}</option>`).join('')}
+                          </select>
+                        </div>
+                  <div class="detail-actions">
+                    <button class="btn xs ghost" data-action="move-up" ${idx===0?'disabled':''}>↑</button>
+                    <button class="btn xs ghost" data-action="move-down" ${idx===workflowDraft.chain.length-1?'disabled':''}>↓</button>
+                    <button class="btn xs ghost" data-action="remove-step">Delete</button>
+                  </div>
+                </div>
+                <div class="mt-1">
+                  <div class="info-label">Checkpoints</div>
+                  <div class="detail-view">
+                    ${(step.handoff_rules.length?step.handoff_rules.map((rule,rIdx)=>`
+                      <div class="section" data-checkpoint="${rule.id}">
+                        <div class="row space-between">
+                          <input class="input checkpoint-text" value="${rule.text||''}" />
+                          <div class="detail-actions">
+                            <button class="btn xs ghost" data-action="checkpoint-up" ${rIdx===0?'disabled':''}>↑</button>
+                            <button class="btn xs ghost" data-action="checkpoint-down" ${rIdx===step.handoff_rules.length-1?'disabled':''}>↓</button>
+                            <button class="btn xs ghost" data-action="remove-checkpoint">Remove</button>
+                          </div>
+                        </div>
+                        <div class="info-grid" style="margin-top:8px">
+                          <div>
+                            <div class="info-label">Automation</div>
+                            <select class="input checkpoint-auto">
+                              <option value="">Manual</option>
+                              <option value="artifact_match" ${rule.auto_type==='artifact_match'?'selected':''}>Artifact name contains</option>
+                              <option value="artifact_type" ${rule.auto_type==='artifact_type'?'selected':''}>Artifact type is</option>
+                            </select>
+                          </div>
+                          <div>
+                            <div class="info-label">Automation value</div>
+                            <input class="input checkpoint-auto-value" value="${rule.auto_value||''}" ${rule.auto_type?'':'disabled'} placeholder="e.g. draft" />
+                          </div>
+                        </div>
+                      </div>
+                    `).join(''):`<div class="empty-state"><div class="empty-state-text">No checkpoints yet</div></div>`)}
+                    <button class="btn xs" data-action="add-checkpoint">+ Add checkpoint</button>
+                  </div>
+                </div>
+              </div>
+            `).join(''):`<div class="empty-state"><div class="empty-state-icon">🧭</div><div class="empty-state-title">No steps yet</div><div class="empty-state-text">Add roles to outline the workflow.</div></div>`)}
+            <button class="btn" id="addWorkflowStep" ${hasRoles?'':'disabled'}>+ Add step</button>
+          </div>
+        `;
+      }
+
+      if(workflowWizardStep===2){
+        section.innerHTML = `
+          <div class="section-header">Review</div>
+          <div class="detail-view">
+            <div>
+              <div class="detail-card-title">${workflowDraft.name||'Untitled Workflow'}</div>
+              <div class="text-sm text-muted">${workflowDraft.frame_id||'No frame'}</div>
+              <div class="description">${workflowDraft.description||'No description provided.'}</div>
+            </div>
+            <div>
+              <div class="info-label">Steps</div>
+              <div class="workflow-chain">
+                ${workflowDraft.chain.map(step=>`<div class="workflow-step">${roles[step.role]?.name||step.role}</div>`).join('<div class="workflow-arrow">→</div>') || '<div class="empty-state-text">No steps defined</div>'}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      content.appendChild(section);
+
+      if(workflowWizardStep===1){
+        const stepsContainer = section.querySelector('#workflowSteps');
+        if(stepsContainer){
+          stepsContainer.querySelectorAll('.detail-card').forEach(card=>{
+            const stepId = card.getAttribute('data-step');
+            const step = workflowDraft.chain.find(s=>s.id===stepId);
+            if(!step) return;
+            const roleSelect = card.querySelector('.step-role');
+            roleSelect.addEventListener('change', e=>{ step.role = e.target.value; });
+            card.querySelectorAll('button[data-action]').forEach(btn=>{
+              btn.addEventListener('click', e=>{
+                e.preventDefault();
+                const action = btn.getAttribute('data-action');
+                if(action==='move-up'){
+                  const idx = workflowDraft.chain.findIndex(s=>s.id===stepId);
+                  if(idx>0){
+                    const [m] = workflowDraft.chain.splice(idx,1);
+                    workflowDraft.chain.splice(idx-1,0,m);
+                    renderWorkflowWizard();
+                  }
+                }
+                if(action==='move-down'){
+                  const idx = workflowDraft.chain.findIndex(s=>s.id===stepId);
+                  if(idx>=0 && idx<workflowDraft.chain.length-1){
+                    const [m] = workflowDraft.chain.splice(idx,1);
+                    workflowDraft.chain.splice(idx+1,0,m);
+                    renderWorkflowWizard();
+                  }
+                }
+                if(action==='remove-step'){
+                  workflowDraft.chain = workflowDraft.chain.filter(s=>s.id!==stepId);
+                  renderWorkflowWizard();
+                }
+                if(action==='add-checkpoint'){
+                  const newRule = { id:uniqueId('checkpoint'), text:'New checkpoint', auto_type:null, auto_value:null };
+                  step.handoff_rules.push(newRule);
+                  renderWorkflowWizard();
+                }
+                if(action==='remove-checkpoint'){
+                  const ruleId = btn.closest('[data-checkpoint]')?.getAttribute('data-checkpoint');
+                  if(ruleId){
+                    step.handoff_rules = step.handoff_rules.filter(r=>r.id!==ruleId);
+                    renderWorkflowWizard();
+                  }
+                }
+                if(action==='checkpoint-up' || action==='checkpoint-down'){
+                  const ruleId = btn.closest('[data-checkpoint]')?.getAttribute('data-checkpoint');
+                  const idx = step.handoff_rules.findIndex(r=>r.id===ruleId);
+                  if(idx>=0){
+                    const [rule] = step.handoff_rules.splice(idx,1);
+                    const target = action==='checkpoint-up'?Math.max(0, idx-1):Math.min(step.handoff_rules.length, idx+1);
+                    step.handoff_rules.splice(target,0,rule);
+                    renderWorkflowWizard();
+                  }
+                }
+              });
+            });
+            card.querySelectorAll('.checkpoint-text').forEach(input=>{
+              const ruleId = input.closest('[data-checkpoint]')?.getAttribute('data-checkpoint');
+              input.addEventListener('input', ()=>{
+                const rule = step.handoff_rules.find(r=>r.id===ruleId);
+                if(rule){ rule.text = input.value; }
+              });
+            });
+            card.querySelectorAll('.checkpoint-auto').forEach(select=>{
+              const ruleId = select.closest('[data-checkpoint]')?.getAttribute('data-checkpoint');
+              select.addEventListener('change', ()=>{
+                const rule = step.handoff_rules.find(r=>r.id===ruleId);
+                if(rule){
+                  rule.auto_type = select.value || null;
+                  const valInput = select.closest('[data-checkpoint]')?.querySelector('.checkpoint-auto-value');
+                  if(valInput){
+                    valInput.disabled = !rule.auto_type;
+                    if(!rule.auto_type){ valInput.value=''; rule.auto_value=null; }
+                  }
+                }
+              });
+            });
+            card.querySelectorAll('.checkpoint-auto-value').forEach(input=>{
+              const ruleId = input.closest('[data-checkpoint]')?.getAttribute('data-checkpoint');
+              input.addEventListener('input', ()=>{
+                const rule = step.handoff_rules.find(r=>r.id===ruleId);
+                if(rule){ rule.auto_value = input.value || null; }
+              });
+            });
+          });
+        }
+        const addStepBtn = section.querySelector('#addWorkflowStep');
+        addStepBtn?.addEventListener('click', e=>{
+          e.preventDefault();
+          if(addStepBtn.hasAttribute('disabled')) return;
+          const firstRole = Object.values(roles)[0];
+          workflowDraft.chain.push({ id:uniqueId('step'), role:firstRole?.id||'', handoff_rules:[] });
+          renderWorkflowWizard();
+        });
+      }
+
+      const actions = [];
+      if(workflowWizardStep>0){
+        actions.push({ label:'Back', variant:'ghost', onClick:()=>{ workflowWizardStep = Math.max(0, workflowWizardStep-1); renderWorkflowWizard(); } });
+      } else {
+        actions.push({ label:'Cancel', variant:'ghost', onClick:()=>{ workflowDraft=null; workflowEditingId=null; closeFormModal(); } });
+      }
+
+      const goNext = ()=>{
+        if(workflowWizardStep===0){
+          const name = content.querySelector('#workflowName').value.trim();
+          if(!name){ alert('Workflow name is required'); return false; }
+          workflowDraft.name = name;
+          workflowDraft.frame_id = content.querySelector('#workflowFrame').value.trim();
+          workflowDraft.description = content.querySelector('#workflowDescription').value.trim();
+        }
+        if(workflowWizardStep===1){
+          if(workflowDraft.chain.length===0){ alert('Add at least one step.'); return false; }
+          const hasEmptyRole = workflowDraft.chain.some(step=>!step.role);
+          if(hasEmptyRole){ alert('Each step must have a role.'); return false; }
+        }
+        workflowWizardStep = Math.min(2, workflowWizardStep+1);
+        renderWorkflowWizard();
+        return true;
+      };
+
+      if(workflowWizardStep<2){
+        actions.push({ label:'Next', variant:'primary', onClick:goNext });
+      } else {
+        actions.push({ label: editing?'Save Changes':'Create Workflow', variant:'primary', onClick:()=>{
+          if(workflowDraft.chain.length===0){ alert('Add at least one step.'); return; }
+          persistWorkflowDraft();
+          workflowDraft=null;
+          workflowEditingId=null;
+          closeFormModal();
+          render();
+        }});
+      }
+
+      openFormModal({ title, content, actions });
+    }
+
+    function persistWorkflowDraft(){
+      const editing = !!workflowEditingId;
+      const baseId = slugify(workflowDraft.name, 'workflow-' + Math.random().toString(36).slice(2,6));
+      if(!editing){
+        let newId = baseId;
+        let i = 1;
+        while(workflows[newId]){ newId = `${baseId}-${i++}`; }
+        workflowDraft.id = newId;
+        recordEvent({ type:'workflow_created', workflow_id:newId, name:workflowDraft.name, description:workflowDraft.description, frame_id:workflowDraft.frame_id });
+        workflowDraft.chain.forEach((step, idx)=>{
+          const stepId = step.id || uniqueId('step');
+          step.id = stepId;
+          recordEvent({ type:'workflow_step_added', workflow_id:newId, step_id:stepId, role_id:step.role, position:idx });
+          step.handoff_rules.forEach((rule, rIdx)=>{
+            recordEvent({ type:'workflow_checkpoint_added', workflow_id:newId, step_id:stepId, checkpoint_id:rule.id||uniqueId('checkpoint'), text:rule.text, auto_type:rule.auto_type||null, auto_value:rule.auto_value||null, position:rIdx });
+          });
+        });
+        workflowEditingId = newId;
+        currentView = { type:'workflow', id:newId };
+      } else {
+        const wfId = workflowEditingId;
+        const existing = workflows[wfId];
+        if(!existing) return;
+        const updates = {};
+        if(existing.name!==workflowDraft.name) updates.name = workflowDraft.name;
+        if((existing.description||'')!==workflowDraft.description) updates.description = workflowDraft.description;
+        if((existing.frame_id||'')!==workflowDraft.frame_id) updates.frame_id = workflowDraft.frame_id;
+        if(Object.keys(updates).length){
+          recordEvent({ type:'workflow_updated', workflow_id:wfId, ...updates });
+        }
+
+        const existingStepIds = new Set(existing.chain.map(s=>s.id));
+        const newStepIds = new Set(workflowDraft.chain.map(s=>s.id));
+
+        existing.chain.forEach(step=>{
+          if(!newStepIds.has(step.id)){
+            recordEvent({ type:'workflow_step_removed', workflow_id:wfId, step_id:step.id });
+          }
+        });
+
+        workflowDraft.chain.forEach((step, idx)=>{
+          if(!step.id) step.id = uniqueId('step');
+          if(!existingStepIds.has(step.id)){
+            recordEvent({ type:'workflow_step_added', workflow_id:wfId, step_id:step.id, role_id:step.role, position:idx });
+            step.handoff_rules.forEach((rule, rIdx)=>{
+              const ruleId = rule.id || uniqueId('checkpoint');
+              rule.id = ruleId;
+              recordEvent({ type:'workflow_checkpoint_added', workflow_id:wfId, step_id:step.id, checkpoint_id:ruleId, text:rule.text, auto_type:rule.auto_type||null, auto_value:rule.auto_value||null, position:rIdx });
+            });
+          }
+        });
+
+        workflowDraft.chain.forEach((step, idx)=>{
+          const prevIdx = existing.chain.findIndex(s=>s.id===step.id);
+          if(prevIdx>=0 && prevIdx!==idx){
+            recordEvent({ type:'workflow_step_reordered', workflow_id:wfId, step_id:step.id, position:idx });
+          }
+          const prevStep = existing.chain[prevIdx];
+          if(prevStep && prevStep.role!==step.role){
+            recordEvent({ type:'workflow_step_role_updated', workflow_id:wfId, step_id:step.id, role_id:step.role });
+          }
+          if(prevStep){
+            const prevRuleIds = new Set(prevStep.handoff_rules.map(r=>r.id));
+            const newRuleIds = new Set(step.handoff_rules.map(r=>r.id));
+            prevStep.handoff_rules.forEach(rule=>{
+              if(!newRuleIds.has(rule.id)){
+                recordEvent({ type:'workflow_checkpoint_removed', workflow_id:wfId, step_id:step.id, checkpoint_id:rule.id });
+              }
+            });
+            step.handoff_rules.forEach((rule, rIdx)=>{
+              if(!rule.id) rule.id = uniqueId('checkpoint');
+              const prevRule = prevStep.handoff_rules.find(r=>r.id===rule.id);
+              if(!prevRule){
+                recordEvent({ type:'workflow_checkpoint_added', workflow_id:wfId, step_id:step.id, checkpoint_id:rule.id, text:rule.text, auto_type:rule.auto_type||null, auto_value:rule.auto_value||null, position:rIdx });
+              } else {
+                if(prevRule.text!==rule.text || (prevRule.auto_type||null)!==(rule.auto_type||null) || (prevRule.auto_value||null)!==(rule.auto_value||null)){
+                  recordEvent({ type:'workflow_checkpoint_updated', workflow_id:wfId, step_id:step.id, checkpoint_id:rule.id, text:rule.text, auto_type:rule.auto_type||null, auto_value:rule.auto_value||null });
+                }
+                const prevRuleIdx = prevStep.handoff_rules.findIndex(r=>r.id===rule.id);
+                if(prevRuleIdx!==rIdx){
+                  recordEvent({ type:'workflow_checkpoint_reordered', workflow_id:wfId, step_id:step.id, checkpoint_id:rule.id, position:rIdx });
+                }
+              }
+            });
+          }
+        });
+      }
+    }
+
+    function handleRoleDelete(roleId){
+      const role = roles[roleId];
+      if(!role) return;
+      if(!confirm(`Delete role "${role.name}"? This won't remove tasks but they'll reference the raw role id.`)) return;
+      recordEvent({ type:'role_deleted', role_id:roleId });
+      if(currentView.type==='role' && currentView.id===roleId){
+        currentView = { type:'roles' };
+      }
+      render();
+    }
+
+    function toggleWorkflowArchive(workflowId){
+      const wf = workflows[workflowId];
+      if(!wf) return;
+      if(wf.archived){
+        recordEvent({ type:'workflow_restored', workflow_id:workflowId });
+      } else {
+        recordEvent({ type:'workflow_archived', workflow_id:workflowId });
+      }
+      render();
+    }
+
+    function handleWorkflowDelete(workflowId){
+      const wf = workflows[workflowId];
+      if(!wf) return;
+      if(!confirm(`Delete workflow "${wf.name}" and its configuration? Tasks will keep their history.`)) return;
+      recordEvent({ type:'workflow_deleted', workflow_id:workflowId });
+      if(currentView.type==='workflow' && currentView.id===workflowId){
+        currentView = { type:'workflows' };
+      }
+      render();
     }
 
     // =============================
@@ -357,6 +1050,28 @@
 
     const $ = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    function openFormModal({ title, content, actions=[] }){
+      $('#formModalTitle').textContent = title;
+      const body = $('#formModalBody');
+      body.innerHTML = '';
+      if(typeof content === 'string'){ body.innerHTML = content; }
+      else if(content){ body.appendChild(content); }
+      const footer = $('#formModalFooter');
+      footer.innerHTML = '';
+      actions.forEach(action=>{
+        const btn = document.createElement('button');
+        btn.className = `btn ${action.variant||''}`.trim();
+        btn.textContent = action.label;
+        btn.addEventListener('click', action.onClick);
+        footer.appendChild(btn);
+      });
+      $('#formOverlay').classList.add('active');
+    }
+
+    function closeFormModal(){
+      $('#formOverlay').classList.remove('active');
+    }
 
     function render(){
       updateNavCounts();
@@ -384,21 +1099,38 @@
     function updateNavCounts(){
       $('#allTasksCount').textContent = taskIds().length;
       $('#statusCount').textContent = taskIds().length;
-      $('#rolesCount').textContent = Object.keys(roles).length;
-      $('#workflowsCount').textContent = Object.keys(workflows).length;
-      
-      const roleHTML = Object.values(roles).map(r=>{
+      const roleList = Object.values(roles);
+      const workflowList = Object.values(workflows).filter(wf=>!wf.archived);
+
+      $('#rolesCount').textContent = roleList.length;
+      $('#workflowsCount').textContent = workflowList.length;
+
+      const roleHTML = roleList.map(r=>{
         const count = tasksAtRole(r.id).length;
         return `<div class="nav-item" data-view="role" data-role="${r.id}"><span>${r.name}</span><span class="badge">${count}</span></div>`;
       }).join('');
       $('#roleNavItems').innerHTML = roleHTML || '<div class="empty-state"><div class="empty-state-text">No roles</div></div>';
-      
-      const wfHTML = Object.values(workflows).map(wf=>{
+
+      const wfHTML = workflowList.map(wf=>{
         const count = tasksInWorkflow(wf.id).length;
         return `<div class="nav-item" data-view="workflow" data-workflow="${wf.id}"><span>${wf.name}</span><span class="badge">${count}</span></div>`;
       }).join('');
       $('#workflowNavItems').innerHTML = wfHTML || '<div class="empty-state"><div class="empty-state-text">No workflows</div></div>';
-      
+
+      const activeSelector = (()=>{
+        if(currentView.type==='role' && currentView.id){
+          return `.nav-item[data-view="role"][data-role="${currentView.id}"]`;
+        }
+        if(currentView.type==='workflow' && currentView.id){
+          return `.nav-item[data-view="workflow"][data-workflow="${currentView.id}"]`;
+        }
+        return `.nav-item[data-view="${currentView.type}"]`;
+      })();
+      if(activeSelector){
+        document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+        document.querySelector(activeSelector)?.classList.add('active');
+      }
+
       attachNavListeners();
     }
 
@@ -459,12 +1191,45 @@
 
     function renderBoard(){
       if(currentView.type==='role'){
-        const rId=currentView.id, list=tasksAtRole(rId), role=roles[rId], op = operators.find(o=>o.id===role?.operator);
-        $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">${role?.name||rId} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${list.length}</div></div><div class="column-body">${list.length?list.map(t=>card(t,true)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div></div>`;
+        const rId=currentView.id;
+        const role=roles[rId];
+        const op = operators.find(o=>o.id===role?.operator);
+        const list=tasksAtRole(rId);
+        if(!role){
+          $('#main').innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">Role not found</div></div>';
+          return;
+        }
+        const people = role.people?.map(p=>`<span class="pill">${p}</span>`).join('') || '<span class="text-muted text-sm">No people assigned</span>';
+        const power = role.power ? `Power: I${role.power.institutional} · E${role.power.epistemic} · A${role.power.action} · N${role.power.narrative}` : '';
+        const board = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">${role.name} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${list.length}</div></div><div class="column-body">${list.length?list.map(t=>card(t,true)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div></div>`;
+        const detail = `
+          <div class="section">
+            <div class="detail-header">
+              <div>
+                <div class="modal-title" style="font-size:16px">${role.name}</div>
+                <div class="text-sm text-muted">${op?.name||'No operator'}</div>
+                <div class="description">${role.description||'No description yet.'}</div>
+                ${power?`<div class="text-sm text-muted mt-1">${power}</div>`:''}
+                <div class="row mt-1">${people}</div>
+              </div>
+              <div class="detail-actions">
+                <button class="btn sm" id="editRoleBtn">Edit Role</button>
+                <button class="btn sm ghost" id="deleteRoleBtn">Delete Role</button>
+              </div>
+            </div>
+          </div>`;
+        $('#main').innerHTML = `<div class="detail-view">${detail}${board}</div>`;
+        $('#editRoleBtn')?.addEventListener('click', ()=>openRoleModal(rId));
+        $('#deleteRoleBtn')?.addEventListener('click', ()=>handleRoleDelete(rId));
         bindOpen();
+        return;
       }
-      else if(currentView.type==='workflow'){
+      if(currentView.type==='workflow'){
         const wf = workflows[currentView.id];
+        if(!wf){
+          $('#main').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔄</div><div class="empty-state-title">Workflow not found</div></div>';
+          return;
+        }
         const tasks = tasksInWorkflow(wf.id);
         const cols = wf.chain.map(step=>{
           const r = roles[step.role];
@@ -472,9 +1237,32 @@
           const op = operators.find(o=>o.id===r?.operator);
           return `<div class="column"><div class="column-header"><div class="column-title">${r?.name||step.role} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${rs.length}</div></div><div class="column-body" data-drop="${step.role}">${rs.length?rs.map(t=>card(t)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div>`;
         }).join('');
-        $('#main').innerHTML = `<div class="board">${cols}</div>`;
-        enableDragDrop();
+        const chain = wf.chain.map(step=>`<div class="workflow-step">${roles[step.role]?.name||step.role}</div>`).join('<div class="workflow-arrow">→</div>') || '<div class="text-muted text-sm">No steps defined</div>';
+        const detail = `
+          <div class="section">
+            <div class="detail-header">
+              <div>
+                <div class="modal-title" style="font-size:16px">${wf.name}</div>
+                <div class="text-sm text-muted">${wf.frame_id||'No frame'}</div>
+                <div class="description">${wf.description||'No description yet.'}</div>
+                ${wf.archived?'<div class="text-xs text-muted mt-1">Archived</div>':''}
+                <div class="workflow-chain" style="margin-top:12px">${chain}</div>
+              </div>
+              <div class="detail-actions">
+                <button class="btn sm" id="editWorkflowBtn">Edit Workflow</button>
+                <button class="btn sm" id="toggleArchiveWorkflowBtn">${wf.archived?'Restore':'Archive'}</button>
+                <button class="btn sm ghost" id="deleteWorkflowBtn">Delete</button>
+              </div>
+            </div>
+          </div>`;
+        const boardContent = cols || `<div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">No steps</div><div class="column-count">0</div></div><div class="column-body"><div class="empty-state"><div class="empty-state-icon">🧭</div><div class="empty-state-text">Define steps to visualize tasks.</div></div></div></div>`;
+        $('#main').innerHTML = `<div class="detail-view">${detail}<div class="board">${boardContent}</div></div>`;
+        $('#editWorkflowBtn')?.addEventListener('click', ()=>openWorkflowWizard(wf.id));
+        $('#toggleArchiveWorkflowBtn')?.addEventListener('click', ()=>toggleWorkflowArchive(wf.id));
+        $('#deleteWorkflowBtn')?.addEventListener('click', ()=>handleWorkflowDelete(wf.id));
+        if(wf.chain.length) enableDragDrop();
         bindOpen();
+        return;
       }
     }
 
@@ -500,7 +1288,7 @@
       const blocks = operators.map(op=>{
         const rs = Object.values(roles).filter(r=>r.operator===op.id);
         return rs.map(r=>{
-          const ppl = r.people.map(p=>`<span class="pill">${p}</span>`).join('');
+          const ppl = (r.people||[]).map(p=>`<span class="pill">${p}</span>`).join('');
           const pv = r.power?`<div class="text-xs text-muted mt-1">Power: I${r.power.institutional} E${r.power.epistemic} A${r.power.action} N${r.power.narrative}</div>`:'';
           return `<div class="detail-card"><div class="detail-card-title">${r.name}</div><div class="text-sm text-muted">${op.name}</div><div class="row mt-1">${ppl}</div>${pv}</div>`;
         }).join('');
@@ -514,7 +1302,8 @@
           const r = roles[s.role];
           return `<div class="workflow-step">${r?.name||s.role}</div>${i<wf.chain.length-1?'<div class="workflow-arrow">→</div>':''}`;
         }).join('');
-        return `<div class="detail-card"><div class="detail-card-title">${wf.name}</div><div class="text-sm text-muted">${wf.description||''}</div><div class="workflow-chain">${steps}</div></div>`;
+        const archived = wf.archived ? '<div class="text-xs text-muted mt-1">Archived</div>' : '';
+        return `<div class="detail-card"><div class="detail-card-title">${wf.name}</div><div class="text-sm text-muted">${wf.description||''}</div>${archived}<div class="workflow-chain">${steps}</div></div>`;
       }).join('');
       $('#main').innerHTML = `<div class="detail-grid">${blocks||'<div class="empty-state"><div class="empty-state-icon">🔄</div><div class="empty-state-title">No workflows yet</div></div>'}</div>`;
     }
@@ -534,24 +1323,30 @@
     }
 
     function openTask(id){
-      openTaskId = id; 
+      openTaskId = id;
       const t = project(id);
       const wf = workflows[t.workflow];
+      if(!wf){
+        $('#modalTitle').textContent = `${t.id} · ${t.title}`;
+        $('#modalBody').innerHTML = '<div class="empty-state"><div class="empty-state-icon">ℹ️</div><div class="empty-state-text">Workflow definition missing.</div></div>';
+        $('#overlay').classList.add('active');
+        return;
+      }
       const idx = wf.chain.findIndex(s=>s.role===t.current_role);
-      const step = wf.chain[idx];
+      const step = wf.chain[idx] || { handoff_rules:[] };
       
       $('#modalTitle').textContent = `${t.id} · ${t.title}`;
       
       const rulesHTML = (step.handoff_rules||[]).map(rule=>{
-        const met = rule.auto_detect ? !!rule.auto_detect(t) : !!t.checkpoints[rule.id];
-        const evidence = met ? (t.checkpoints[rule.id]?.evidence || 'auto-detected') : 'not met';
+        const met = rule.auto_type ? checkpointAutoDetected(rule, t) : !!t.checkpoints[rule.id];
+        const evidence = met ? (t.checkpoints[rule.id]?.evidence || (rule.auto_type?'auto-detected':'marked')) : 'not met';
         return `<div class="checkpoint-item">
           <div class="checkpoint-status ${met?'met':'unmet'}">${met?'✓':'?'}</div>
           <div class="checkpoint-info">
             <div class="checkpoint-text">${rule.text}</div>
             <div class="checkpoint-evidence">${evidence}</div>
           </div>
-          ${!rule.auto_detect? `<button class="btn sm" data-toggle-cp="${rule.id}">${met?'Clear':'Mark'}</button>`:''}
+          ${!rule.auto_type? `<button class="btn sm" data-toggle-cp="${rule.id}">${met?'Clear':'Mark'}</button>`:''}
         </div>`;
       }).join('');
 
@@ -655,27 +1450,30 @@
     }
 
     function autoDetectCheckpoints(taskId){
-      const t = project(taskId); 
-      const wf = workflows[t.workflow]; 
-      const idx = wf.chain.findIndex(s=>s.role===t.current_role); 
+      const t = project(taskId);
+      const wf = workflows[t.workflow];
+      if(!wf) return;
+      const idx = wf.chain.findIndex(s=>s.role===t.current_role);
       if(idx<0) return;
-      const step = wf.chain[idx]; 
+      const step = wf.chain[idx];
       (step.handoff_rules||[]).forEach(rule=>{
-        if(rule.auto_detect && rule.auto_detect(t) && !t.checkpoints[rule.id]){
+        if(rule.auto_type && checkpointAutoDetected(rule, t) && !t.checkpoints[rule.id]){
           recordEvent({ type:'checkpoint_detected', task_id:taskId, checkpoint:rule.id, evidence:'auto-detected', source:'auto', ops:[op('SEG')] });
         }
       });
     }
 
     $('#moveBtn').addEventListener('click', ()=>{
-      if(!openTaskId) return; 
-      const t = project(openTaskId); 
-      const wf=workflows[t.workflow]; 
+      if(!openTaskId) return;
+      const t = project(openTaskId);
+      const wf=workflows[t.workflow];
+      if(!wf){ alert('Workflow definition missing.'); return; }
       const idx = wf.chain.findIndex(s=>s.role===t.current_role);
+      if(idx<0){ alert('Current role is not part of the workflow.'); return; }
       if(idx>=wf.chain.length-1) return;
-      if(!isReady(t)) { 
-        alert('Task is not ready. Please meet all checkpoints or use Override & Move.'); 
-        return; 
+      if(!isReady(t)) {
+        alert('Task is not ready. Please meet all checkpoints or use Override & Move.');
+        return;
       }
       const next = wf.chain[idx+1];
       recordEvent({ type:'ready_marked', task_id:openTaskId, actor:'alex', ops:[op('ALT')] });
@@ -684,12 +1482,14 @@
     });
 
     $('#overrideBtn').addEventListener('click', ()=>{
-      if(!openTaskId) return; 
-      const reason = prompt('Override reason:'); 
+      if(!openTaskId) return;
+      const reason = prompt('Override reason:');
       if(!reason) return;
-      const t = project(openTaskId); 
-      const wf=workflows[t.workflow]; 
-      const idx = wf.chain.findIndex(s=>s.role===t.current_role); 
+      const t = project(openTaskId);
+      const wf=workflows[t.workflow];
+      if(!wf){ alert('Workflow definition missing.'); return; }
+      const idx = wf.chain.findIndex(s=>s.role===t.current_role);
+      if(idx<0){ alert('Current role is not part of the workflow.'); return; }
       if(idx>=wf.chain.length-1) return;
       const next = wf.chain[idx+1];
       recordEvent({ type:'override_move', task_id:openTaskId, from_role:t.current_role, to_role:next.role, reason, actor:'alex', ops:[op('SUP'),op('REC')] });
@@ -722,10 +1522,11 @@
     }));
 
     $('#newTask').addEventListener('click', ()=>{
-      const title = prompt('Task title:'); 
+      const title = prompt('Task title:');
       if(!title) return;
-      const wfs = Object.values(workflows); 
-      const choice = prompt('Select workflow:\n' + wfs.map((w,i)=>`${i+1}. ${w.name}`).join('\n')); 
+      const wfs = Object.values(workflows).filter(w=>!w.archived);
+      if(wfs.length===0){ alert('No active workflows available.'); return; }
+      const choice = prompt('Select workflow:\n' + wfs.map((w,i)=>`${i+1}. ${w.name}`).join('\n'));
       if(!choice) return;
       const wf = wfs[parseInt(choice)-1]; 
       if(!wf) return alert('Invalid selection');
@@ -734,6 +1535,9 @@
       recordEvent({ type:'task_status_set', task_id:id, status:'todo', prev_status:null, actor:'alex', ops:[op('ALT')] });
       render();
     });
+
+    $('#createRoleBtn').addEventListener('click', ()=>openRoleModal());
+    $('#createWorkflowBtn').addEventListener('click', ()=>openWorkflowWizard());
 
     $('#newCheckpoint').addEventListener('click', ()=>{
       if(currentView.type!=='workflow') {
@@ -749,9 +1553,10 @@
       if(!s) return alert('Invalid selection');
       const text = prompt('Checkpoint text:'); 
       if(!text) return;
-      s.handoff_rules = s.handoff_rules||[]; 
-      s.handoff_rules.push({ id: text.toLowerCase().replace(/\s+/g,'-'), text, auto_detect:null });
-      recordEvent({ type:'workflow_checkpoint_added', workflow_id:wf.id, role:s.role, text, actor:'alex', ops:[op('SEG')] });
+      const cpIdBase = slugify(text, uniqueId('checkpoint'));
+      const cpId = cpIdBase || uniqueId('checkpoint');
+      const position = s.handoff_rules?.length || 0;
+      recordEvent({ type:'workflow_checkpoint_added', workflow_id:wf.id, step_id:s.id, checkpoint_id:cpId, text, auto_type:null, auto_value:null, position, actor:'alex', ops:[op('SEG')] });
       render();
     });
 
@@ -822,13 +1627,15 @@
       $('#themeToggle').textContent = saved==='dark'?'🌙':'☀️'; 
     })();
     
-    $('#themeToggle').addEventListener('click', ()=>{ 
-      const cur=document.documentElement.getAttribute('data-theme'); 
-      const nxt=cur==='dark'?'light':'dark'; 
-      document.documentElement.setAttribute('data-theme',nxt); 
-      localStorage.setItem('theme',nxt); 
-      $('#themeToggle').textContent = nxt==='dark'?'🌙':'☀️'; 
+    $('#themeToggle').addEventListener('click', ()=>{
+      const cur=document.documentElement.getAttribute('data-theme');
+      const nxt=cur==='dark'?'light':'dark';
+      document.documentElement.setAttribute('data-theme',nxt);
+      localStorage.setItem('theme',nxt);
+      $('#themeToggle').textContent = nxt==='dark'?'🌙':'☀️';
     });
+
+    $('#closeFormModal').addEventListener('click', ()=>{ workflowDraft=null; workflowEditingId=null; closeFormModal(); });
 
     function ago(ts){ 
       const d=Date.now()-ts; 
