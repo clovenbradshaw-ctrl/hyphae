@@ -352,8 +352,27 @@
     // =============================
     // Rendering
     // =============================
+    const LAYOUT_STORAGE_KEY = 'eo_pm_layout_pref_v1';
+    const layoutPrefs = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || '{}');
+
     let currentView = { type:'status' };
-    let layout = 'board';
+    let layout = getLayoutForView(currentView.type);
+
+    function viewSupportsList(type){
+      return ['tasks','role','workflow'].includes(type);
+    }
+
+    function getLayoutForView(type){
+      if(!viewSupportsList(type)) return 'board';
+      const saved = layoutPrefs[type];
+      return saved === 'list' ? 'list' : 'board';
+    }
+
+    function saveLayoutPreference(viewType, value){
+      if(!viewSupportsList(viewType)) return;
+      layoutPrefs[viewType] = value;
+      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layoutPrefs));
+    }
 
     const $ = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -361,12 +380,14 @@
     function render(){
       updateNavCounts();
       updateViewTitle();
+      updateViewToggle();
       if(currentView.type==='status'){ return renderStatusBoard(); }
-      if(currentView.type==='tasks'){ return renderAllTasks(); }
+      if(currentView.type==='tasks'){ return layout==='list' ? renderAllTasksList() : renderAllTasksBoard(); }
       if(currentView.type==='roles'){ return renderRoles(); }
       if(currentView.type==='workflows'){ return renderWorkflows(); }
-      if(layout==='board') return renderBoard();
-      return renderList();
+      if(currentView.type==='role'){ return layout==='list' ? renderRoleList(currentView.id) : renderRoleBoard(currentView.id); }
+      if(currentView.type==='workflow'){ return layout==='list' ? renderWorkflowList(currentView.id) : renderWorkflowBoard(currentView.id); }
+      return renderAllTasksBoard();
     }
 
     function updateViewTitle(){
@@ -447,53 +468,103 @@
       bindOpen();
     }
 
-    function renderAllTasks(){
+    function renderAllTasksBoard(){
       const all = taskIds().map(project);
-      if(layout === 'board'){
-        $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">All Tasks</div><div class="column-count">${all.length}</div></div><div class="column-body">${all.map(t=>card(t,true,true)).join('')}</div></div></div>`;
-        bindOpen();
-      } else {
-        renderList();
-      }
-    }
-
-    function renderBoard(){
-      if(currentView.type==='role'){
-        const rId=currentView.id, list=tasksAtRole(rId), role=roles[rId], op = operators.find(o=>o.id===role?.operator);
-        $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">${role?.name||rId} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${list.length}</div></div><div class="column-body">${list.length?list.map(t=>card(t,true)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div></div>`;
-        bindOpen();
-      }
-      else if(currentView.type==='workflow'){
-        const wf = workflows[currentView.id];
-        const tasks = tasksInWorkflow(wf.id);
-        const cols = wf.chain.map(step=>{
-          const r = roles[step.role];
-          const rs = tasks.filter(t=>t.current_role===step.role);
-          const op = operators.find(o=>o.id===r?.operator);
-          return `<div class="column"><div class="column-header"><div class="column-title">${r?.name||step.role} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${rs.length}</div></div><div class="column-body" data-drop="${step.role}">${rs.length?rs.map(t=>card(t)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div>`;
-        }).join('');
-        $('#main').innerHTML = `<div class="board">${cols}</div>`;
-        enableDragDrop();
-        bindOpen();
-      }
-    }
-
-    function renderList(){
-      const rows = taskIds().map(project).map(t=>{
-        const wf=workflows[t.workflow], role=roles[t.current_role];
-        return `<div class="list-row" data-open="${t.id}">
-          <div class="list-cell id">${t.id}</div>
-          <div class="list-cell title">${t.title}</div>
-          <div class="list-cell meta">${wf?.name||t.workflow}</div>
-          <div class="list-cell meta">${role?.name||t.current_role}</div>
-          <div class="list-cell"><span class="pill status-${t.status}">${t.status}</span></div>
-        </div>`;
-      }).join('');
-      $('#main').innerHTML = `<div class="list-container">
-        <div class="list-header"><div>ID</div><div>Title</div><div>Workflow</div><div>Role</div><div>Status</div></div>
-        ${rows}
-      </div>`;
+      $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">All Tasks</div><div class="column-count">${all.length}</div></div><div class="column-body">${all.map(t=>card(t,true,true)).join('')}</div></div></div>`;
       bindOpen();
+    }
+
+    function renderRoleBoard(roleId){
+      const list = tasksAtRole(roleId);
+      const role = roles[roleId];
+      const op = operators.find(o=>o.id===role?.operator);
+      $('#main').innerHTML = `<div class="board"><div class="column" style="flex:1;max-width:100%"><div class="column-header"><div class="column-title">${role?.name||roleId} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${list.length}</div></div><div class="column-body">${list.length?list.map(t=>card(t,true)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div></div>`;
+      bindOpen();
+    }
+
+    function renderWorkflowBoard(workflowId){
+      const wf = workflows[workflowId];
+      if(!wf){
+        $('#main').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Workflow not found</div></div>';
+        return;
+      }
+      const tasks = tasksInWorkflow(wf.id);
+      const cols = wf.chain.map(step=>{
+        const r = roles[step.role];
+        const rs = tasks.filter(t=>t.current_role===step.role);
+        const op = operators.find(o=>o.id===r?.operator);
+        return `<div class="column"><div class="column-header"><div class="column-title">${r?.name||step.role} <span style="opacity:.6">· ${op?.name||''}</span></div><div class="column-count">${rs.length}</div></div><div class="column-body" data-drop="${step.role}">${rs.length?rs.map(t=>card(t)).join(''):'<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>'}</div></div>`;
+      }).join('');
+      $('#main').innerHTML = `<div class="board">${cols}</div>`;
+      enableDragDrop();
+      bindOpen();
+    }
+
+    function buildListRows(tasks, cellBuilder){
+      return tasks.map(t=>{
+        const cells = cellBuilder(t);
+        const cols = cells.map(cell=>`<div class="list-cell ${cell.className||''}">${cell.content}</div>`).join('');
+        return `<div class="list-row" data-open="${t.id}">${cols}</div>`;
+      });
+    }
+
+    function renderListView(headers, rows){
+      const headerHtml = `<div class="list-header">${headers.map(h=>`<div>${h}</div>`).join('')}</div>`;
+      const rowsHtml = rows.length ? rows.join('') : '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No tasks</div></div>';
+      $('#main').innerHTML = `<div class="list-container">${headerHtml}${rowsHtml}</div>`;
+      bindOpen();
+    }
+
+    function renderAllTasksList(){
+      const tasks = taskIds().map(project);
+      const rows = buildListRows(tasks, t=>{
+        const wf=workflows[t.workflow], role=roles[t.current_role];
+        return [
+          { className:'id', content:t.id },
+          { className:'title', content:t.title },
+          { className:'meta', content:wf?.name||t.workflow },
+          { className:'meta', content:role?.name||t.current_role },
+          { content:`<span class="pill status-${t.status}">${t.status}</span>` }
+        ];
+      });
+      renderListView(['ID','Title','Workflow','Role','Status'], rows);
+    }
+
+    function renderRoleList(roleId){
+      const tasks = tasksAtRole(roleId);
+      const rows = buildListRows(tasks, t=>{
+        const wf=workflows[t.workflow];
+        const ready = isReady(t);
+        return [
+          { className:'id', content:t.id },
+          { className:'title', content:t.title },
+          { className:'meta', content:wf?.name||t.workflow },
+          { className:'meta', content:`<span class="pill status-${t.status}">${t.status}</span>` },
+          { className:'meta', content:ready?'<span class="pill ready">✓ Ready</span>':'<span class="text-muted">Not ready</span>' }
+        ];
+      });
+      renderListView(['ID','Title','Workflow','Status','Ready'], rows);
+    }
+
+    function renderWorkflowList(workflowId){
+      const wf = workflows[workflowId];
+      if(!wf){
+        $('#main').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Workflow not found</div></div>';
+        return;
+      }
+      const tasks = tasksInWorkflow(workflowId);
+      const rows = buildListRows(tasks, t=>{
+        const role = roles[t.current_role];
+        const ready = isReady(t);
+        return [
+          { className:'id', content:t.id },
+          { className:'title', content:t.title },
+          { className:'meta', content:role?.name||t.current_role },
+          { className:'meta', content:`<span class="pill status-${t.status}">${t.status}</span>` },
+          { className:'meta', content:ready?'<span class="pill ready">✓ Ready</span>':'<span class="text-muted">Not ready</span>' }
+        ];
+      });
+      renderListView(['ID','Title','Role','Status','Ready'], rows);
     }
 
     function renderRoles(){
@@ -709,17 +780,38 @@
             type: n.dataset.view,
             id: n.dataset.role || n.dataset.workflow || n.dataset.person || null
           };
+          layout = getLayoutForView(currentView.type);
           render();
         };
       });
     }
 
     $$('.view-toggle .btn').forEach(b=> b.addEventListener('click', ()=>{
-      $$('.view-toggle .btn').forEach(x=>x.classList.remove('active')); 
-      b.classList.add('active'); 
-      layout=b.dataset.layout; 
+      if(b.disabled) return;
+      const nextLayout = b.dataset.layout;
+      if(layout === nextLayout) return;
+      layout = nextLayout;
+      saveLayoutPreference(currentView.type, layout);
+      updateViewToggle();
       render();
     }));
+
+    function updateViewToggle(){
+      const supportsList = viewSupportsList(currentView.type);
+      if(!supportsList && layout === 'list'){
+        layout = 'board';
+      }
+      $$('.view-toggle .btn').forEach(btn=>{
+        const layoutType = btn.dataset.layout;
+        const disable = layoutType === 'list' && !supportsList;
+        btn.disabled = disable;
+        btn.style.opacity = disable ? 0.5 : '';
+        btn.style.cursor = disable ? 'not-allowed' : '';
+        const isActive = !disable && layoutType === layout;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    }
 
     $('#newTask').addEventListener('click', ()=>{
       const title = prompt('Task title:'); 
