@@ -1,170 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Event Operator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      body {
-        background-color: #0f172a;
-      }
-    </style>
-  </head>
-  <body class="min-h-screen">
-    <div id="root"></div>
-    <script type="module">
-      import React, { useEffect, useMemo, useState } from 'https://esm.sh/react@18.2.0?dev';
-      import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client?dev';
-      import {
-        AlertCircle,
-        ArrowLeft,
-        CheckCircle,
-        ChevronRight,
-        GitBranch,
-        Layers,
-        Link as LinkIcon,
-        Plus,
-        TrendingDown,
-        Users,
-        X,
-        Zap
-      } from 'https://esm.sh/lucide-react@0.344.0?bundle';
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Operator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="root"></div>
 
-      const STORAGE_KEY = 'eo_v3_state';
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { Plus, ArrowLeft, Layers, GitBranch, ChevronRight, X } = lucide;
 
-      const OPERATORS = [
-        { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', seq: 1, deliverableType: 'foundation' },
-        { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', seq: 2, deliverableType: 'core' },
-        { id: 'connector', name: 'Connector', desc: 'Links work across contexts', seq: 3, deliverableType: 'core' },
-        { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', seq: 4, deliverableType: 'foundation' },
-        { id: 'approver', name: 'Approver', desc: 'Alters state with authority', seq: 5, deliverableType: 'foundation' },
-        { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', seq: 6, deliverableType: 'foundation' },
-        { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', seq: 7, deliverableType: 'distribution' },
-        { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', seq: 8, deliverableType: 'distribution' },
-        { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, deliverableType: 'analytics' }
-      ];
+    const OPERATORS = [
+      { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', seq: 1, deliverableType: 'foundation' },
+      { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', seq: 2, deliverableType: 'core' },
+      { id: 'connector', name: 'Connector', desc: 'Links work across contexts', seq: 3, deliverableType: 'core' },
+      { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', seq: 4, deliverableType: 'foundation' },
+      { id: 'approver', name: 'Approver', desc: 'Alters state with authority', seq: 5, deliverableType: 'foundation' },
+      { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', seq: 6, deliverableType: 'foundation' },
+      { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', seq: 7, deliverableType: 'distribution' },
+      { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', seq: 8, deliverableType: 'distribution' },
+      { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, deliverableType: 'analytics' }
+    ];
 
-      const createId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    function Icon({ icon: IconComponent, ...props }) {
+      return React.createElement(IconComponent, props);
+    }
 
-      function EventOperator() {
-        const [view, setView] = useState('welcome');
-        const [currentUser, setCurrentUser] = useState('');
-        const [projects, setProjects] = useState([]);
-        const [roles, setRoles] = useState([]);
-        const [selectedProjectId, setSelectedProjectId] = useState(null);
-        const [selectedFlowId, setSelectedFlowId] = useState(null);
-        const [modal, setModal] = useState(null);
-        const [modalData, setModalData] = useState({});
+    function EventOperator() {
+      const [view, setView] = useState('welcome');
+      const [currentUser, setCurrentUser] = useState('');
+      const [projects, setProjects] = useState([]);
+      const [selectedProject, setSelectedProject] = useState(null);
+      const [selectedFlow, setSelectedFlow] = useState(null);
+      const [roles, setRoles] = useState([]);
+      const [showModal, setShowModal] = useState(null);
+      const [modalData, setModalData] = useState({});
 
-        useEffect(() => {
-          if (typeof window === 'undefined') return;
-
-          try {
-            const saved = window.localStorage.getItem(STORAGE_KEY);
-            if (!saved) return;
-            const state = JSON.parse(saved);
-            if (state?.currentUser) {
-              setCurrentUser(state.currentUser);
-              setProjects(Array.isArray(state.projects) ? state.projects : []);
-              setRoles(Array.isArray(state.roles) ? state.roles : []);
-              setView('projects');
-            }
-          } catch (error) {
-            console.warn('Failed to restore saved state', error);
+      useEffect(() => {
+        if (selectedProject) {
+          const updated = projects.find(p => p.id === selectedProject.id);
+          if (updated) {
+            setSelectedProject(updated);
           }
-        }, []);
+        }
+      }, [projects]);
 
-        useEffect(() => {
-          if (typeof window === 'undefined' || !currentUser) return;
-          const payload = JSON.stringify({ currentUser, projects, roles });
-          window.localStorage.setItem(STORAGE_KEY, payload);
-        }, [currentUser, projects, roles]);
-
-        useEffect(() => {
-          if (!selectedProjectId) return;
-          const exists = projects.some((project) => project.id === selectedProjectId);
-          if (!exists) {
-            setSelectedProjectId(null);
-            if (view !== 'projects') {
-              setView('projects');
-            }
+      useEffect(() => {
+        if (selectedFlow && selectedProject) {
+          const updated = selectedProject.flows.find(f => f.id === selectedFlow.id);
+          if (updated) {
+            setSelectedFlow(updated);
           }
-        }, [projects, selectedProjectId, view]);
+        }
+      }, [selectedProject]);
 
-        useEffect(() => {
-          if (!selectedFlowId) return;
-          const project = projects.find((p) => p.id === selectedProjectId);
-          const flowExists = project?.flows.some((flow) => flow.id === selectedFlowId);
-          if (!flowExists) {
-            setSelectedFlowId(null);
-            if (view === 'activities') {
-              setView(project ? 'flows' : 'projects');
-            }
+      const createProject = (name, team, user) => {
+        const project = {
+          id: `project-${Date.now()}`,
+          name,
+          team,
+          createdBy: user,
+          createdAt: Date.now(),
+          flows: []
+        };
+        setProjects([...projects, project]);
+        setCurrentUser(user);
+        setView('projects');
+      };
+
+      const createFlow = (projectId, name, deliverables, description) => {
+        setProjects(prevProjects => prevProjects.map(p => {
+          if (p.id === projectId) {
+            const flow = {
+              id: `flow-${Date.now()}`,
+              name,
+              deliverables,
+              description,
+              createdBy: currentUser,
+              createdAt: Date.now(),
+              activities: []
+            };
+            return { ...p, flows: [...p.flows, flow] };
           }
-        }, [projects, selectedProjectId, selectedFlowId, view]);
+          return p;
+        }));
+      };
 
-        const selectedProject = useMemo(
-          () => projects.find((project) => project.id === selectedProjectId) || null,
-          [projects, selectedProjectId]
-        );
-
-        const selectedFlow = useMemo(() => {
-          if (!selectedProject) return null;
-          return selectedProject.flows.find((flow) => flow.id === selectedFlowId) || null;
-        }, [selectedProject, selectedFlowId]);
-
-        const closeModal = () => {
-          setModal(null);
-          setModalData({});
-        };
-
-        const createProject = (name, team, user) => {
-          const uniqueTeam = Array.from(new Set([...team, user].filter(Boolean)));
-          const project = {
-            id: createId('project'),
-            name,
-            team: uniqueTeam,
-            createdBy: user,
-            createdAt: Date.now(),
-            flows: []
-          };
-
-          setProjects((prev) => [...prev, project]);
-          setCurrentUser(user);
-          setView('projects');
-        };
-
-        const createFlow = (projectId, name, deliverables, description) => {
-          const trimmedDeliverables = deliverables.map((deliverable) => deliverable.trim()).filter(Boolean);
-
-          setProjects((prev) =>
-            prev.map((project) => {
-              if (project.id !== projectId) return project;
-              const flow = {
-                id: createId('flow'),
-                name,
-                deliverables: trimmedDeliverables,
-                description,
-                createdBy: currentUser,
-                createdAt: Date.now(),
-                activities: []
-              };
-              return { ...project, flows: [...project.flows, flow] };
-            })
-          );
-        };
-
-        const createActivity = (projectId, flowId, title, roleId, accountabilities = [], deliverable = '', timing = null) => {
-          setProjects((prev) =>
-            prev.map((project) => {
-              if (project.id !== projectId) return project;
-              return {
-                ...project,
-                flows: project.flows.map((flow) => {
-                  if (flow.id !== flowId) return flow;
+      const createActivity = (projectId, flowId, title, roleId, accountabilities = [], deliverable = '', timing = null) => {
+        setProjects(projects.map(p => {
+          if (p.id === projectId) {
+            return {
+              ...p,
+              flows: p.flows.map(f => {
+                if (f.id === flowId) {
                   const activity = {
-                    id: createId('activity'),
+                    id: `activity-${Date.now()}`,
                     title,
                     roleId,
                     accountabilities,
@@ -176,1234 +113,1117 @@
                     createdBy: currentUser,
                     createdAt: Date.now()
                   };
-                  return { ...flow, activities: [...flow.activities, activity] };
-                })
-              };
-            })
-          );
-        };
+                  return { ...f, activities: [...f.activities, activity] };
+                }
+                return f;
+              })
+            };
+          }
+          return p;
+        }));
+      };
 
-        const createRole = (name, operatorType, people = []) => {
-          const role = {
-            id: createId('role'),
-            name,
-            operatorType,
-            people: Array.from(new Set([...people, currentUser].filter(Boolean))),
-            createdBy: currentUser
-          };
-          setRoles((prev) => [...prev, role]);
-          return role;
+      const createRole = (name, operatorType, people = []) => {
+        const role = {
+          id: `role-${Date.now()}`,
+          name,
+          operatorType,
+          people: [...people, currentUser],
+          createdBy: currentUser
         };
+        setRoles([...roles, role]);
+        return role;
+      };
 
-        const claimActivity = (projectId, flowId, activityId, priority) => {
-          setProjects((prev) =>
-            prev.map((project) => {
-              if (project.id !== projectId) return project;
-              return {
-                ...project,
-                flows: project.flows.map((flow) => {
-                  if (flow.id !== flowId) return flow;
+      const claimActivity = (projectId, flowId, activityId, priority) => {
+        setProjects(projects.map(p => {
+          if (p.id === projectId) {
+            return {
+              ...p,
+              flows: p.flows.map(f => {
+                if (f.id === flowId) {
                   return {
-                    ...flow,
-                    activities: flow.activities.map((activity) =>
-                      activity.id === activityId
-                        ? { ...activity, status: 'claimed', claimedBy: currentUser, priority }
-                        : activity
+                    ...f,
+                    activities: f.activities.map(a =>
+                      a.id === activityId
+                        ? { ...a, status: 'claimed', claimedBy: currentUser, priority }
+                        : a
                     )
                   };
-                })
-              };
-            })
-          );
-        };
+                }
+                return f;
+              })
+            };
+          }
+          return p;
+        }));
+      };
 
-        const completeActivity = (projectId, flowId, activityId) => {
-          setProjects((prev) =>
-            prev.map((project) => {
-              if (project.id !== projectId) return project;
-              return {
-                ...project,
-                flows: project.flows.map((flow) => {
-                  if (flow.id !== flowId) return flow;
+      const completeActivity = (projectId, flowId, activityId) => {
+        setProjects(projects.map(p => {
+          if (p.id === projectId) {
+            return {
+              ...p,
+              flows: p.flows.map(f => {
+                if (f.id === flowId) {
                   return {
-                    ...flow,
-                    activities: flow.activities.map((activity) =>
-                      activity.id === activityId
-                        ? { ...activity, status: 'completed', completedAt: Date.now() }
-                        : activity
+                    ...f,
+                    activities: f.activities.map(a =>
+                      a.id === activityId
+                        ? { ...a, status: 'completed', completedAt: Date.now() }
+                        : a
                     )
                   };
-                })
-              };
-            })
-          );
-        };
+                }
+                return f;
+              })
+            };
+          }
+          return p;
+        }));
+      };
 
-        const value = {
-          currentUser,
-          projects,
-          roles,
-          view,
-          selectedProject,
-          selectedFlow,
-          setView,
-          setSelectedProjectId,
-          setSelectedFlowId,
-          setModal,
-          setModalData,
-          closeModal,
-          createProject,
-          createFlow,
-          createActivity,
-          createRole,
-          claimActivity,
-          completeActivity,
-          modal,
-          modalData
-        };
+      let mainContent;
 
-        return <AppShell {...value} />;
+      if (view === 'welcome') {
+        mainContent = <WelcomeView onCreate={createProject} />;
+      } else if (view === 'projects') {
+        mainContent = (
+          <ProjectsView
+            projects={projects}
+            currentUser={currentUser}
+            onSelectProject={(project) => {
+              setSelectedProject(project);
+              setView('flows');
+            }}
+            onCreateProject={() => setShowModal('createProject')}
+          />
+        );
+      } else if (view === 'flows' && selectedProject) {
+        mainContent = (
+          <FlowsView
+            project={selectedProject}
+            onBack={() => {
+              setSelectedProject(null);
+              setView('projects');
+            }}
+            onSelectFlow={(flow) => {
+              setSelectedFlow(flow);
+              setView('activities');
+            }}
+            onCreateFlow={() => setShowModal('createFlow')}
+          />
+        );
+      } else if (view === 'activities' && selectedProject && selectedFlow) {
+        mainContent = (
+          <ActivitiesView
+            project={selectedProject}
+            flow={selectedFlow}
+            roles={roles}
+            currentUser={currentUser}
+            onBack={() => {
+              setSelectedFlow(null);
+              setView('flows');
+            }}
+            onCreateActivity={() => setShowModal('createActivity')}
+            onClaimActivity={(activityId) => {
+              setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId });
+              setShowModal('claimActivity');
+            }}
+            onCompleteActivity={(activityId) => {
+              completeActivity(selectedProject.id, selectedFlow.id, activityId);
+            }}
+          />
+        );
       }
 
-      function AppShell(props) {
-        const {
-          view,
-          setView,
-          currentUser,
-          projects,
-          roles,
-          selectedProject,
-          selectedFlow,
-          setSelectedProjectId,
-          setSelectedFlowId,
-          modal,
-          modalData,
-          setModal,
-          closeModal,
-          createProject,
-          createFlow,
-          createActivity,
-          createRole,
-          claimActivity,
-          completeActivity
-        } = props;
+      return (
+        <>
+          {mainContent}
 
-        let mainContent = null;
+          {showModal === 'createProject' && (
+            <CreateProjectModal
+              onClose={() => setShowModal(null)}
+              onCreate={(name, team) => {
+                createProject(name, team, currentUser);
+                setShowModal(null);
+              }}
+            />
+          )}
 
-        if (view === 'welcome') {
-          mainContent = (
-            <WelcomeView
-              onCreate={(name, team, user) => {
-                createProject(name, team, user);
+          {showModal === 'createFlow' && selectedProject && (
+            <CreateFlowModal
+              onClose={() => setShowModal(null)}
+              onCreate={(name, deliverables, description) => {
+                createFlow(selectedProject.id, name, deliverables, description);
+                setShowModal(null);
               }}
             />
-          );
-        } else if (view === 'projects') {
-          mainContent = (
-            <ProjectsView
-              projects={projects}
-              currentUser={currentUser}
-              onSelectProject={(project) => {
-                setSelectedProjectId(project.id);
-                setView('flows');
-              }}
-              onCreateProject={() => setModal('createProject')}
-            />
-          );
-        } else if (view === 'flows' && selectedProject) {
-          mainContent = (
-            <FlowsView
-              project={selectedProject}
-              onBack={() => {
-                setSelectedProjectId(null);
-                setView('projects');
-              }}
-              onSelectFlow={(flow) => {
-                setSelectedFlowId(flow.id);
-                setView('activities');
-              }}
-              onCreateFlow={() => setModal('createFlow')}
-            />
-          );
-        } else if (view === 'activities' && selectedProject && selectedFlow) {
-          mainContent = (
-            <ActivitiesView
-              project={selectedProject}
+          )}
+
+          {showModal === 'createActivity' && selectedProject && selectedFlow && (
+            <CreateActivityModal
               flow={selectedFlow}
               roles={roles}
-              currentUser={currentUser}
-              onBack={() => {
-                setSelectedFlowId(null);
-                setView('flows');
+              onClose={() => setShowModal(null)}
+              onCreate={(title, roleId, accountabilities, deliverable, timing) => {
+                createActivity(selectedProject.id, selectedFlow.id, title, roleId, accountabilities, deliverable, timing);
+                setShowModal(null);
               }}
-              onCreateActivity={() => setModal('createActivity')}
-              onClaimActivity={(activityId) => {
-                setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId });
-                setModal('claimActivity');
+              onCreateRole={createRole}
+            />
+          )}
+
+          {showModal === 'claimActivity' && selectedFlow && (
+            <ClaimActivityModal
+              activity={selectedFlow.activities.find(a => a.id === modalData.activityId)}
+              roles={roles}
+              onClose={() => {
+                setShowModal(null);
+                setModalData({});
               }}
-              onCompleteActivity={(activityId) => {
-                completeActivity(selectedProject.id, selectedFlow.id, activityId);
+              onClaim={(priority) => {
+                claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority);
+                setShowModal(null);
+                setModalData({});
               }}
             />
-          );
-        }
+          )}
+        </>
+      );
+    }
 
-        return (
-          <>
-            {mainContent}
+    function WelcomeView({ onCreate }) {
+      const [projectName, setProjectName] = useState('');
+      const [team, setTeam] = useState('');
+      const [userName, setUserName] = useState('');
 
-            {modal === 'createProject' && (
-              <CreateProjectModal
-                onClose={closeModal}
-                onCreate={(name, team) => {
-                  createProject(name, team, currentUser || team[0] || '');
-                  closeModal();
-                }}
-              />
-            )}
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
+          <div className="max-w-2xl w-full">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold mb-4">EVENT_OPERATOR</h1>
+              <p className="text-gray-300 text-lg">Projects contain flows, flows contain activities</p>
+            </div>
 
-            {modal === 'createFlow' && selectedProject && (
-              <CreateFlowModal
-                onClose={closeModal}
-                onCreate={(name, deliverables, description) => {
-                  createFlow(selectedProject.id, name, deliverables, description);
-                  closeModal();
-                }}
-              />
-            )}
-
-            {modal === 'createActivity' && selectedProject && selectedFlow && (
-              <CreateActivityModal
-                roles={roles}
-                onClose={closeModal}
-                onCreate={(title, roleId, accountabilities, deliverable, timing) => {
-                  createActivity(selectedProject.id, selectedFlow.id, title, roleId, accountabilities, deliverable, timing);
-                  closeModal();
-                }}
-                onCreateRole={createRole}
-              />
-            )}
-
-            {modal === 'claimActivity' && selectedProject && selectedFlow && (
-              <ClaimActivityModal
-                activity={selectedFlow.activities.find((activity) => activity.id === modalData.activityId) || null}
-                roles={roles}
-                onClose={closeModal}
-                onClaim={(priority) => {
-                  claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority);
-                  closeModal();
-                }}
-              />
-            )}
-          </>
-        );
-      }
-
-      function WelcomeView({ onCreate }) {
-        const [projectName, setProjectName] = useState('');
-        const [team, setTeam] = useState('');
-        const [userName, setUserName] = useState('');
-
-        return (
-          <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
-            <div className="max-w-2xl w-full">
-              <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold mb-4">EVENT_OPERATOR</h1>
-                <p className="text-gray-300 text-lg">Projects contain flows, flows contain activities</p>
-              </div>
-
-              <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
-                <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
-
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Project name</label>
-                    <input
-                      type="text"
-                      value={projectName}
-                      onChange={(event) => setProjectName(event.target.value)}
-                      placeholder="e.g., Marketing, Product Development"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Team members (comma separated)</label>
-                    <input
-                      type="text"
-                      value={team}
-                      onChange={(event) => setTeam(event.target.value)}
-                      placeholder="e.g., alex, pat, sam"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Your name</label>
-                    <input
-                      type="text"
-                      value={userName}
-                      onChange={(event) => setUserName(event.target.value)}
-                      placeholder="Your name"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                    />
-                  </div>
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
+              <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
+              
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Project name</label>
+                  <input
+                    type="text"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="e.g., Marketing, Product Development"
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                  />
                 </div>
-
-                <button
-                  onClick={() => {
-                    if (projectName && userName) {
-                      const teamList = team
-                        ? team
-                            .split(',')
-                            .map((member) => member.trim())
-                            .filter(Boolean)
-                        : [];
-                      onCreate(projectName, teamList, userName);
-                    }
-                  }}
-                  disabled={!projectName || !userName}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
-                >
-                  Create Project
-                </button>
+                
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
+                  <input
+                    type="text"
+                    value={team}
+                    onChange={(e) => setTeam(e.target.value)}
+                    placeholder="e.g., alex, pat, sam"
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Your name</label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                  />
+                </div>
               </div>
 
-              <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  Projects organize related coordination cycles. Within each project, you will create flows that represent complete coordination cycles moving through the nine-operator sequence. Each flow produces up to three deliverables.
-                </p>
-              </div>
+              <button
+                onClick={() => {
+                  if (projectName && userName) {
+                    const teamList = team ? team.split(',').map(s => s.trim()) : [userName];
+                    onCreate(projectName, teamList, userName);
+                  }
+                }}
+                disabled={!projectName || !userName}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
+              >
+                Create Project
+              </button>
+            </div>
+
+            <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
+              <p className="text-sm text-gray-300 leading-relaxed">
+                Projects organize related coordination cycles. Within each project, you will create flows that represent complete coordination cycles moving through the nine-operator sequence. Each flow produces up to three deliverables.
+              </p>
             </div>
           </div>
-        );
-      }
+        </div>
+      );
+    }
 
-      function ProjectsView({ projects, currentUser, onSelectProject, onCreateProject }) {
-        return (
-          <div className="min-h-screen bg-gray-950 text-gray-100">
-            <div className="max-w-7xl mx-auto p-6">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h1 className="text-2xl font-bold">Projects</h1>
-                  <p className="text-gray-300">You: {currentUser || 'Anonymous coordinator'}</p>
-                </div>
+    function ProjectsView({ projects, currentUser, onSelectProject, onCreateProject }) {
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100">
+          <div className="max-w-7xl mx-auto p-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl font-bold">Projects</h1>
+                <p className="text-gray-300">You: {currentUser}</p>
+              </div>
+              <button
+                onClick={onCreateProject}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                <Icon icon={Plus} className="w-4 h-4" />
+                New Project
+              </button>
+            </div>
+
+            {projects.length === 0 ? (
+              <div className="text-center py-20">
+                <Icon icon={Layers} className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 mb-4">No projects yet</p>
                 <button
                   onClick={onCreateProject}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  New Project
+                  Create Your First Project
                 </button>
               </div>
-
-              {projects.length === 0 ? (
-                <div className="text-center py-20">
-                  <Layers className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400 mb-4">No projects yet</p>
-                  <button onClick={onCreateProject} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">
-                    Create Your First Project
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {projects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => onSelectProject(project)}
-                      className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
-                    >
-                      <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
-                      <p className="text-sm text-gray-300 mb-4">Team: {project.team.join(', ')}</p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">{project.flows.length} flows</span>
-                        <ChevronRight className="w-4 h-4 text-gray-600" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      }
-
-      function FlowsView({ project, onBack, onSelectFlow, onCreateFlow }) {
-        return (
-          <div className="min-h-screen bg-gray-950 text-gray-100">
-            <div className="max-w-7xl mx-auto p-6">
-              <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Projects
-              </button>
-
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h1 className="text-2xl font-bold">{project.name}</h1>
-                  <p className="text-gray-300">Coordination Flows</p>
-                </div>
-                <button
-                  onClick={onCreateFlow}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Flow
-                </button>
-              </div>
-
-              {project.flows.length === 0 ? (
-                <div className="text-center py-20">
-                  <GitBranch className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400 mb-4">No flows yet</p>
-                  <button onClick={onCreateFlow} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">
-                    Create Your First Flow
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {project.flows.map((flow) => {
-                    const completedActivities = flow.activities.filter((activity) => activity.status === 'completed').length;
-                    const totalActivities = flow.activities.length;
-
-                    return (
-                      <div
-                        key={flow.id}
-                        onClick={() => onSelectFlow(flow)}
-                        className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
-                      >
-                        <h3 className="text-lg font-semibold mb-2">{flow.name}</h3>
-                        {flow.description && <p className="text-sm text-gray-300 mb-4">{flow.description}</p>}
-
-                        <div className="mb-4">
-                          <div className="text-xs text-gray-400 mb-2">Deliverables:</div>
-                          <div className="space-y-1">
-                            {flow.deliverables.map((deliverable, index) => (
-                              <div key={index} className="text-sm text-gray-200">
-                                • {deliverable}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-400">
-                            {totalActivities} activities ({completedActivities} completed)
-                          </span>
-                          <ChevronRight className="w-4 h-4 text-gray-600" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      }
-
-      function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onClaimActivity, onCompleteActivity }) {
-        const groupedActivities = useMemo(() => {
-          const groups = {};
-          for (const operator of OPERATORS) {
-            groups[operator.id] = flow.activities.filter((activity) => {
-              const role = roles.find((r) => r.id === activity.roleId);
-              return role?.operatorType === operator.id;
-            });
-          }
-          return groups;
-        }, [flow.activities, roles]);
-
-        return (
-          <div className="min-h-screen bg-gray-950 text-gray-100">
-            <div className="max-w-7xl mx-auto p-6">
-              <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Flows
-              </button>
-
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-sm text-gray-400 mb-1">{project.name}</div>
-                    <h1 className="text-2xl font-bold mb-2">{flow.name}</h1>
-                    {flow.description && <p className="text-gray-300">{flow.description}</p>}
-                  </div>
-                  <button
-                    onClick={onCreateActivity}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(project => (
+                  <div
+                    key={project.id}
+                    onClick={() => onSelectProject(project)}
+                    className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
-                    New Activity
-                  </button>
-                </div>
-
-                <div>
-                  <div className="text-sm text-gray-300 mb-2">Flow Deliverables:</div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {flow.deliverables.map((deliverable, index) => (
-                      <div key={index} className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-200">
-                        {deliverable}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {OPERATORS.map((operator) => (
-                  <div key={operator.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold">
-                          {operator.seq}. {operator.name}
-                        </h3>
-                        <span className="text-xs bg-gray-800 px-2 py-1 rounded">
-                          {groupedActivities[operator.id]?.length || 0}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-300">{operator.desc}</p>
-                      <div className="text-xs text-gray-400 mt-1">Contributes to: {operator.deliverableType} deliverables</div>
-                    </div>
-
-                    <div className="space-y-2">
-                      {groupedActivities[operator.id]?.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-4">No activities</p>
-                      ) : (
-                        groupedActivities[operator.id].map((activity) => {
-                          const role = roles.find((r) => r.id === activity.roleId) || null;
-                          return (
-                            <ActivityCard
-                              key={activity.id}
-                              activity={activity}
-                              role={role}
-                              currentUser={currentUser}
-                              onClaim={(activityId) => onClaimActivity(activityId)}
-                              onComplete={(activityId) => onCompleteActivity(activityId)}
-                            />
-                          );
-                        })
-                      )}
+                    <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
+                    <p className="text-sm text-gray-300 mb-4">
+                      Team: {project.team.join(', ')}
+                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">{project.flows.length} flows</span>
+                      <Icon icon={ChevronRight} className="w-4 h-4 text-gray-600" />
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-        );
-      }
+        </div>
+      );
+    }
 
-      function ActivityCard({ activity, role, currentUser, onClaim, onComplete }) {
-        const isMine = activity.claimedBy === currentUser;
-        const canClaim = activity.status === 'unclaimed' && role?.people?.includes(currentUser);
+    function FlowsView({ project, onBack, onSelectFlow, onCreateFlow }) {
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100">
+          <div className="max-w-7xl mx-auto p-6">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"
+            >
+              <Icon icon={ArrowLeft} className="w-4 h-4" />
+              Back to Projects
+            </button>
 
-        const getTimingDisplay = () => {
-          if (!activity.timing) return null;
-          if (activity.timing.type === 'estimated') {
-            const hours = activity.timing.hours ?? 0;
-            return `~${hours}h`;
-          }
-          if (activity.timing.type === 'dueDate' && activity.timing.date) {
-            const date = new Date(activity.timing.date);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          }
-          return null;
-        };
-
-        return (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-            <div className="flex items-start justify-between mb-2">
-              <h4 className="font-medium text-sm">{activity.title}</h4>
-              <span
-                className={`text-xs px-2 py-0.5 rounded ${
-                  activity.status === 'completed'
-                    ? 'bg-green-900 text-green-300'
-                    : isMine
-                    ? 'bg-blue-900 text-blue-300'
-                    : activity.claimedBy
-                    ? 'bg-gray-700 text-gray-300'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl font-bold">{project.name}</h1>
+                <p className="text-gray-300">Coordination Flows</p>
+              </div>
+              <button
+                onClick={onCreateFlow}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                {activity.status === 'completed' ? '✓ Done' : isMine ? 'You' : activity.claimedBy || 'Available'}
-              </span>
+                <Icon icon={Plus} className="w-4 h-4" />
+                New Flow
+              </button>
             </div>
 
-            {role && (
-              <div className="text-xs text-gray-300 mb-2">
-                {role.name} • {(role.people || []).join(', ')}
+            {project.flows.length === 0 ? (
+              <div className="text-center py-20">
+                <Icon icon={GitBranch} className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 mb-4">No flows yet</p>
+                <button
+                  onClick={onCreateFlow}
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
+                >
+                  Create Your First Flow
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {project.flows.map(flow => {
+                  const completedActivities = flow.activities.filter(a => a.status === 'completed').length;
+                  const totalActivities = flow.activities.length;
+                  
+                  return (
+                    <div
+                      key={flow.id}
+                      onClick={() => onSelectFlow(flow)}
+                      className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
+                    >
+                      <h3 className="text-lg font-semibold mb-2">{flow.name}</h3>
+                      {flow.description && (
+                        <p className="text-sm text-gray-300 mb-4">{flow.description}</p>
+                      )}
+                      
+                      <div className="mb-4">
+                        <div className="text-xs text-gray-400 mb-2">Deliverables:</div>
+                        <div className="space-y-1">
+                          {flow.deliverables.map((deliverable, idx) => (
+                            <div key={idx} className="text-sm text-gray-200">
+                              • {deliverable}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">
+                          {totalActivities} activities ({completedActivities} completed)
+                        </span>
+                        <Icon icon={ChevronRight} className="w-4 h-4 text-gray-600" />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
+          </div>
+        </div>
+      );
+    }
 
-            {activity.deliverable && (
-              <div className="text-xs text-gray-200 mb-2">
-                <span className="text-gray-400">Delivers:</span> {activity.deliverable}
-              </div>
-            )}
+    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onClaimActivity, onCompleteActivity }) {
+      const groupedActivities = {};
+      
+      OPERATORS.forEach(op => {
+        groupedActivities[op.id] = flow.activities.filter(activity => {
+          const role = roles.find(r => r.id === activity.roleId);
+          return role?.operatorType === op.id;
+        });
+      });
 
-            {activity.accountabilities?.length > 0 && (
-              <div className="text-xs text-gray-300 mb-2">
-                <div className="text-gray-400 mb-1">Accountabilities:</div>
-                <ul className="space-y-0.5 ml-3">
-                  {activity.accountabilities.slice(0, 2).map((acc, index) => (
-                    <li key={index} className="list-disc">
-                      {acc}
-                    </li>
-                  ))}
-                  {activity.accountabilities.length > 2 && (
-                    <li className="text-gray-400">+{activity.accountabilities.length - 2} more</li>
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100">
+          <div className="max-w-7xl mx-auto p-6">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"
+            >
+              <Icon icon={ArrowLeft} className="w-4 h-4" />
+              Back to Flows
+            </button>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="text-sm text-gray-400 mb-1">{project.name}</div>
+                  <h1 className="text-2xl font-bold mb-2">{flow.name}</h1>
+                  {flow.description && (
+                    <p className="text-gray-300">{flow.description}</p>
                   )}
-                </ul>
+                </div>
+                <button
+                  onClick={onCreateActivity}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <Icon icon={Plus} className="w-4 h-4" />
+                  New Activity
+                </button>
               </div>
-            )}
 
-            {getTimingDisplay() && <div className="text-xs text-gray-400 mb-2">{getTimingDisplay()}</div>}
+              <div>
+                <div className="text-sm text-gray-300 mb-2">Flow Deliverables:</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {flow.deliverables.map((deliverable, idx) => (
+                    <div key={idx} className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-200">
+                      {deliverable}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-            <div className="flex gap-2 mt-2">
-              {canClaim && (
-                <button
-                  onClick={() => onClaim(activity.id)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors"
-                >
-                  Claim
-                </button>
-              )}
-              {isMine && activity.status === 'claimed' && (
-                <button
-                  onClick={() => onComplete(activity.id)}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors"
-                >
-                  Complete
-                </button>
-              )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {OPERATORS.map(operator => (
+                <div key={operator.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold">{operator.seq}. {operator.name}</h3>
+                      <span className="text-xs bg-gray-800 px-2 py-1 rounded">
+                        {groupedActivities[operator.id]?.length || 0}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-300">{operator.desc}</p>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Contributes to: {operator.deliverableType} deliverables
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {groupedActivities[operator.id]?.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">No activities</p>
+                    ) : (
+                      groupedActivities[operator.id]?.map(activity => {
+                        const role = roles.find(r => r.id === activity.roleId);
+                        return (
+                          <ActivityCard
+                            key={activity.id}
+                            activity={activity}
+                            role={role}
+                            currentUser={currentUser}
+                            onClaim={onClaimActivity}
+                            onComplete={onCompleteActivity}
+                          />
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        );
-      }
+        </div>
+      );
+    }
 
-      function CreateProjectModal({ onClose, onCreate }) {
-        const [name, setName] = useState('');
-        const [team, setTeam] = useState('');
+    function ActivityCard({ activity, role, currentUser, onClaim, onComplete }) {
+      const isMine = activity.claimedBy === currentUser;
+      const canClaim = activity.status === 'unclaimed' && role?.people.includes(currentUser);
 
-        return (
-          <Modal onClose={onClose} title="Create Project">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-200 mb-2">Project name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g., Marketing, Product Development"
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  autoFocus
-                />
-              </div>
+      const getTimingDisplay = () => {
+        if (!activity.timing) return null;
+        if (activity.timing.type === 'estimated') {
+          return `~${activity.timing.hours}h`;
+        } else {
+          const date = new Date(activity.timing.date);
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+      };
 
-              <div>
-                <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
-                <input
-                  type="text"
-                  value={team}
-                  onChange={(event) => setTeam(event.target.value)}
-                  placeholder="e.g., alex, pat, sam"
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                />
-              </div>
+      return (
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+          <div className="flex items-start justify-between mb-2">
+            <h4 className="font-medium text-sm">{activity.title}</h4>
+            <span className={`text-xs px-2 py-0.5 rounded ${
+              activity.status === 'completed' ? 'bg-green-900 text-green-300' :
+              isMine ? 'bg-blue-900 text-blue-300' :
+              activity.claimedBy ? 'bg-gray-700 text-gray-300' :
+              'bg-gray-700 text-gray-300'
+            }`}>
+              {activity.status === 'completed' ? '✓ Done' :
+               isMine ? 'You' :
+               activity.claimedBy || 'Available'}
+            </span>
+          </div>
 
-              <div className="flex gap-3 pt-4">
-                <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const teamList = team
-                      ? team
-                          .split(',')
-                          .map((member) => member.trim())
-                          .filter(Boolean)
-                      : [];
-                    if (name) {
-                      onCreate(name, teamList);
-                    }
-                  }}
-                  disabled={!name}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-                >
-                  Create Project
-                </button>
-              </div>
+          {role && (
+            <div className="text-xs text-gray-300 mb-2">
+              {role.name} • {role.people.join(', ')}
             </div>
-          </Modal>
-        );
-      }
+          )}
 
-      function CreateFlowModal({ onClose, onCreate }) {
-        const [name, setName] = useState('');
-        const [description, setDescription] = useState('');
-        const [deliverables, setDeliverables] = useState(['']);
+          {activity.deliverable && (
+            <div className="text-xs text-gray-200 mb-2">
+              <span className="text-gray-400">Delivers:</span> {activity.deliverable}
+            </div>
+          )}
 
-        const updateDeliverable = (index, value) => {
-          setDeliverables((prev) => {
-            const next = [...prev];
-            next[index] = value;
-            return next;
-          });
-        };
+          {activity.accountabilities && activity.accountabilities.length > 0 && (
+            <div className="text-xs text-gray-300 mb-2">
+              <div className="text-gray-400 mb-1">Accountabilities:</div>
+              <ul className="space-y-0.5 ml-3">
+                {activity.accountabilities.slice(0, 2).map((acc, idx) => (
+                  <li key={idx} className="list-disc">{acc}</li>
+                ))}
+                {activity.accountabilities.length > 2 && (
+                  <li className="text-gray-400">+{activity.accountabilities.length - 2} more</li>
+                )}
+              </ul>
+            </div>
+          )}
 
-        const addDeliverable = () => setDeliverables((prev) => [...prev, '']);
+          {activity.timing && (
+            <div className="text-xs text-gray-400 mb-2">
+              {getTimingDisplay()}
+            </div>
+          )}
 
-        const removeDeliverable = (index) => {
-          setDeliverables((prev) => prev.filter((_, i) => i !== index));
-        };
+          <div className="flex gap-2 mt-2">
+            {canClaim && (
+              <button
+                onClick={() => onClaim(activity.id)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors"
+              >
+                Claim
+              </button>
+            )}
+            {isMine && activity.status === 'claimed' && (
+              <button
+                onClick={() => onComplete(activity.id)}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors"
+              >
+                Complete
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
 
-        return (
-          <Modal onClose={onClose} title="Create Flow">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-200 mb-2">Flow name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g., Publishing cycle"
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  autoFocus
-                />
+    function CreateProjectModal({ onClose, onCreate }) {
+      const [name, setName] = useState('');
+      const [team, setTeam] = useState('');
+
+      return (
+        <Modal onClose={onClose} title="Create Project">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Project name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Marketing, Product Development"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
+              <input
+                type="text"
+                value={team}
+                onChange={(e) => setTeam(e.target.value)}
+                placeholder="e.g., alex, pat, sam"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (name) {
+                    const teamList = team ? team.split(',').map(s => s.trim()) : [];
+                    onCreate(name, teamList);
+                  }
+                }}
+                disabled={!name}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+              >
+                Create Project
+              </button>
+            </div>
+          </div>
+        </Modal>
+      );
+    }
+
+    function CreateFlowModal({ onClose, onCreate }) {
+      const [name, setName] = useState('');
+      const [description, setDescription] = useState('');
+      const [deliverables, setDeliverables] = useState(['', '', '']);
+
+      return (
+        <Modal onClose={onClose} title="Create Flow" size="large">
+          <div className="space-y-4">
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
+              <p className="text-sm text-gray-100">
+                Flows represent complete coordination cycles through the nine-operator sequence. Define up to three deliverables that this flow will produce.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Flow name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Newsletter Creation, Product Launch"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Description (optional)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief description of this coordination cycle"
+                rows={2}
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">
+                Flow Deliverables (1-3 required)
+              </label>
+              <div className="space-y-2">
+                {deliverables.map((deliverable, idx) => (
+                  <input
+                    key={idx}
+                    type="text"
+                    value={deliverable}
+                    onChange={(e) => {
+                      const updated = [...deliverables];
+                      updated[idx] = e.target.value;
+                      setDeliverables(updated);
+                    }}
+                    placeholder={
+                      idx === 0 ? 'e.g., Published article' :
+                      idx === 1 ? 'e.g., Social media promotion package' :
+                      'e.g., Performance analytics report'
+                    }
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400"
+                  />
+                ))}
               </div>
+              <p className="text-xs text-gray-300 mt-2">
+                Activities will implicitly contribute to these deliverables through their operator types.
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-sm text-gray-200 mb-2">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="What is this flow responsible for?"
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400 h-24"
-                />
-              </div>
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const validDeliverables = deliverables.filter(d => d.trim());
+                  if (name && validDeliverables.length > 0) {
+                    onCreate(name, validDeliverables, description);
+                  }
+                }}
+                disabled={!name || !deliverables.some(d => d.trim())}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+              >
+                Create Flow
+              </button>
+            </div>
+          </div>
+        </Modal>
+      );
+    }
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm text-gray-200">Deliverables (up to 3)</label>
-                  <button onClick={addDeliverable} className="text-xs text-blue-400 hover:text-blue-300">
-                    + Add deliverable
+    function CreateActivityModal({ flow, roles, onClose, onCreate, onCreateRole }) {
+      const [step, setStep] = useState('role');
+      const [title, setTitle] = useState('');
+      const [selectedRole, setSelectedRole] = useState('');
+      const [newRoleName, setNewRoleName] = useState('');
+      const [selectedOperator, setSelectedOperator] = useState('');
+      const [accountabilities, setAccountabilities] = useState(['']);
+      const [deliverable, setDeliverable] = useState('');
+      const [timingType, setTimingType] = useState('estimated');
+      const [estimatedHours, setEstimatedHours] = useState('');
+      const [dueDate, setDueDate] = useState('');
+
+      const handleCreateRole = () => {
+        if (newRoleName && selectedOperator) {
+          const role = onCreateRole(newRoleName, selectedOperator);
+          setSelectedRole(role.id);
+          setStep('activity');
+        }
+      };
+
+      const handleSelectExistingRole = () => {
+        if (selectedRole) {
+          setStep('activity');
+        }
+      };
+
+      const handleCreateActivity = () => {
+        if (title && selectedRole) {
+          const validAccountabilities = accountabilities.filter(a => a.trim());
+          const timing = timingType === 'estimated' 
+            ? { type: 'estimated', hours: parseFloat(estimatedHours) || 0 }
+            : { type: 'dueDate', date: dueDate };
+          
+          onCreate(title, selectedRole, validAccountabilities, deliverable, timing);
+        }
+      };
+
+      const addAccountability = () => {
+        setAccountabilities([...accountabilities, '']);
+      };
+
+      const removeAccountability = (index) => {
+        setAccountabilities(accountabilities.filter((_, i) => i !== index));
+      };
+
+      const updateAccountability = (index, value) => {
+        const updated = [...accountabilities];
+        updated[index] = value;
+        setAccountabilities(updated);
+      };
+
+      const selectedOperatorObj = OPERATORS.find(op => op.id === selectedOperator);
+
+      return (
+        <Modal onClose={onClose} title="Create Activity" size="large">
+          <div className="space-y-4">
+            {step === 'role' ? (
+              <>
+                <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4">
+                  <p className="text-sm text-gray-100">
+                    Each activity requires a role. The role defines who performs the work and what type of operator it represents in the coordination sequence.
+                  </p>
+                </div>
+
+                {roles.length > 0 && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-gray-200 mb-2">Select an existing role</label>
+                      <select
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
+                      >
+                        <option value="">Choose a role...</option>
+                        {roles.map(role => {
+                          const op = OPERATORS.find(o => o.id === role.operatorType);
+                          return (
+                            <option key={role.id} value={role.id}>
+                              {role.name} ({op?.name}) - {role.people.join(', ')}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    {selectedRole && (
+                      <button
+                        onClick={handleSelectExistingRole}
+                        className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors"
+                      >
+                        Continue with Selected Role
+                      </button>
+                    )}
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-700"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-gray-900 text-gray-300">or create a new role</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">New role name</label>
+                  <input
+                    type="text"
+                    value={newRoleName}
+                    onChange={(e) => setNewRoleName(e.target.value)}
+                    placeholder="e.g., Content Writer"
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Select operator type</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {OPERATORS.map(op => (
+                      <button
+                        key={op.id}
+                        onClick={() => setSelectedOperator(op.id)}
+                        className={`p-3 border rounded text-left transition-colors ${
+                          selectedOperator === op.id
+                            ? 'border-blue-500 bg-blue-500/20'
+                            : 'border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="font-medium text-sm">{op.seq}. {op.name}</div>
+                        <div className="text-xs text-gray-300 mt-1">{op.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateRole}
+                    disabled={!newRoleName || !selectedOperator}
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+                  >
+                    Create Role & Continue
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-gray-800 rounded p-3 mb-4">
+                  <div className="text-sm text-gray-300">Role selected:</div>
+                  <div className="font-medium text-gray-100">
+                    {roles.find(r => r.id === selectedRole)?.name}
+                  </div>
+                  {selectedOperatorObj && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      Contributes to: {selectedOperatorObj.deliverableType} deliverables
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setStep('role')}
+                    className="text-xs text-blue-400 hover:text-blue-300 mt-1"
+                  >
+                    Change role
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  {deliverables.map((deliverable, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={deliverable}
-                        onChange={(event) => updateDeliverable(index, event.target.value)}
-                        placeholder="e.g., Published article"
-                        className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400"
-                      />
-                      {deliverables.length > 1 && (
-                        <button onClick={() => removeDeliverable(index)} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors">
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Activity name</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g., Write housing article"
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                    autoFocus
+                  />
                 </div>
-              </div>
 
-              <div className="flex gap-3 pt-4">
-                <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const validDeliverables = deliverables.map((item) => item.trim()).filter(Boolean);
-                    if (name && validDeliverables.length > 0) {
-                      onCreate(name, validDeliverables, description);
-                    }
-                  }}
-                  disabled={!name || !deliverables.some((item) => item.trim())}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-                >
-                  Create Flow
-                </button>
-              </div>
-            </div>
-          </Modal>
-        );
-      }
-
-      function CreateActivityModal({ roles, onClose, onCreate, onCreateRole }) {
-        const [step, setStep] = useState('role');
-        const [title, setTitle] = useState('');
-        const [selectedRole, setSelectedRole] = useState('');
-        const [newRoleName, setNewRoleName] = useState('');
-        const [selectedOperator, setSelectedOperator] = useState('');
-        const [accountabilities, setAccountabilities] = useState(['']);
-        const [deliverable, setDeliverable] = useState('');
-        const [timingType, setTimingType] = useState('estimated');
-        const [estimatedHours, setEstimatedHours] = useState('');
-        const [dueDate, setDueDate] = useState('');
-
-        useEffect(() => {
-          const role = roles.find((r) => r.id === selectedRole);
-          if (role) {
-            setSelectedOperator(role.operatorType);
-          }
-        }, [roles, selectedRole]);
-
-        const handleCreateRole = () => {
-          if (newRoleName && selectedOperator) {
-            const role = onCreateRole(newRoleName, selectedOperator);
-            setSelectedRole(role.id);
-            setStep('activity');
-          }
-        };
-
-        const handleSelectExistingRole = () => {
-          if (selectedRole) {
-            setStep('activity');
-          }
-        };
-
-        const handleCreateActivity = () => {
-          if (!title || !selectedRole) return;
-
-          const validAccountabilities = accountabilities.map((item) => item.trim()).filter(Boolean);
-          let timing = null;
-          if (timingType === 'estimated') {
-            const hours = Number.parseFloat(estimatedHours);
-            timing = { type: 'estimated', hours: Number.isFinite(hours) && hours > 0 ? hours : 0 };
-          } else if (dueDate) {
-            timing = { type: 'dueDate', date: dueDate };
-          }
-
-          onCreate(title, selectedRole, validAccountabilities, deliverable.trim(), timing);
-        };
-
-        const addAccountability = () => setAccountabilities((prev) => [...prev, '']);
-        const removeAccountability = (index) => setAccountabilities((prev) => prev.filter((_, i) => i !== index));
-        const updateAccountability = (index, value) =>
-          setAccountabilities((prev) => {
-            const next = [...prev];
-            next[index] = value;
-            return next;
-          });
-
-        const selectedOperatorObj = OPERATORS.find((operator) => operator.id === selectedOperator);
-
-        return (
-          <Modal onClose={onClose} title="Create Activity" size="large">
-            <div className="space-y-4">
-              {step === 'role' ? (
-                <>
-                  <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4">
-                    <p className="text-sm text-gray-100">
-                      Each activity requires a role. The role defines who performs the work and what type of operator it represents in the coordination sequence.
-                    </p>
-                  </div>
-
-                  {roles.length > 0 && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-gray-200 mb-2">Select an existing role</label>
-                        <select
-                          value={selectedRole}
-                          onChange={(event) => setSelectedRole(event.target.value)}
-                          className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
-                        >
-                          <option value="">Choose a role...</option>
-                          {roles.map((role) => {
-                            const operator = OPERATORS.find((op) => op.id === role.operatorType);
-                            return (
-                              <option key={role.id} value={role.id}>
-                                {role.name} ({operator?.name || 'Unknown'}) - {(role.people || []).join(', ')}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-
-                      {selectedRole && (
-                        <button onClick={handleSelectExistingRole} className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">
-                          Continue with Selected Role
-                        </button>
-                      )}
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-700"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="px-2 bg-gray-900 text-gray-300">or create a new role</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div>
-                    <label className="block text-sm text-gray-200 mb-2">New role name</label>
-                    <input
-                      type="text"
-                      value={newRoleName}
-                      onChange={(event) => setNewRoleName(event.target.value)}
-                      placeholder="e.g., Content Writer"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-200 mb-2">Select operator type</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {OPERATORS.map((operator) => (
-                        <button
-                          key={operator.id}
-                          onClick={() => setSelectedOperator(operator.id)}
-                          className={`p-3 border rounded text-left transition-colors ${
-                            selectedOperator === operator.id ? 'border-blue-500 bg-blue-500/20' : 'border-gray-700 hover:border-gray-600'
-                          }`}
-                        >
-                          <div className="font-medium text-sm">
-                            {operator.seq}. {operator.name}
-                          </div>
-                          <div className="text-xs text-gray-300 mt-1">{operator.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleCreateRole}
-                      disabled={!newRoleName || !selectedOperator}
-                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-                    >
-                      Create Role & Continue
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="bg-gray-800 rounded p-3 mb-4">
-                    <div className="text-sm text-gray-300">Role selected:</div>
-                    <div className="font-medium text-gray-100">{roles.find((role) => role.id === selectedRole)?.name}</div>
-                    {selectedOperatorObj && (
-                      <div className="text-xs text-gray-400 mt-1">
-                        Contributes to: {selectedOperatorObj.deliverableType} deliverables
-                      </div>
-                    )}
-                    <button onClick={() => setStep('role')} className="text-xs text-blue-400 hover:text-blue-300 mt-1">
-                      Change role
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-200 mb-2">Activity name</label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value)}
-                      placeholder="e.g., Write housing article"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                      autoFocus
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-200 mb-2">
-                      Accountabilities
-                      <span className="ml-1 text-gray-400">(What needs to be done?)</span>
-                    </label>
-                    <div className="space-y-2">
-                      {accountabilities.map((accountability, index) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={accountability}
-                            onChange={(event) => updateAccountability(index, event.target.value)}
-                            placeholder="e.g., Research local housing trends"
-                            className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400"
-                          />
-                          {accountabilities.length > 1 && (
-                            <button
-                              onClick={() => removeAccountability(index)}
-                              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={addAccountability} className="mt-2 text-sm text-blue-400 hover:text-blue-300">
-                      + Add accountability
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-200 mb-2">
-                      Deliverable
-                      <span className="ml-1 text-gray-400">(What gets produced?)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={deliverable}
-                      onChange={(event) => setDeliverable(event.target.value)}
-                      placeholder="e.g., Draft article"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-200 mb-2">Timing</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <label className={`border rounded p-3 cursor-pointer transition-colors ${
-                        timingType === 'estimated' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 hover:border-gray-600'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="font-medium text-sm">Estimated effort</span>
-                        </div>
-                        <p className="text-xs text-gray-300 mb-2">Specify how long it should take.</p>
-                        {timingType === 'estimated' && (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            value={estimatedHours}
-                            onChange={(event) => setEstimatedHours(event.target.value)}
-                            placeholder="Hours"
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
-                          />
-                        )}
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">
+                    Accountabilities
+                    <span className="ml-1 text-gray-400">(What needs to be done?)</span>
+                  </label>
+                  <div className="space-y-2">
+                    {accountabilities.map((accountability, index) => (
+                      <div key={index} className="flex gap-2">
                         <input
-                          type="radio"
-                          name="timing"
-                          className="sr-only"
-                          checked={timingType === 'estimated'}
-                          onChange={() => setTimingType('estimated')}
+                          type="text"
+                          value={accountability}
+                          onChange={(e) => updateAccountability(index, e.target.value)}
+                          placeholder="e.g., Research local housing trends"
+                          className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400"
                         />
-                      </label>
+                        {accountabilities.length > 1 && (
+                          <button
+                            onClick={() => removeAccountability(index)}
+                            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                          >
+                            <Icon icon={X} className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={addAccountability}
+                    className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    + Add accountability
+                  </button>
+                </div>
 
-                      <label className={`border rounded p-3 cursor-pointer transition-colors ${
-                        timingType === 'dueDate' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 hover:border-gray-600'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertCircle className="w-4 h-4" />
-                          <span className="font-medium text-sm">Specific due date</span>
-                        </div>
-                        <p className="text-xs text-gray-300 mb-2">Set a calendar deadline.</p>
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">
+                    Deliverable
+                    <span className="ml-1 text-gray-400">(What gets produced?)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={deliverable}
+                    onChange={(e) => setDeliverable(e.target.value)}
+                    placeholder="e.g., 800-word article with 2 images"
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-200 mb-2">Timeline</label>
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                      <input
+                        type="radio"
+                        name="timingType"
+                        value="estimated"
+                        checked={timingType === 'estimated'}
+                        onChange={(e) => setTimingType(e.target.value)}
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-100 block mb-1">Estimated time to complete</span>
+                        {timingType === 'estimated' && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={estimatedHours}
+                              onChange={(e) => setEstimatedHours(e.target.value)}
+                              placeholder="0"
+                              min="0"
+                              step="0.5"
+                              className="w-20 bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
+                            />
+                            <span className="text-sm text-gray-300">hours</span>
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                      <input
+                        type="radio"
+                        name="timingType"
+                        value="dueDate"
+                        checked={timingType === 'dueDate'}
+                        onChange={(e) => setTimingType(e.target.value)}
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-100 block mb-1">Specific due date</span>
                         {timingType === 'dueDate' && (
                           <input
                             type="date"
                             value={dueDate}
-                            onChange={(event) => setDueDate(event.target.value)}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
+                            onChange={(e) => setDueDate(e.target.value)}
+                            className="bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
                           />
                         )}
-                        <input
-                          type="radio"
-                          name="timing"
-                          className="sr-only"
-                          checked={timingType === 'dueDate'}
-                          onChange={() => setTimingType('dueDate')}
-                        />
-                      </label>
-                    </div>
+                      </div>
+                    </label>
                   </div>
+                </div>
 
-                  <div className="flex gap-3 pt-4">
-                    <button onClick={() => setStep('role')} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
-                      Back
-                    </button>
-                    <button
-                      onClick={handleCreateActivity}
-                      disabled={!title}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-                    >
-                      Create Activity
-                    </button>
-                  </div>
-                </>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setStep('role')}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleCreateActivity}
+                    disabled={!title}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+                  >
+                    Create Activity
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
+      );
+    }
+
+    function ClaimActivityModal({ activity, roles, onClose, onClaim }) {
+      const [priority, setPriority] = useState('medium');
+      
+      const role = roles.find(r => r.id === activity?.roleId);
+      const operator = OPERATORS.find(op => op.id === role?.operatorType);
+
+      return (
+        <Modal onClose={onClose} title="Claim Activity">
+          <div className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-4">
+              <h3 className="font-medium mb-2 text-gray-100">{activity?.title}</h3>
+              {role && (
+                <p className="text-sm text-gray-300">
+                  Role: {role.name} ({operator?.name})
+                </p>
               )}
             </div>
-          </Modal>
-        );
-      }
 
-      function ClaimActivityModal({ activity, roles, onClose, onClaim }) {
-        const [priority, setPriority] = useState('medium');
-
-        if (!activity) {
-          return (
-            <Modal onClose={onClose} title="Claim Activity">
-              <p className="text-sm text-gray-200">This activity is no longer available.</p>
-              <div className="flex gap-3 pt-4">
-                <button onClick={onClose} className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">
-                  Close
-                </button>
-              </div>
-            </Modal>
-          );
-        }
-
-        const role = roles.find((r) => r.id === activity.roleId) || null;
-        const operator = OPERATORS.find((op) => op.id === role?.operatorType) || null;
-
-        return (
-          <Modal onClose={onClose} title="Claim Activity">
-            <div className="space-y-4">
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="font-medium mb-2 text-gray-100">{activity.title}</h3>
-                {role && (
-                  <p className="text-sm text-gray-300">
-                    Role: {role.name} {operator ? `(${operator.name})` : ''}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-200 mb-3">Priority</label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'high', label: 'High - I will focus on this' },
-                    { value: 'medium', label: 'Medium - Among other work' },
-                    { value: 'low', label: 'Low - When I have space' }
-                  ].map((option) => (
-                    <label
-                      key={option.value}
-                      className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"
-                    >
-                      <input
-                        type="radio"
-                        name="priority"
-                        value={option.value}
-                        checked={priority === option.value}
-                        onChange={(event) => setPriority(event.target.value)}
-                      />
-                      <span className="text-sm text-gray-100">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
-                  Cancel
-                </button>
-                <button onClick={() => onClaim(priority)} className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">
-                  Claim Activity
-                </button>
+            <div>
+              <label className="block text-sm text-gray-200 mb-3">Priority</label>
+              <div className="space-y-2">
+                {[
+                  { value: 'high', label: 'High - I will focus on this' },
+                  { value: 'medium', label: 'Medium - Among other work' },
+                  { value: 'low', label: 'Low - When I have space' }
+                ].map(opt => (
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"
+                  >
+                    <input
+                      type="radio"
+                      name="priority"
+                      value={opt.value}
+                      checked={priority === opt.value}
+                      onChange={(e) => setPriority(e.target.value)}
+                    />
+                    <span className="text-sm text-gray-100">{opt.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
-          </Modal>
-        );
-      }
 
-      function Modal({ children, onClose, title, size = 'medium' }) {
-        const sizeClasses = {
-          medium: 'max-w-2xl',
-          large: 'max-w-4xl'
-        };
-
-        return (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-            <div className={`bg-gray-900 rounded-lg border border-gray-800 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
-              <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
-                <button onClick={onClose} className="text-gray-300 hover:text-gray-100 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6">{children}</div>
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => onClaim(priority)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors"
+              >
+                Claim Activity
+              </button>
             </div>
           </div>
-        );
-      }
+        </Modal>
+      );
+    }
 
-      function ActivityInsights({ flow }) {
-        if (!flow.activities.length) {
-          return (
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-2">Insights</h3>
-              <p className="text-sm text-gray-400">Insights will appear once activities are added.</p>
-            </div>
-          );
-        }
+    function Modal({ children, onClose, title, size = 'medium' }) {
+      const sizeClasses = {
+        medium: 'max-w-2xl',
+        large: 'max-w-4xl'
+      };
 
-        const total = flow.activities.length;
-        const completed = flow.activities.filter((activity) => activity.status === 'completed').length;
-        const unclaimed = flow.activities.filter((activity) => activity.status === 'unclaimed').length;
-        const claimed = total - completed - unclaimed;
-
-        return (
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-4">
-            <div className="flex items-center gap-2 text-green-400">
-              <CheckCircle className="w-4 h-4" />
-              <span className="text-sm">{completed} completed</span>
+      return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className={`bg-gray-900 rounded-lg border border-gray-800 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
+            <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-300 hover:text-gray-100 transition-colors"
+              >
+                <Icon icon={X} className="w-5 h-5" />
+              </button>
             </div>
-            <div className="flex items-center gap-2 text-blue-400">
-              <Users className="w-4 h-4" />
-              <span className="text-sm">{claimed} in progress</span>
-            </div>
-            <div className="flex items-center gap-2 text-yellow-400">
-              <AlertCircle className="w-4 h-4" />
-              <span className="text-sm">{unclaimed} awaiting owners</span>
-            </div>
-            <div className="flex items-center gap-2 text-indigo-400">
-              <LinkIcon className="w-4 h-4" />
-              <span className="text-sm">{total} total activities</span>
+            <div className="p-6">
+              {children}
             </div>
           </div>
-        );
-      }
+        </div>
+      );
+    }
 
-      function FlowSidebar({ flow }) {
-        if (!flow) return null;
-
-        return (
-          <div className="space-y-4">
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-2">Flow Metrics</h3>
-              <div className="space-y-2 text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-400" />
-                  <span>{flow.activities.length} activities</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-green-400" />
-                  <span>
-                    {flow.activities.filter((activity) => activity.status === 'completed').length} completed
-                  </span>
-                </div>
-              </div>
-            </div>
-            <ActivityInsights flow={flow} />
-          </div>
-        );
-      }
-
-      function ActivitiesLayout({ project, flow, ...rest }) {
-        return (
-          <div className="min-h-screen bg-gray-950 text-gray-100">
-            <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
-              <div>
-                <ActivitiesView project={project} flow={flow} {...rest} />
-              </div>
-              <FlowSidebar flow={flow} />
-            </div>
-          </div>
-        );
-      }
-
-      function App() {
-        return <EventOperator />;
-      }
-
-      const container = document.getElementById('root');
-      const root = createRoot(container);
-      root.render(<App />);
-    </script>
-  </body>
-</html>
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<EventOperator />);
+  </script>
+</body>
+</html>v
