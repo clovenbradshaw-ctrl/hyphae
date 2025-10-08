@@ -50,7 +50,7 @@
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 1.657-1.79 3-4 3-.295 0-.582-.021-.859-.061-.284 1.193-1.355 2.06-2.641 2.06-.358 0-.703-.065-1.019-.184-.44.498-1.086.814-1.781.814-.732 0-1.392-.347-1.829-.888-.51.355-1.137.558-1.812.558-1.648 0-2.985-1.343-2.985-3 0-.333.054-.654.153-.954C3.1 12.715 2 11.477 2 10c0-1.657 1.79-3 4-3h11c2.21 0 4 1.343 4 3z" /></svg>;
     }
 
-    function ActivityDetailPanel({ activity, role, operator, dependencies, project, currentUser, onClose, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment }) {
+    function ActivityDetailPanel({ activity, role, operator, dependencies, project, currentUser, onClose, onEdit, onDelete, onClaim, onUnclaim, onComplete, onSkipStage, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment }) {
       const [commentText, setCommentText] = useState('');
       const [attachmentName, setAttachmentName] = useState('');
       const [attachmentUrl, setAttachmentUrl] = useState('');
@@ -67,6 +67,43 @@
 
       const comments = [...(activity.comments || [])].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       const history = [...(activity.history || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      const stages = activity.stages || [];
+      const currentStageIndex = activity.currentStage ?? 0;
+      const currentStage = stages[currentStageIndex];
+      const stageHistory = [...(activity.stageHistory || [])].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      const stageStatusStyles = {
+        pending: 'bg-gray-800 text-gray-300',
+        current: 'bg-blue-900/60 text-blue-200',
+        completed: 'bg-green-900/70 text-green-300',
+        skipped: 'bg-yellow-900/70 text-yellow-200'
+      };
+      const stageStatusLabel = (stage, idx) => {
+        if (stage.status === 'completed') return 'Completed';
+        if (stage.status === 'skipped') return 'Skipped';
+        if (idx === currentStageIndex) {
+          if (activity.completedAt) return 'Complete';
+          return activity.claimedBy ? 'In progress' : 'Ready';
+        }
+        return 'Pending';
+      };
+      const canSkipCurrentStage = isMine && activity.state === 'in_progress';
+      const stagePositionLabel = currentStage ? `${Math.min(currentStageIndex + 1, stages.length)} / ${stages.length}` : 'Complete';
+
+      const describeStageEvent = (event) => {
+        if (!event) return '';
+        switch (event.type) {
+          case 'stage_completed':
+            return `${event.actor} completed ${event.stageLabel}`;
+          case 'stage_skipped':
+            return `${event.actor} skipped ${event.stageLabel}${event.reason ? ` (${event.reason})` : ''}`;
+          case 'revision_requested':
+            return `${event.actor} requested revision on ${event.stageLabel}${event.reason ? `: ${event.reason}` : ''}`;
+          case 'stage_added':
+            return `${event.actor} added stage ${event.stageLabel}`;
+          default:
+            return `${event.actor || 'Someone'} updated ${event.stageLabel || 'stage'}`;
+        }
+      };
 
       const handleAddComment = () => {
         if (!currentUser || !commentText.trim()) return;
@@ -98,8 +135,9 @@
           {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm">Claim</button>}
           {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
           {canComplete && <button onClick={() => onComplete(activity.id)} className="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded text-sm">Complete</button>}
+          {canSkipCurrentStage && <button onClick={() => { const reason = window.prompt('Skip reason (optional)?') || ''; onSkipStage(activity.id, reason); }} className="bg-yellow-800 hover:bg-yellow-700 px-3 py-1.5 rounded text-sm">Skip stage</button>}
           {canComplete && operator?.canRequestRevision && dependencies.length > 0 && (
-            <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded text-sm">Request revision</button>
+            <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) { const reason = window.prompt('Revision reason (optional)?') || ''; onRequestRevision(activity.id, lastDep.activity.id, reason); } }} className="bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded text-sm">Request revision</button>
           )}
           {!activity.completedAt && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
           {!activity.completedAt && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
@@ -141,6 +179,28 @@
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+                {stages.length > 0 && (
+                  <div className="text-sm text-gray-200">
+                    <div className="flex items-center justify-between text-gray-400 mb-2">
+                      <span>Stage progress</span>
+                      <span>Stage {stagePositionLabel}</span>
+                    </div>
+                    <ol className="space-y-2">
+                      {stages.map((stage, idx) => (
+                        <li key={stage.id} className={`flex items-center justify-between gap-3 px-3 py-2 rounded border ${idx === currentStageIndex ? 'border-blue-600 bg-blue-900/10' : 'border-gray-700 bg-gray-800/40'}`}>
+                          <div>
+                            <div className="text-xs font-semibold text-gray-100">{stage.label}</div>
+                            {stage.deliverable && <div className="text-[11px] text-gray-400">Delivers: {stage.deliverable}</div>}
+                          </div>
+                          {(() => {
+                            const statusKey = stage.status === 'completed' ? 'completed' : stage.status === 'skipped' ? 'skipped' : (idx === currentStageIndex ? 'current' : 'pending');
+                            return <span className={`text-[11px] px-2 py-0.5 rounded ${stageStatusStyles[statusKey]}`}>{stageStatusLabel(stage, idx)}</span>;
+                          })()}
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 )}
                 {actionButtons}
@@ -201,6 +261,22 @@
               </div>
 
               <div>
+                <h3 className="text-sm font-semibold text-gray-100 mb-3">Stage history</h3>
+                <div className="space-y-2 text-sm text-gray-200">
+                  {stageHistory.length === 0 ? (
+                    <div className="text-xs text-gray-500">No stage transitions yet.</div>
+                  ) : (
+                    stageHistory.map(entry => (
+                      <div key={entry.id} className="flex items-start gap-2">
+                        <div className="text-xs text-gray-500 w-28 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</div>
+                        <div className="flex-1">{describeStageEvent(entry)}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
                 <h3 className="text-sm font-semibold text-gray-100 mb-3">History</h3>
                 <div className="space-y-2 text-sm text-gray-200">
                   {history.length === 0 ? (
@@ -247,6 +323,25 @@
         mentions.add(match[1]);
       }
       return Array.from(mentions);
+    }
+
+    function createStage(label, roleId, deliverable = '', timestamp = Date.now()) {
+      return {
+        id: `stage-${timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+        label,
+        roleId,
+        deliverable,
+        status: 'pending',
+        createdAt: timestamp
+      };
+    }
+
+    function createStageHistoryId() {
+      return `sh-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    function cloneStagesWithUpdate(stages = [], updater) {
+      return stages.map((stage, index) => updater(stage, index));
     }
     function RefreshIcon(props) {
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
@@ -345,22 +440,34 @@
 
       const createActivity = (projectId, flowId, title, roleId, deliverable = '') => {
         const timestamp = Date.now();
+        const stage = createStage(title, roleId, deliverable, timestamp);
+        const stageHistoryEntry = {
+          id: createStageHistoryId(),
+          type: 'stage_added',
+          stageId: stage.id,
+          stageLabel: stage.label,
+          actor: currentUser || 'System',
+          timestamp
+        };
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
             activities: [...f.activities, {
-              id: `a-${Date.now()}`,
-              title,
-              roleId,
-              deliverable,
+              id: `a-${timestamp}`,
+              title: stage.label,
+              roleId: stage.roleId,
+              deliverable: stage.deliverable,
               claimedBy: null,
               priority: null,
               createdAt: timestamp,
               comments: [],
               attachments: [],
               history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} created this activity`, timestamp }],
-              readBy: {}
+              readBy: {},
+              stages: [stage],
+              currentStage: 0,
+              stageHistory: [stageHistoryEntry]
             }]
           } : f)
         } : p));
@@ -467,26 +574,174 @@
         } : p));
       };
 
-      const completeActivity = (projectId, flowId, activityId) => {
+      const completeActivity = (projectId, flowId, activityId, nextStageConfig = null) => {
         const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              completedAt: timestamp,
-              comments: [...(a.comments || []), {
-                id: `c-${timestamp}`,
-                author: currentUser,
-                content: `${currentUser} completed this`,
-                createdAt: timestamp,
-                mentions: [],
-                system: true
-              }],
-              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} marked complete`, timestamp }],
-              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
-            } : a)
+            activities: f.activities.map(a => {
+              if (a.id !== activityId) return a;
+              const stages = a.stages || [];
+              const stageIndex = typeof a.currentStage === 'number' ? a.currentStage : 0;
+              const currentStage = stages[stageIndex];
+              if (!currentStage) {
+                return {
+                  ...a,
+                  completedAt: timestamp
+                };
+              }
+
+              const updatedStages = cloneStagesWithUpdate(stages, (stage, idx) => {
+                if (idx === stageIndex) {
+                  return {
+                    ...stage,
+                    status: 'completed',
+                    completedAt: timestamp,
+                    completedBy: currentUser
+                  };
+                }
+                return stage;
+              });
+
+              let newStages = updatedStages;
+              let newStageHistory = [...(a.stageHistory || []), {
+                id: createStageHistoryId(),
+                type: 'stage_completed',
+                stageId: currentStage.id,
+                stageLabel: currentStage.label,
+                actor: currentUser,
+                timestamp
+              }];
+
+              if (nextStageConfig && nextStageConfig.title && nextStageConfig.roleId) {
+                const additionTimestamp = Date.now();
+                const newStage = createStage(nextStageConfig.title, nextStageConfig.roleId, nextStageConfig.deliverable || '', additionTimestamp);
+                newStages = [...updatedStages, newStage];
+                newStageHistory = [...newStageHistory, {
+                  id: createStageHistoryId(),
+                  type: 'stage_added',
+                  stageId: newStage.id,
+                  stageLabel: newStage.label,
+                  actor: currentUser,
+                  timestamp: additionTimestamp
+                }];
+              }
+
+              let nextStageIndex = stageIndex + 1;
+              let completedAt = a.completedAt;
+              let nextTitle = a.title;
+              let nextRoleId = a.roleId;
+              let nextDeliverable = a.deliverable;
+
+              if (nextStageIndex < newStages.length) {
+                const nextStage = newStages[nextStageIndex];
+                nextTitle = nextStage.label;
+                nextRoleId = nextStage.roleId;
+                nextDeliverable = nextStage.deliverable;
+              } else if (nextStageIndex >= newStages.length) {
+                nextStageIndex = newStages.length;
+                completedAt = timestamp;
+              }
+
+              return {
+                ...a,
+                title: nextTitle,
+                roleId: nextRoleId,
+                deliverable: nextDeliverable,
+                completedAt,
+                currentStage: nextStageIndex,
+                stages: newStages,
+                stageHistory: newStageHistory,
+                claimedBy: null,
+                comments: [...(a.comments || []), {
+                  id: `c-${timestamp}`,
+                  author: currentUser,
+                  content: `${currentUser} completed stage "${currentStage.label}"`,
+                  createdAt: timestamp,
+                  mentions: [],
+                  system: true
+                }],
+                history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} completed stage ${currentStage.label}`, timestamp }],
+                readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
+              };
+            })
+          } : f)
+        } : p));
+      };
+
+      const skipStage = (projectId, flowId, activityId, reason = '') => {
+        const timestamp = Date.now();
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => {
+              if (a.id !== activityId) return a;
+              const stages = a.stages || [];
+              const stageIndex = typeof a.currentStage === 'number' ? a.currentStage : 0;
+              const currentStage = stages[stageIndex];
+              if (!currentStage) return a;
+
+              const updatedStages = cloneStagesWithUpdate(stages, (stage, idx) => {
+                if (idx === stageIndex) {
+                  return {
+                    ...stage,
+                    status: 'skipped',
+                    skippedAt: timestamp,
+                    skippedBy: currentUser,
+                    reason: reason || undefined
+                  };
+                }
+                return stage;
+              });
+
+              let nextStageIndex = stageIndex + 1;
+              let completedAt = a.completedAt;
+              let nextTitle = a.title;
+              let nextRoleId = a.roleId;
+              let nextDeliverable = a.deliverable;
+
+              if (nextStageIndex < updatedStages.length) {
+                const nextStage = updatedStages[nextStageIndex];
+                nextTitle = nextStage.label;
+                nextRoleId = nextStage.roleId;
+                nextDeliverable = nextStage.deliverable;
+              } else {
+                nextStageIndex = updatedStages.length;
+                completedAt = timestamp;
+              }
+
+              return {
+                ...a,
+                title: nextTitle,
+                roleId: nextRoleId,
+                deliverable: nextDeliverable,
+                completedAt,
+                currentStage: nextStageIndex,
+                stages: updatedStages,
+                stageHistory: [...(a.stageHistory || []), {
+                  id: createStageHistoryId(),
+                  type: 'stage_skipped',
+                  stageId: currentStage.id,
+                  stageLabel: currentStage.label,
+                  actor: currentUser,
+                  timestamp,
+                  reason
+                }],
+                claimedBy: null,
+                comments: [...(a.comments || []), {
+                  id: `c-${timestamp}`,
+                  author: currentUser,
+                  content: `${currentUser} skipped stage "${currentStage.label}"${reason ? ` (${reason})` : ''}`,
+                  createdAt: timestamp,
+                  mentions: [],
+                  system: true
+                }],
+                history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} skipped stage ${currentStage.label}`, timestamp }],
+                readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
+              };
+            })
           } : f)
         } : p));
       };
@@ -552,67 +807,78 @@
         } : p));
       };
 
-      const spawnActivity = (projectId, flowId, sourceActivityId, title, roleId, deliverable = '') => {
-        const newActivityId = `a-${Date.now()}`;
-        const timestamp = Date.now();
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: [...f.activities, {
-              id: newActivityId,
-              title,
-              roleId,
-              deliverable,
-              claimedBy: null,
-              priority: null,
-              createdAt: timestamp,
-              comments: [],
-              attachments: [],
-              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} spawned this from another activity`, timestamp }],
-              readBy: {}
-            }],
-            edges: [...f.edges, {
-              id: `e-${Date.now()}`,
-              type: 'enables',
-              srcId: sourceActivityId,
-              dstId: newActivityId
-            }]
-          } : f)
-        } : p));
-      };
-
-      const requestRevision = (projectId, flowId, reviewerId, targetActivityId) => {
+      const requestRevision = (projectId, flowId, reviewerId, targetActivityId, reason = '', targetStageId = null) => {
         const flow = projects.find(p => p.id === projectId)?.flows.find(f => f.id === flowId);
         const targetActivity = flow?.activities.find(a => a.id === targetActivityId);
         if (!targetActivity) return;
 
-        const revisionId = `a-${Date.now()}`;
+        const stages = targetActivity.stages || [];
+        if (stages.length === 0) return;
+
+        let stageIndex = targetStageId ? stages.findIndex(stage => stage.id === targetStageId) : -1;
+        if (stageIndex === -1) {
+          stageIndex = [...stages].reverse().findIndex(stage => stage.status === 'completed');
+          if (stageIndex !== -1) {
+            stageIndex = stages.length - 1 - stageIndex;
+          }
+        }
+        if (stageIndex === -1) stageIndex = 0;
+
         const timestamp = Date.now();
+        const stageToReopen = stages[stageIndex];
 
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
-            activities: [...f.activities, {
-              id: revisionId,
-              title: `${targetActivity.title} (revision)`,
-              roleId: targetActivity.roleId,
-              deliverable: targetActivity.deliverable,
-              claimedBy: null,
-              priority: null,
-              isRevision: true,
-              createdAt: timestamp,
-              comments: [],
-              attachments: [],
-              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} requested a revision`, timestamp }],
-              readBy: {}
-            }],
-            edges: [
-              ...f.edges,
-              { id: `e-${Date.now()}-1`, type: 'loops', srcId: reviewerId, dstId: revisionId },
-              { id: `e-${Date.now()}-2`, type: 'enables', srcId: revisionId, dstId: reviewerId }
-            ]
+            activities: f.activities.map(a => {
+              if (a.id !== targetActivityId) return a;
+              const resetStages = cloneStagesWithUpdate(stages, (stage, idx) => {
+                if (idx >= stageIndex) {
+                  return {
+                    ...stage,
+                    status: 'pending',
+                    completedAt: undefined,
+                    completedBy: undefined,
+                    skippedAt: undefined,
+                    skippedBy: undefined,
+                    reason: undefined
+                  };
+                }
+                return stage;
+              });
+
+              return {
+                ...a,
+                title: stageToReopen ? stageToReopen.label : a.title,
+                roleId: stageToReopen ? stageToReopen.roleId : a.roleId,
+                deliverable: stageToReopen ? stageToReopen.deliverable : a.deliverable,
+                completedAt: null,
+                currentStage: stageIndex,
+                stages: resetStages,
+                stageHistory: [...(a.stageHistory || []), {
+                  id: createStageHistoryId(),
+                  type: 'revision_requested',
+                  stageId: stageToReopen?.id,
+                  stageLabel: stageToReopen?.label || 'Stage',
+                  actor: currentUser,
+                  timestamp,
+                  reason,
+                  requestedBy: reviewerId
+                }],
+                claimedBy: null,
+                comments: [...(a.comments || []), {
+                  id: `c-${timestamp}`,
+                  author: currentUser,
+                  content: `${currentUser} requested a revision${stageToReopen ? ` on "${stageToReopen.label}"` : ''}${reason ? `: ${reason}` : ''}`,
+                  createdAt: timestamp,
+                  mentions: [],
+                  system: true
+                }],
+                history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} requested revision${stageToReopen ? ` on ${stageToReopen.label}` : ''}`, timestamp }],
+                readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
+              };
+            })
           } : f)
         } : p));
       };
@@ -640,8 +906,9 @@
             onClaimActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('claimActivity'); }}
             onUnclaimActivity={(aid) => unclaimActivity(selectedProject.id, selectedFlow.id, aid)}
             onCompleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('completeActivity'); }}
+            onSkipStage={(aid, reason) => skipStage(selectedProject.id, selectedFlow.id, aid, reason)}
             onWireActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('wireActivity'); }}
-            onRequestRevision={(reviewerId, targetId) => requestRevision(selectedProject.id, selectedFlow.id, reviewerId, targetId)}
+            onRequestRevision={(reviewerId, targetId, reason, stageId) => requestRevision(selectedProject.id, selectedFlow.id, reviewerId, targetId, reason, stageId)}
             onAddComment={addCommentToActivity}
             onAddAttachment={addAttachmentToActivity}
             onRemoveAttachment={removeAttachmentFromActivity}
@@ -660,7 +927,7 @@
           {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
           {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
           {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
-          {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(spawnNext) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId); if (spawnNext) { spawnActivity(modalData.projectId, modalData.flowId, modalData.activityId, spawnNext.title, spawnNext.roleId, spawnNext.deliverable); } setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(nextStage) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId, nextStage); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
           {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={(targetId, edgeType) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType); setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable, edgeType) => { const newId = `a-${Date.now()}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
         </>
       );
@@ -697,7 +964,7 @@
               <button onClick={() => { if (projectName && userName) { const teamList = team ? team.split(',').map(s => s.trim()) : [userName]; onCreate(projectName, teamList, userName); } }} disabled={!projectName || !userName} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors">Create Project</button>
             </div>
             <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
-              <p className="text-sm text-gray-300 leading-relaxed">Activities spawn new activities. Dependencies compute states. Structure emerges through action.</p>
+              <p className="text-sm text-gray-300 leading-relaxed">Activities advance through stages. Dependencies compute states. Structure emerges through action.</p>
             </div>
           </div>
         </div>
@@ -896,7 +1163,7 @@
       );
     }
 
-    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead }) {
+    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onSkipStage, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead }) {
       const activitiesWithState = useMemo(() => {
         return flow.activities.map(activity => ({
           ...activity,
@@ -1044,24 +1311,25 @@
               ))}
             </div>
             {selectedActivity && (
-              <ActivityDetailPanel
-                activity={selectedActivity}
-                role={selectedRole}
-                operator={selectedOperator}
-                dependencies={selectedDependencies}
-                project={project}
-                currentUser={currentUser}
-                onClose={closeDetails}
-                onEdit={onEditActivity}
-                onDelete={onDeleteActivity}
-                onClaim={onClaimActivity}
-                onUnclaim={onUnclaimActivity}
-                onComplete={onCompleteActivity}
-                onWire={onWireActivity}
-                onRequestRevision={onRequestRevision}
-                onAddComment={(text) => currentUser && onAddComment(project.id, flow.id, selectedActivity.id, currentUser, text)}
-                onAddAttachment={(attachment) => onAddAttachment(project.id, flow.id, selectedActivity.id, attachment)}
-                onRemoveAttachment={(attachmentId) => onRemoveAttachment(project.id, flow.id, selectedActivity.id, attachmentId)}
+                <ActivityDetailPanel
+                  activity={selectedActivity}
+                  role={selectedRole}
+                  operator={selectedOperator}
+                  dependencies={selectedDependencies}
+                  project={project}
+                  currentUser={currentUser}
+                  onClose={closeDetails}
+                  onEdit={onEditActivity}
+                  onDelete={onDeleteActivity}
+                  onClaim={onClaimActivity}
+                  onUnclaim={onUnclaimActivity}
+                  onComplete={onCompleteActivity}
+                  onSkipStage={onSkipStage}
+                  onWire={onWireActivity}
+                  onRequestRevision={onRequestRevision}
+                  onAddComment={(text) => currentUser && onAddComment(project.id, flow.id, selectedActivity.id, currentUser, text)}
+                  onAddAttachment={(attachment) => onAddAttachment(project.id, flow.id, selectedActivity.id, attachment)}
+                  onRemoveAttachment={(attachmentId) => onRemoveAttachment(project.id, flow.id, selectedActivity.id, attachmentId)}
               />
             )}
           </div>
@@ -1073,6 +1341,9 @@
       const isMine = activity.claimedBy === currentUser;
       const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
       const canComplete = isMine && activity.state === 'in_progress';
+      const stages = activity.stages || [];
+      const currentStageIndex = activity.currentStage ?? 0;
+      const stagePosition = stages.length > 0 ? `${Math.min(currentStageIndex + 1, stages.length)}/${stages.length}` : null;
 
       const stateConfig = {
         ready: { label: 'Ready to start', color: 'bg-green-900 text-green-300' },
@@ -1102,6 +1373,7 @@
               {hasUnread && <span className="w-2 h-2 rounded-full bg-blue-400" title="Unread comments" />}
             </div>
           </div>
+          {stagePosition && <div className="text-[11px] text-gray-400 mb-2">Stage {stagePosition}</div>}
           {activity.isRevision && <div className="text-xs text-orange-400 mb-2">🔄 Revision requested</div>}
           {role && <div className="text-xs text-gray-300 mb-2">{role.name} • {role.userIds.map(uid => project.users.find(u => u.id === uid)?.name).filter(Boolean).join(', ')}</div>}
           {activity.deliverable && <div className="text-xs text-gray-200 mb-2"><span className="text-gray-400">Delivers:</span> {activity.deliverable}</div>}
@@ -1136,14 +1408,14 @@
             )}
             {canClaim && <button onClick={(e) => { e.stopPropagation(); onClaim(activity.id); }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
             {isMine && !activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
-            {canComplete && (
-              <>
-                <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
-                {operator.canRequestRevision && dependencies.length > 0 && (
-                  <button onClick={(e) => { e.stopPropagation(); const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
+                {canComplete && (
+                  <>
+                    <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
+                    {operator.canRequestRevision && dependencies.length > 0 && (
+                  <button onClick={(e) => { e.stopPropagation(); const lastDep = dependencies[dependencies.length - 1]; if (lastDep) { const reason = window.prompt('Revision reason (optional)?') || ''; onRequestRevision(activity.id, lastDep.activity.id, reason); } }} className="bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
             {!activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
           </div>
         </div>
@@ -1336,7 +1608,7 @@
     }
 
     function CompleteActivityModal({ project, activity, flow, roles, onClose, onComplete, onCreateRole, onUpdateRole }) {
-      const [spawnNext, setSpawnNext] = useState(false);
+      const [addNextStage, setAddNextStage] = useState(false);
       const [nextTitle, setNextTitle] = useState('');
       const [nextRoleId, setNextRoleId] = useState('');
       const [nextDeliverable, setNextDeliverable] = useState('');
@@ -1344,6 +1616,22 @@
       const [newRoleName, setNewRoleName] = useState('');
       const [newRoleOperator, setNewRoleOperator] = useState('');
       const [selectedUserIds, setSelectedUserIds] = useState([]);
+
+      const currentStageIndex = activity?.currentStage ?? 0;
+      const stages = activity?.stages || [];
+      const currentStage = stages[currentStageIndex] || stages[stages.length - 1];
+      const stagePosition = currentStage ? `${Math.min(currentStageIndex + 1, stages.length)} of ${stages.length}` : 'All stages complete';
+
+      useEffect(() => {
+        setAddNextStage(false);
+        setNextTitle('');
+        setNextRoleId('');
+        setNextDeliverable('');
+        setShowNewRole(false);
+        setNewRoleName('');
+        setNewRoleOperator('');
+        setSelectedUserIds([]);
+      }, [activity?.id]);
 
       const handleCreateRole = () => {
         if (newRoleName && newRoleOperator) {
@@ -1357,31 +1645,96 @@
         setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
       };
 
+      const handleComplete = () => {
+        const nextStage = addNextStage && nextTitle && nextRoleId ? {
+          title: nextTitle,
+          roleId: nextRoleId,
+          deliverable: nextDeliverable
+        } : null;
+        onComplete(nextStage);
+      };
+
       return (
-        <Modal onClose={onClose} title="Complete Activity" size="large">
-          <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium text-gray-100">{activity?.title}</h3></div>
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4"><label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={spawnNext} onChange={(e) => setSpawnNext(e.target.checked)} className="w-4 h-4" /><span className="text-sm text-gray-100">Spawn next activity (what does this enable?)</span></label></div>
-            {spawnNext && (
-              <>
-                <div><label className="block text-sm text-gray-200 mb-2">Next activity title</label><input type="text" value={nextTitle} onChange={(e) => setNextTitle(e.target.value)} placeholder="e.g., Review article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                {!showNewRole ? (
-                  <>
-                    <div><label className="block text-sm text-gray-200 mb-2">Role for next activity</label><select value={nextRoleId} onChange={(e) => setNextRoleId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
-                    <button onClick={() => setShowNewRole(true)} className="text-sm text-blue-400 hover:text-blue-300">+ Create new role</button>
-                  </>
-                ) : (
-                  <>
-                    <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                    <div><label className="block text-sm text-gray-200 mb-2">Operator type</label><select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}</select></div>
-                    <div><label className="block text-sm text-gray-200 mb-2">Assign users</label><div className="space-y-2">{project.users.map(user => <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} /><span className="text-sm text-gray-100">{user.name}</span></label>)}</div></div>
-                    <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
-                  </>
-                )}
-                <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={nextDeliverable} onChange={(e) => setNextDeliverable(e.target.value)} placeholder="e.g., Reviewed article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-              </>
-            )}
-            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { onComplete(spawnNext && nextTitle && nextRoleId ? { title: nextTitle, roleId: nextRoleId, deliverable: nextDeliverable } : null); }} disabled={spawnNext && (!nextTitle || !nextRoleId)} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Complete</button></div>
+        <Modal onClose={onClose} title="Complete Stage" size="large">
+          <div className="space-y-5">
+            <div className="bg-gray-900 rounded-lg p-4">
+              <h3 className="font-medium text-gray-100">{activity?.title}</h3>
+              {currentStage && (
+                <p className="text-sm text-gray-300 mt-2">Completing <span className="font-semibold">{currentStage.label}</span> · Stage {stagePosition}</p>
+              )}
+            </div>
+
+            <div className="bg-blue-900/20 border border-blue-700/40 rounded p-4">
+              <p className="text-sm text-blue-100">Mark this stage complete. You can optionally define the next stage if more work follows.</p>
+            </div>
+
+            <div className="bg-gray-900/40 border border-gray-800 rounded p-4">
+              <label className="flex items-center gap-3 cursor-pointer text-sm text-gray-100">
+                <input type="checkbox" checked={addNextStage} onChange={(e) => setAddNextStage(e.target.checked)} className="w-4 h-4" />
+                Plan the next stage after this one
+              </label>
+              {addNextStage && (
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Next stage label</label>
+                    <input type="text" value={nextTitle} onChange={(e) => setNextTitle(e.target.value)} placeholder="e.g., Reviewer check" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                  </div>
+                  {!showNewRole ? (
+                    <>
+                      <div>
+                        <label className="block text-sm text-gray-200 mb-2">Role responsible</label>
+                        <select value={nextRoleId} onChange={(e) => setNextRoleId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                          <option value="">Choose...</option>
+                          {roles.map(r => {
+                            const op = OPERATORS.find(o => o.id === r.operatorType);
+                            return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>;
+                          })}
+                        </select>
+                      </div>
+                      <button onClick={() => setShowNewRole(true)} className="text-sm text-blue-400 hover:text-blue-300">+ Create new role</button>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm text-gray-200 mb-2">New role name</label>
+                        <input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-200 mb-2">Operator type</label>
+                        <select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                          <option value="">Choose...</option>
+                          {OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-200 mb-2">Assign users</label>
+                        <div className="space-y-2">
+                          {project.users.map(user => (
+                            <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                              <input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} />
+                              <span className="text-sm text-gray-100">{user.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button>
+                        <button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label>
+                    <input type="text" value={nextDeliverable} onChange={(e) => setNextDeliverable(e.target.value)} placeholder="e.g., Reviewer notes" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
+              <button onClick={handleComplete} disabled={addNextStage && (!nextTitle || !nextRoleId)} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Complete stage</button>
+            </div>
           </div>
         </Modal>
       );

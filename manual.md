@@ -10,7 +10,7 @@
 7. [Understanding Activity States](#understanding-activity-states)
 8. [Claiming Work & Priorities](#claiming-work--priorities)
 9. [Wiring Activities Together](#wiring-activities-together)
-10. [Completing Activities & Spawning Next Steps](#completing-activities--spawning-next-steps)
+10. [Completing Stages & Planning Next Steps](#completing-stages--planning-next-steps)
 11. [The Revision Workflow](#the-revision-workflow)
 12. [Coordination Patterns](#coordination-patterns)
 13. [Tips & Best Practices](#tips--best-practices)
@@ -23,7 +23,7 @@
 
 Event Operator is a coordination management system where **structure emerges through action**. Unlike traditional project management tools where you plan everything upfront, Event Operator lets you discover what needs to happen as you work.
 
-The key insight: **Activities spawn new activities, dependencies compute states, and coordination patterns materialize organically.**
+The key insight: **Activities advance through stages, dependencies compute states, and coordination patterns materialize organically.**
 
 ---
 
@@ -360,54 +360,57 @@ No need to plan everything upfront. Discover structure as you go.
 
 ---
 
-## Completing Activities & Spawning Next Steps
+## Completing Stages & Planning Next Steps
 
 ### Simple Completion
 
-When you finish work on an activity you've claimed:
-1. Click the "Complete" button
-2. You'll see the completion modal
-3. If you just want to mark it done, click "Complete"
+When you finish the stage you've claimed:
+1. Click the "Complete" button.
+2. Review the completion modal for the active stage details.
+3. If there's nothing else to line up, click "Complete stage".
 
-The activity moves to completed state and unblocks anything waiting on it.
+The stage is marked done and the activity advances to the next stage (or to "completed" if there are no more stages).
 
-### Spawning the Next Activity
+### Adding the Next Stage
 
-Often, completing work reveals what needs to happen next. That's when you use spawn:
+Often, finishing a stage reveals the next handoff. Capture it while the context is fresh:
 
-1. Click "Complete" on your activity
-2. Check "Spawn next activity (what does this enable?)"
-3. Fill in the next activity:
-   - Title (e.g., "Review article")
+1. Click "Complete" on your activity.
+2. Check "Plan the next stage after this one".
+3. Describe the follow-on stage:
+   - Stage label (e.g., "Review article")
    - Role (choose existing or create new)
    - Optional deliverable
-4. Click "Complete"
+4. Click "Complete stage".
 
 **What happens:**
-- Current activity → completed
-- New activity → created
-- Edge automatically created: completed → new (enables)
-- New activity appears in the appropriate operator column
+- Current stage → marked complete.
+- Activity → advances to the newly defined stage.
+- Dependencies stay intact; the same activity keeps flowing through the board.
+
+### Skipping a Stage
+
+Sometimes a stage becomes irrelevant. Open the activity detail panel and click **Skip stage**. The system marks the stage as skipped, logs the reason in stage history, and advances the activity to the next stage (or completes it if that was the last one).
 
 ### Sequential Discovery
 
-This is how emergent structure works in practice:
+This keeps coordination inside a single activity while the stages evolve:
 
 ```
-Start → Create "Write draft" → Complete & spawn "Review draft" → 
-Complete & spawn "Publish article" → Complete & spawn "Promote on social"
+Stage 1: Draft → Complete stage, add Stage 2: Review →
+Complete stage, add Stage 3: Publish → Complete stage, activity finishes
 ```
 
-Each completion reveals the next step. You're not planning a gantt chart - you're flowing through coordination in real-time.
+Each completion reveals the next move. You're not planning a gantt chart—you’re learning the path as you work.
 
-### When NOT to Spawn
+### When NOT to Add a Stage
 
-Don't spawn when:
-- The next step already exists as an activity
-- Multiple things need to happen next (use Wire for branching)
-- You're not sure what comes next yet (just complete it)
+Skip the stage planning option when:
+- The follow-on work already exists as another activity.
+- Multiple parallel steps are needed (use Wire for branching).
+- You're unsure what comes next (just complete it and wait).
 
-Spawning is for simple sequential chains. For complex structures, use Wire.
+Stage planning is for simple sequential handoffs. For complex structures, wire activities together.
 
 ---
 
@@ -421,47 +424,43 @@ Event Operator makes this natural without losing history.
 
 ### Who Can Request Revisions
 
-Only **Reviewer** and **Approver** operator types can request revisions. These roles have a "Revise" button when completing activities.
+Only **Reviewer** and **Approver** operator types can request revisions. These roles see a "Request revision" button while working the stage or from the activity detail panel.
 
 ### How to Request a Revision
 
-1. You're completing a Reviewer or Approver activity
-2. Instead of clicking "Complete", click "Revise"
-3. The system automatically:
-   - Spawns a new revision activity (e.g., "Write draft (revision)")
-   - Tags it with 🔄 indicator
-   - Creates a loops edge: Reviewer → Revision
-   - Creates an enables edge: Revision → Reviewer
-   - Your Reviewer activity becomes blocked again
+1. You're completing a Reviewer or Approver stage.
+2. Click "Request revision" instead of finishing the stage.
+3. Add an optional reason so the doer knows what to fix.
+
+**What happens:**
+- The stage history logs the revision request with your reason.
+- The activity rewinds to the previous completed stage that needs work.
+- Any later stages reset to "pending" so they can run again after the fix.
+- The reviewer/approver now waits on that stage to be completed again.
 
 ### The Revision Cycle
 
 Here's what a typical revision cycle looks like:
 
 ```
-1. Doer completes "Write draft"
-2. Reviewer becomes ready, claims it
-3. Reviewer clicks "Revise" instead of "Complete"
-4. New activity appears: "Write draft (revision)"
-5. Original "Write draft" stays completed ✓
-6. Reviewer shows "Waiting on: Write draft (revision)"
-7. Someone claims and completes the revision
-8. Reviewer becomes ready again
-9. Reviewer completes normally (or requests another revision)
+1. Doer completes "Write draft" (Stage 1)
+2. Reviewer becomes ready and claims "Review draft" (Stage 2)
+3. Reviewer clicks "Request revision" with feedback
+4. Activity rewinds to Stage 1: "Write draft"
+5. Stage history shows "Reviewer requested revision on Review draft"
+6. Doer reclaims Stage 1, applies fixes, completes stage again
+7. Reviewer stage becomes ready and can complete (or request another revision)
 ```
 
-### Version History
+### Tracking the Loop
 
-Because each revision is a new activity, you maintain complete history:
-- "Write draft" ✓ Done
-- "Write draft (revision)" ✓ Done
-- "Write draft (revision)" ✓ Done (second revision)
-
-You can see how many times work cycled through refinement.
+- Stage history shows every revision hop, completion, and skip.
+- System comments capture who requested the revision and why.
+- The activity card stays in place—the stage badge simply moves backward.
 
 ### Breaking the Loop
 
-The loop ends when the Reviewer/Approver completes normally instead of requesting another revision. There's no "max revisions" - it's organic to the work.
+The loop ends when the Reviewer/Approver completes the stage normally instead of requesting another revision. There's no "max revisions"—each cycle stays in the stage history for traceability.
 
 ---
 
@@ -473,9 +472,8 @@ The loop ends when the Reviewer/Approver completes normally instead of requestin
 
 **How to build:**
 1. Create first activity or start with existing one
-2. Complete & spawn next
-3. Complete & spawn next
-4. Repeat
+2. Complete the current stage and add the next stage during completion
+3. Repeat until the activity reaches its final stage
 
 **Example:**
 ```
@@ -560,8 +558,8 @@ Approver: "Approve launch" ──┬──> Convener: "Schedule team meeting"
 
 **How to build:**
 1. Start with just one activity
-2. Complete & spawn next step
-3. Sometimes wire additional dependencies as you discover them
+2. Complete stages and add the next stage as you learn what follows
+3. Wire additional dependencies as you discover them
 4. Let structure materialize through action
 
 **Example:**
@@ -579,7 +577,7 @@ Start: "Research competitor landscape"
 
 ### Start Simple
 
-Don't try to map out everything upfront. Create 1-2 initial activities and let structure emerge through completion and spawning.
+Don't try to map out everything upfront. Create 1-2 initial activities and let structure emerge as you complete stages and add the next ones.
 
 ### Use Descriptive Titles
 
@@ -616,7 +614,7 @@ The "Waiting on" section is your coordination dashboard. If an activity is block
 
 ### Use Wire for Complex Structures
 
-Spawn is great for sequential discovery. Wire is great for:
+Stage planning is great for sequential discovery. Wire is great for:
 - Creating parallel branches
 - Adding dependencies to existing activities
 - Building complex convergence patterns
@@ -679,6 +677,6 @@ There's no hard limit, but flows with 20-30 activities start to feel complex. Co
 
 Remember: Event Operator is designed for **emergent structure**. If you're feeling like you need to plan everything perfectly upfront, you're fighting the tool. 
 
-Start small, complete things, spawn next steps, wire when you see patterns, and let coordination materialize through action.
+Start small, complete stages, plan the next handoff, wire when you see patterns, and let coordination materialize through action.
 
 The structure you need will reveal itself through the work.
