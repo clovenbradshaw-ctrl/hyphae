@@ -46,6 +46,208 @@
     function LinkIcon(props) {
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>;
     }
+    function ChatBubbleIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 1.657-1.79 3-4 3-.295 0-.582-.021-.859-.061-.284 1.193-1.355 2.06-2.641 2.06-.358 0-.703-.065-1.019-.184-.44.498-1.086.814-1.781.814-.732 0-1.392-.347-1.829-.888-.51.355-1.137.558-1.812.558-1.648 0-2.985-1.343-2.985-3 0-.333.054-.654.153-.954C3.1 12.715 2 11.477 2 10c0-1.657 1.79-3 4-3h11c2.21 0 4 1.343 4 3z" /></svg>;
+    }
+
+    function ActivityDetailPanel({ activity, role, operator, dependencies, project, currentUser, onClose, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment }) {
+      const [commentText, setCommentText] = useState('');
+      const [attachmentName, setAttachmentName] = useState('');
+      const [attachmentUrl, setAttachmentUrl] = useState('');
+
+      useEffect(() => {
+        setCommentText('');
+        setAttachmentName('');
+        setAttachmentUrl('');
+      }, [activity?.id]);
+
+      const isMine = activity.claimedBy === currentUser;
+      const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
+      const canComplete = isMine && activity.state === 'in_progress';
+
+      const comments = [...(activity.comments || [])].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      const history = [...(activity.history || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      const handleAddComment = () => {
+        if (!currentUser || !commentText.trim()) return;
+        onAddComment(commentText);
+        setCommentText('');
+      };
+
+      const handleAddAttachment = () => {
+        if (!attachmentName.trim() || !currentUser) return;
+        onAddAttachment({ name: attachmentName.trim(), url: attachmentUrl.trim(), addedBy: currentUser });
+        setAttachmentName('');
+        setAttachmentUrl('');
+      };
+
+      const renderCommentContent = (text) => {
+        const parts = text.split(/(@[\w-]+)/g);
+        return parts.map((part, idx) => {
+          if (part.startsWith && part.startsWith('@')) {
+            const name = part.slice(1);
+            const isMe = currentUser && name.toLowerCase() === currentUser.toLowerCase();
+            return <span key={idx} className={isMe ? 'text-blue-300 font-semibold' : 'text-blue-400'}>{part}</span>;
+          }
+          return <span key={idx}>{part}</span>;
+        });
+      };
+
+      const actionButtons = (
+        <div className="flex flex-wrap gap-2">
+          {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm">Claim</button>}
+          {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
+          {canComplete && <button onClick={() => onComplete(activity.id)} className="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded text-sm">Complete</button>}
+          {canComplete && operator?.canRequestRevision && dependencies.length > 0 && (
+            <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded text-sm">Request revision</button>
+          )}
+          {!activity.completedAt && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
+          {!activity.completedAt && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
+          {!activity.completedAt && <button onClick={() => onDelete(activity.id)} className="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded text-sm">Delete</button>}
+        </div>
+      );
+
+      return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-end z-40" aria-modal="true" role="dialog">
+          <div className="w-full max-w-md bg-gray-900 border-l border-gray-800 h-full overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-100">{activity.title}</h2>
+                <div className="text-xs text-gray-400 mt-1">State: {activity.state.replace('_', ' ')}</div>
+              </div>
+              <button onClick={onClose} className="p-2 rounded hover:bg-gray-800"><XIcon className="w-4 h-4" /></button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6">
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2 text-sm text-gray-200">
+                    {role && <div><span className="text-gray-400">Role:</span> {role.name}</div>}
+                    {operator && <div><span className="text-gray-400">Operator:</span> {operator.name}</div>}
+                    {activity.deliverable && <div><span className="text-gray-400">Deliverable:</span> {activity.deliverable}</div>}
+                    {activity.claimedBy && <div><span className="text-gray-400">Claimed by:</span> {activity.claimedBy} {activity.priority && <span className="text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 ml-2 rounded">{activity.priority}</span>}</div>}
+                    <div className="text-xs text-gray-500">Created {formatTimestamp(activity.createdAt)}</div>
+                  </div>
+                </div>
+                {dependencies.length > 0 && (
+                  <div className="text-sm text-gray-200">
+                    <div className="text-gray-400 mb-2">Waiting on</div>
+                    <ul className="space-y-1 ml-2">
+                      {dependencies.map((dep, idx) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <ChevronRightIcon className="w-3 h-3 text-gray-500" />
+                          <span className={dep.activity.completedAt ? 'line-through text-gray-500' : ''}>{dep.activity.title}</span>
+                          {dep.edgeType === 'loops' && <span className="text-xs text-orange-400">(revision)</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {actionButtons}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-100">Attachments</h3>
+                </div>
+                <div className="space-y-2">
+                  {(activity.attachments || []).length === 0 ? (
+                    <div className="text-xs text-gray-500">No attachments yet.</div>
+                  ) : (
+                    (activity.attachments || []).map(att => (
+                      <div key={att.id} className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+                        <div className="flex flex-col">
+                          <span>{att.name}</span>
+                          {att.url && <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300">{att.url}</a>}
+                          <span className="text-xs text-gray-500">Added {att.addedBy || 'someone'} · {formatRelativeTime(att.addedAt)}</span>
+                        </div>
+                        <button onClick={() => onRemoveAttachment(att.id)} className="text-xs text-gray-400 hover:text-gray-200">Remove</button>
+                      </div>
+                    ))
+                  )}
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+                    <input type="text" value={attachmentName} onChange={(e) => setAttachmentName(e.target.value)} placeholder="File name" className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm" />
+                    <input type="text" value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)} placeholder="Link (optional)" className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm" />
+                    <button onClick={handleAddAttachment} disabled={!currentUser || !attachmentName.trim()} className="w-full bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 text-sm py-2 rounded">Add attachment</button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-100">Comments ({comments.length})</h3>
+                </div>
+                <div className="space-y-3">
+                  {comments.length === 0 ? (
+                    <div className="text-xs text-gray-500">No comments yet.</div>
+                  ) : (
+                    comments.map(comment => (
+                      <div key={comment.id} className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-100">
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                          <span>{comment.author}{comment.system && ' · system'}</span>
+                          <span>{formatRelativeTime(comment.createdAt)}</span>
+                        </div>
+                        <div className="leading-relaxed">{renderCommentContent(comment.content)}</div>
+                      </div>
+                    ))
+                  )}
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+                    <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={currentUser ? 'Add a comment with @mentions' : 'Set your name in the dashboard to comment'} className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm" rows={3} disabled={!currentUser} />
+                    <div className="flex justify-end">
+                      <button onClick={handleAddComment} disabled={!currentUser || !commentText.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 px-3 py-1.5 rounded text-sm">Comment</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-gray-100 mb-3">History</h3>
+                <div className="space-y-2 text-sm text-gray-200">
+                  {history.length === 0 ? (
+                    <div className="text-xs text-gray-500">No history yet.</div>
+                  ) : (
+                    history.map(entry => (
+                      <div key={entry.id} className="flex items-start gap-2">
+                        <div className="text-xs text-gray-500 w-28 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</div>
+                        <div className="flex-1">{entry.text}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function formatTimestamp(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    }
+
+    function formatRelativeTime(timestamp) {
+      if (!timestamp) return '';
+      const diff = Date.now() - timestamp;
+      const minutes = Math.floor(diff / 60000);
+      if (minutes < 1) return 'just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function extractMentions(content) {
+      const regex = /@([\w-]+)/g;
+      const mentions = new Set();
+      let match;
+      while ((match = regex.exec(content))) {
+        mentions.add(match[1]);
+      }
+      return Array.from(mentions);
+    }
     function RefreshIcon(props) {
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
     }
@@ -142,6 +344,7 @@
       };
 
       const createActivity = (projectId, flowId, title, roleId, deliverable = '') => {
+        const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -152,7 +355,12 @@
               roleId,
               deliverable,
               claimedBy: null,
-              priority: null
+              priority: null,
+              createdAt: timestamp,
+              comments: [],
+              attachments: [],
+              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} created this activity`, timestamp }],
+              readBy: {}
             }]
           } : f)
         } : p));
@@ -210,6 +418,7 @@
       };
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
+        const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -217,13 +426,24 @@
             activities: f.activities.map(a => a.id === activityId ? {
               ...a,
               claimedBy: currentUser,
-              priority
+              priority,
+              comments: [...(a.comments || []), {
+                id: `c-${timestamp}`,
+                author: currentUser,
+                content: `${currentUser} claimed this`,
+                createdAt: timestamp,
+                mentions: [],
+                system: true
+              }],
+              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} claimed (priority: ${priority})`, timestamp }],
+              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
             } : a)
           } : f)
         } : p));
       };
 
       const unclaimActivity = (projectId, flowId, activityId) => {
+        const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -231,20 +451,102 @@
             activities: f.activities.map(a => a.id === activityId ? {
               ...a,
               claimedBy: null,
-              priority: null
+              priority: null,
+              comments: [...(a.comments || []), {
+                id: `c-${timestamp}`,
+                author: currentUser,
+                content: `${currentUser} unclaimed this`,
+                createdAt: timestamp,
+                mentions: [],
+                system: true
+              }],
+              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} unclaimed`, timestamp }],
+              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
             } : a)
           } : f)
         } : p));
       };
 
       const completeActivity = (projectId, flowId, activityId) => {
+        const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
             activities: f.activities.map(a => a.id === activityId ? {
               ...a,
-              completedAt: Date.now()
+              completedAt: timestamp,
+              comments: [...(a.comments || []), {
+                id: `c-${timestamp}`,
+                author: currentUser,
+                content: `${currentUser} completed this`,
+                createdAt: timestamp,
+                mentions: [],
+                system: true
+              }],
+              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} marked complete`, timestamp }],
+              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
+            } : a)
+          } : f)
+        } : p));
+      };
+
+      const addCommentToActivity = (projectId, flowId, activityId, author, content) => {
+        const trimmed = content.trim();
+        if (!trimmed) return;
+        const timestamp = Date.now();
+        const mentions = extractMentions(trimmed);
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              comments: [...(a.comments || []), { id: `c-${timestamp}`, author, content: trimmed, createdAt: timestamp, mentions, system: false }],
+              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${author} commented`, timestamp }],
+              readBy: { ...(a.readBy || {}), [author]: timestamp }
+            } : a)
+          } : f)
+        } : p));
+      };
+
+      const addAttachmentToActivity = (projectId, flowId, activityId, attachment) => {
+        const timestamp = Date.now();
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              attachments: [...(a.attachments || []), { ...attachment, id: attachment.id || `att-${timestamp}`, addedAt: timestamp }],
+              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${attachment.addedBy} attached ${attachment.name}`, timestamp }]
+            } : a)
+          } : f)
+        } : p));
+      };
+
+      const removeAttachmentFromActivity = (projectId, flowId, activityId, attachmentId) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              attachments: (a.attachments || []).filter(att => att.id !== attachmentId)
+            } : a)
+          } : f)
+        } : p));
+      };
+
+      const markActivityRead = (projectId, flowId, activityId, userName) => {
+        const timestamp = Date.now();
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              readBy: { ...(a.readBy || {}), [userName]: timestamp }
             } : a)
           } : f)
         } : p));
@@ -252,6 +554,7 @@
 
       const spawnActivity = (projectId, flowId, sourceActivityId, title, roleId, deliverable = '') => {
         const newActivityId = `a-${Date.now()}`;
+        const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -262,7 +565,12 @@
               roleId,
               deliverable,
               claimedBy: null,
-              priority: null
+              priority: null,
+              createdAt: timestamp,
+              comments: [],
+              attachments: [],
+              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} spawned this from another activity`, timestamp }],
+              readBy: {}
             }],
             edges: [...f.edges, {
               id: `e-${Date.now()}`,
@@ -280,7 +588,8 @@
         if (!targetActivity) return;
 
         const revisionId = `a-${Date.now()}`;
-        
+        const timestamp = Date.now();
+
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -292,7 +601,12 @@
               deliverable: targetActivity.deliverable,
               claimedBy: null,
               priority: null,
-              isRevision: true
+              isRevision: true,
+              createdAt: timestamp,
+              comments: [],
+              attachments: [],
+              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} requested a revision`, timestamp }],
+              readBy: {}
             }],
             edges: [
               ...f.edges,
@@ -328,6 +642,10 @@
             onCompleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('completeActivity'); }}
             onWireActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('wireActivity'); }}
             onRequestRevision={(reviewerId, targetId) => requestRevision(selectedProject.id, selectedFlow.id, reviewerId, targetId)}
+            onAddComment={addCommentToActivity}
+            onAddAttachment={addAttachmentToActivity}
+            onRemoveAttachment={removeAttachmentFromActivity}
+            onMarkRead={markActivityRead}
           />
         );
       }
@@ -578,13 +896,15 @@
       );
     }
 
-    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision }) {
+    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead }) {
       const activitiesWithState = useMemo(() => {
         return flow.activities.map(activity => ({
           ...activity,
           state: computeActivityState(activity, flow.activities, flow.edges)
         }));
       }, [flow.activities, flow.edges]);
+
+      const [selectedActivityId, setSelectedActivityId] = useState(null);
 
       const groupedActivities = useMemo(() => {
         const grouped = {};
@@ -597,12 +917,45 @@
         return grouped;
       }, [activitiesWithState, roles]);
 
+      useEffect(() => {
+        if (selectedActivityId && !activitiesWithState.some(a => a.id === selectedActivityId)) {
+          setSelectedActivityId(null);
+        }
+      }, [activitiesWithState, selectedActivityId]);
+
+      const selectedActivity = useMemo(() => {
+        return selectedActivityId ? activitiesWithState.find(a => a.id === selectedActivityId) : null;
+      }, [selectedActivityId, activitiesWithState]);
+
+      const selectedRole = useMemo(() => {
+        return selectedActivity ? roles.find(r => r.id === selectedActivity.roleId) : null;
+      }, [selectedActivity, roles]);
+
+      const selectedOperator = useMemo(() => {
+        return selectedRole ? OPERATORS.find(op => op.id === selectedRole.operatorType) : null;
+      }, [selectedRole]);
+
       const getDependencies = (activityId) => {
         const inbound = flow.edges.filter(e => e.dstId === activityId);
         return inbound.map(edge => {
           const src = flow.activities.find(a => a.id === edge.srcId);
           return src ? { activity: src, edgeType: edge.type } : null;
         }).filter(Boolean);
+      };
+
+      const selectedDependencies = useMemo(() => {
+        return selectedActivity ? getDependencies(selectedActivity.id) : [];
+      }, [selectedActivity, flow.edges, flow.activities]);
+
+      const openActivityDetails = (activityId) => {
+        setSelectedActivityId(activityId);
+        if (currentUser) {
+          onMarkRead(project.id, flow.id, activityId, currentUser);
+        }
+      };
+
+      const closeDetails = () => {
+        setSelectedActivityId(null);
       };
 
       return (
@@ -673,6 +1026,8 @@
                             dependencies={deps}
                             project={project}
                             currentUser={currentUser}
+                            isSelected={selectedActivityId === activity.id}
+                            onOpenDetails={openActivityDetails}
                             onEdit={onEditActivity}
                             onDelete={onDeleteActivity}
                             onClaim={onClaimActivity}
@@ -688,12 +1043,33 @@
                 </div>
               ))}
             </div>
+            {selectedActivity && (
+              <ActivityDetailPanel
+                activity={selectedActivity}
+                role={selectedRole}
+                operator={selectedOperator}
+                dependencies={selectedDependencies}
+                project={project}
+                currentUser={currentUser}
+                onClose={closeDetails}
+                onEdit={onEditActivity}
+                onDelete={onDeleteActivity}
+                onClaim={onClaimActivity}
+                onUnclaim={onUnclaimActivity}
+                onComplete={onCompleteActivity}
+                onWire={onWireActivity}
+                onRequestRevision={onRequestRevision}
+                onAddComment={(text) => currentUser && onAddComment(project.id, flow.id, selectedActivity.id, currentUser, text)}
+                onAddAttachment={(attachment) => onAddAttachment(project.id, flow.id, selectedActivity.id, attachment)}
+                onRemoveAttachment={(attachmentId) => onRemoveAttachment(project.id, flow.id, selectedActivity.id, attachmentId)}
+              />
+            )}
           </div>
         </div>
       );
     }
 
-    function ActivityCard({ activity, role, operator, dependencies, project, currentUser, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision }) {
+    function ActivityCard({ activity, role, operator, dependencies, project, currentUser, isSelected, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision }) {
       const isMine = activity.claimedBy === currentUser;
       const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
       const canComplete = isMine && activity.state === 'in_progress';
@@ -706,13 +1082,24 @@
       };
 
       const config = stateConfig[activity.state] || stateConfig.ready;
+      const commentCount = activity.comments?.length || 0;
+      const attachmentCount = activity.attachments?.length || 0;
+      const lastRead = activity.readBy?.[currentUser] || 0;
+      const hasUnread = (activity.comments || []).some(comment => !comment.system && comment.createdAt > lastRead && comment.author !== currentUser);
 
       return (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+        <div
+          className={`bg-gray-800 border ${isSelected ? 'border-blue-500' : 'border-gray-700'} rounded-lg p-3 hover:border-blue-400 transition-colors cursor-pointer`}
+          onClick={(e) => {
+            if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('textarea')) return;
+            onOpenDetails(activity.id);
+          }}
+        >
           <div className="flex items-start justify-between mb-2">
             <h4 className="font-medium text-sm flex-1">{activity.title}</h4>
             <div className="flex items-center gap-1 ml-2">
               <span className={`text-xs px-2 py-0.5 rounded ${config.color}`}>{config.label}</span>
+              {hasUnread && <span className="w-2 h-2 rounded-full bg-blue-400" title="Unread comments" />}
             </div>
           </div>
           {activity.isRevision && <div className="text-xs text-orange-400 mb-2">🔄 Revision requested</div>}
@@ -731,24 +1118,33 @@
               </ul>
             </div>
           )}
-          <div className="flex gap-1 mt-2 flex-wrap">
+          <div className="flex items-center gap-3 text-xs text-gray-400 mt-3">
+            {attachmentCount > 0 && (
+              <div className="flex items-center gap-1"><span role="img" aria-label="attachments">📎</span>{attachmentCount}</div>
+            )}
+            {commentCount > 0 && (
+              <div className="flex items-center gap-1"><ChatBubbleIcon className="w-3.5 h-3.5" />{commentCount}</div>
+            )}
+            {activity.createdAt && <div className="ml-auto text-gray-500">{formatRelativeTime(activity.createdAt)}</div>}
+          </div>
+          <div className="flex gap-1 mt-3 flex-wrap">
             {!activity.completedAt && (
               <>
-                <button onClick={() => onEdit(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
-                <button onClick={() => onDelete(activity.id)} className="bg-red-900 hover:bg-red-800 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onEdit(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(activity.id); }} className="bg-red-900 hover:bg-red-800 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
               </>
             )}
-            {canClaim && <button onClick={() => onClaim(activity.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
-            {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
+            {canClaim && <button onClick={(e) => { e.stopPropagation(); onClaim(activity.id); }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
+            {isMine && !activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
             {canComplete && (
               <>
-                <button onClick={() => onComplete(activity.id)} className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
+                <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
                 {operator.canRequestRevision && dependencies.length > 0 && (
-                  <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
                 )}
               </>
             )}
-            {activity.state !== 'completed' && <button onClick={() => onWire(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Wire"><LinkIcon className="w-3 h-3" /></button>}
+            {!activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
           </div>
         </div>
       );
