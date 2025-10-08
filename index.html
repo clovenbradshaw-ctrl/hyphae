@@ -27,6 +27,106 @@
       { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, canRequestRevision: false }
     ];
 
+    const DEFAULT_STAGE_TEMPLATE = [
+      { id: 'start', name: 'Start readiness', scope: 'destination', description: 'Work on the destination cannot begin until this is met.' },
+      { id: 'handoff', name: 'In-flight handoff', scope: 'both', description: 'A mid-stream signal or delivery between activities.' },
+      { id: 'complete', name: 'Complete', scope: 'source', description: 'The source must be completed before the dependency is satisfied.' }
+    ];
+
+    const DEFAULT_SOURCE_STAGE = 'complete';
+    const DEFAULT_DESTINATION_STAGE = 'start';
+
+    function cloneDefaultStages() {
+      return DEFAULT_STAGE_TEMPLATE.map(stage => ({ ...stage }));
+    }
+
+    function deriveStageScope(stage) {
+      if (!stage) return 'both';
+      if (stage.scope) return stage.scope;
+
+      const applies = stage.appliesTo;
+      let allowSource;
+      let allowDestination;
+
+      if (Array.isArray(applies)) {
+        allowSource = applies.includes('source');
+        allowDestination = applies.includes('destination');
+      } else if (applies && typeof applies === 'object') {
+        allowSource = applies.source ?? applies.from ?? false;
+        allowDestination = applies.destination ?? applies.to ?? false;
+      }
+
+      if (typeof stage.allowSource === 'boolean') allowSource = stage.allowSource;
+      if (typeof stage.allowDestination === 'boolean') allowDestination = stage.allowDestination;
+      if (typeof stage.source === 'boolean') allowSource = stage.source;
+      if (typeof stage.destination === 'boolean') allowDestination = stage.destination;
+
+      if (allowSource && allowDestination) return 'both';
+      if (allowSource) return 'source';
+      if (allowDestination) return 'destination';
+      return 'both';
+    }
+
+    function ensureStageList(stages) {
+      const base = Array.isArray(stages) && stages.length > 0 ? stages : cloneDefaultStages();
+      const normalized = base.map(stage => {
+        const id = stage.id || stage.value || stage.key;
+        const name = stage.name || stage.label || stage.title || id;
+        const scope = deriveStageScope(stage);
+        return { ...stage, id, name, scope };
+      });
+
+      const hasSource = normalized.some(stage => stage.scope === 'source' || stage.scope === 'both');
+      const hasDestination = normalized.some(stage => stage.scope === 'destination' || stage.scope === 'both');
+      const enriched = [...normalized];
+
+      if (!hasSource) {
+        const template = DEFAULT_STAGE_TEMPLATE.find(stage => stage.id === DEFAULT_SOURCE_STAGE);
+        if (template) enriched.push({ ...template });
+      }
+
+      if (!hasDestination) {
+        const template = DEFAULT_STAGE_TEMPLATE.find(stage => stage.id === DEFAULT_DESTINATION_STAGE);
+        if (template) enriched.push({ ...template });
+      }
+
+      return enriched;
+    }
+
+    function ensureFlowStages(flow) {
+      return ensureStageList(flow?.stages);
+    }
+
+    function normalizeEdgeStages(edge) {
+      if (!edge) return edge;
+      const srcStage = edge.srcStage || DEFAULT_SOURCE_STAGE;
+      const dstStage = edge.dstStage || DEFAULT_DESTINATION_STAGE;
+      return { ...edge, srcStage, dstStage, __legacyStage: !edge.srcStage || !edge.dstStage };
+    }
+
+    function stageScopeLabel(scope) {
+      if (scope === 'source') return 'Source only';
+      if (scope === 'destination') return 'Destination only';
+      return 'Source & destination';
+    }
+
+    function stageNameForDisplay(stage) {
+      return stage?.name || stage?.label || stage?.id || '';
+    }
+
+    function isStageSatisfied(activity, stageId) {
+      if (!activity) return false;
+      switch (stageId) {
+        case 'start':
+          return Boolean(activity.claimedBy || activity.completedAt);
+        case 'handoff':
+          return Boolean(activity.completedAt);
+        case 'complete':
+        default:
+          return Boolean(activity.completedAt);
+      }
+    }
+
     // Icons
     function PlusIcon(props) {
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>;
@@ -93,6 +193,24 @@
         });
       };
 
+      const dependencyGroups = useMemo(() => {
+        const grouped = {};
+        dependencies.forEach(dep => {
+          const key = dep.dstStage || 'unspecified';
+          if (!grouped[key]) {
+            grouped[key] = {
+              stageLabel: dep.dstStageLabel || dep.dstStage || 'Unspecified stage',
+              stageDescription: dep.dstStageDescription,
+              items: []
+            };
+          }
+          grouped[key].items.push(dep);
+        });
+        return Object.values(grouped);
+      }, [dependencies]);
+
+      const hasLegacyStageDeps = useMemo(() => dependencies.some(dep => dep.isLegacyStage), [dependencies]);
+
       const actionButtons = (
         <div className="flex flex-wrap gap-2">
           {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm">Claim</button>}
@@ -130,17 +248,32 @@
                   </div>
                 </div>
                 {dependencies.length > 0 && (
-                  <div className="text-sm text-gray-200">
-                    <div className="text-gray-400 mb-2">Waiting on</div>
-                    <ul className="space-y-1 ml-2">
-                      {dependencies.map((dep, idx) => (
-                        <li key={idx} className="flex items-center gap-2">
-                          <ChevronRightIcon className="w-3 h-3 text-gray-500" />
-                          <span className={dep.activity.completedAt ? 'line-through text-gray-500' : ''}>{dep.activity.title}</span>
-                          {dep.edgeType === 'loops' && <span className="text-xs text-orange-400">(revision)</span>}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="text-sm text-gray-200 space-y-3">
+                    <div className="text-gray-400">Dependencies by stage</div>
+                    {dependencyGroups.map((group, idx) => (
+                      <div key={idx} className="bg-gray-900/40 border border-gray-800 rounded p-3">
+                        <div className="flex items-center justify-between text-xs text-gray-300 mb-2">
+                          <span className="font-semibold text-gray-100">{group.stageLabel}</span>
+                          {group.stageDescription && <span className="text-gray-500">{group.stageDescription}</span>}
+                        </div>
+                        <ul className="space-y-1">
+                          {group.items.map((dep, itemIdx) => (
+                            <li key={itemIdx} className="flex items-center gap-2 text-xs">
+                              <ChevronRightIcon className="w-3 h-3 text-gray-500" />
+                              <span className={`${dep.isSatisfied ? 'line-through text-gray-500' : ''}`}>{dep.activity.title}</span>
+                              <span className="text-gray-500">({dep.srcStageLabel})</span>
+                              {dep.edgeType === 'loops' && <span className="text-orange-400">(revision)</span>}
+                              {dep.isLegacyStage && <span className="text-[10px] uppercase tracking-wide text-yellow-300 bg-yellow-900/40 px-1.5 py-0.5 rounded">Legacy</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {hasLegacyStageDeps && (
+                  <div className="text-xs text-yellow-200 bg-yellow-900/30 border border-yellow-800/40 rounded p-3">
+                    Some dependencies were created before stage tracking. Rewire them to assign source and destination stages.
                   </div>
                 )}
                 {actionButtons}
@@ -264,18 +397,20 @@
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>;
     }
 
-    function computeActivityState(activity, allActivities, edges) {
+    function computeActivityState(activity, allActivities, edges, stageId = DEFAULT_DESTINATION_STAGE) {
       if (activity.completedAt) return 'completed';
       if (activity.claimedBy) return 'in_progress';
-      
-      const inbound = edges.filter(e => e.dstId === activity.id);
+
+      const inbound = edges
+        .map(normalizeEdgeStages)
+        .filter(e => e.dstId === activity.id && e.dstStage === stageId);
       if (inbound.length === 0) return 'ready';
-      
+
       const allComplete = inbound.every(edge => {
         const src = allActivities.find(a => a.id === edge.srcId);
-        return src?.completedAt;
+        return isStageSatisfied(src, edge.srcStage);
       });
-      
+
       return allComplete ? 'ready' : 'waiting';
     }
 
@@ -332,13 +467,14 @@
       const createFlow = (projectId, name, deliverables, description) => {
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
-          flows: [...p.flows, {
+            flows: [...p.flows, {
             id: `f-${Date.now()}`,
             name,
             deliverables,
             description,
             activities: [],
-            edges: []
+            edges: [],
+            stages: cloneDefaultStages()
           }]
         } : p));
       };
@@ -387,7 +523,7 @@
         } : p));
       };
 
-      const createEdge = (projectId, flowId, srcId, dstId, type) => {
+      const createEdge = (projectId, flowId, srcId, dstId, type, srcStage = DEFAULT_SOURCE_STAGE, dstStage = DEFAULT_DESTINATION_STAGE) => {
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -396,7 +532,9 @@
               id: `e-${Date.now()}`,
               type,
               srcId,
-              dstId
+              dstId,
+              srcStage,
+              dstStage
             }]
           } : f)
         } : p));
@@ -576,7 +714,9 @@
               id: `e-${Date.now()}`,
               type: 'enables',
               srcId: sourceActivityId,
-              dstId: newActivityId
+              dstId: newActivityId,
+              srcStage: DEFAULT_SOURCE_STAGE,
+              dstStage: DEFAULT_DESTINATION_STAGE
             }]
           } : f)
         } : p));
@@ -610,8 +750,8 @@
             }],
             edges: [
               ...f.edges,
-              { id: `e-${Date.now()}-1`, type: 'loops', srcId: reviewerId, dstId: revisionId },
-              { id: `e-${Date.now()}-2`, type: 'enables', srcId: revisionId, dstId: reviewerId }
+              { id: `e-${Date.now()}-1`, type: 'loops', srcId: reviewerId, dstId: revisionId, srcStage: DEFAULT_SOURCE_STAGE, dstStage: DEFAULT_DESTINATION_STAGE },
+              { id: `e-${Date.now()}-2`, type: 'enables', srcId: revisionId, dstId: reviewerId, srcStage: DEFAULT_SOURCE_STAGE, dstStage: DEFAULT_DESTINATION_STAGE }
             ]
           } : f)
         } : p));
@@ -661,7 +801,7 @@
           {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
           {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
           {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(spawnNext) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId); if (spawnNext) { spawnActivity(modalData.projectId, modalData.flowId, modalData.activityId, spawnNext.title, spawnNext.roleId, spawnNext.deliverable); } setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
-          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={(targetId, edgeType) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType); setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable, edgeType) => { const newId = `a-${Date.now()}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={(targetId, edgeType, srcStage, dstStage) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType, srcStage, dstStage); setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable, edgeType, srcStage, dstStage) => { const newId = `a-${Date.now()}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType, srcStage, dstStage), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
         </>
       );
     }
@@ -717,7 +857,7 @@
           totalFlows += project.flows.length;
           project.flows.forEach(flow => {
             flow.activities.forEach(activity => {
-              const state = computeActivityState(activity, flow.activities, flow.edges);
+              const state = computeActivityState(activity, flow.activities, flow.edges, DEFAULT_DESTINATION_STAGE);
               if (state === 'ready') totalReady++;
               else if (state === 'waiting') totalWaiting++;
               else if (state === 'in_progress') totalInProgress++;
@@ -856,7 +996,7 @@
       const stats = useMemo(() => {
         let ready = 0, waiting = 0, inProgress = 0, completed = 0;
         flow.activities.forEach(activity => {
-          const state = computeActivityState(activity, flow.activities, flow.edges);
+          const state = computeActivityState(activity, flow.activities, flow.edges, DEFAULT_DESTINATION_STAGE);
           if (state === 'ready') ready++;
           else if (state === 'waiting') waiting++;
           else if (state === 'in_progress') inProgress++;
@@ -897,10 +1037,20 @@
     }
 
     function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead }) {
+      const flowStages = useMemo(() => ensureFlowStages(flow), [flow]);
+      const stageMap = useMemo(() => {
+        const map = {};
+        flowStages.forEach(stage => {
+          map[stage.id] = stage;
+        });
+        return map;
+      }, [flowStages]);
+      const hasLegacyStageEdges = useMemo(() => flow.edges.some(edge => !edge.srcStage || !edge.dstStage), [flow.edges]);
+
       const activitiesWithState = useMemo(() => {
         return flow.activities.map(activity => ({
           ...activity,
-          state: computeActivityState(activity, flow.activities, flow.edges)
+          state: computeActivityState(activity, flow.activities, flow.edges, DEFAULT_DESTINATION_STAGE)
         }));
       }, [flow.activities, flow.edges]);
 
@@ -935,17 +1085,40 @@
         return selectedRole ? OPERATORS.find(op => op.id === selectedRole.operatorType) : null;
       }, [selectedRole]);
 
-      const getDependencies = (activityId) => {
-        const inbound = flow.edges.filter(e => e.dstId === activityId);
+      const getDependencies = (activityId, stageFilter = null) => {
+        const inbound = flow.edges
+          .map(normalizeEdgeStages)
+          .filter(e => e.dstId === activityId && (!stageFilter || e.dstStage === stageFilter));
+
         return inbound.map(edge => {
           const src = flow.activities.find(a => a.id === edge.srcId);
-          return src ? { activity: src, edgeType: edge.type } : null;
+          if (!src) return null;
+
+          const normalized = normalizeEdgeStages(edge);
+          const srcStageDef = stageMap[normalized.srcStage];
+          const dstStageDef = stageMap[normalized.dstStage];
+
+          return {
+            activity: src,
+            edgeId: normalized.id,
+            edgeType: normalized.type,
+            srcStage: normalized.srcStage,
+            dstStage: normalized.dstStage,
+            srcStageLabel: stageNameForDisplay(srcStageDef) || normalized.srcStage,
+            dstStageLabel: stageNameForDisplay(dstStageDef) || normalized.dstStage,
+            srcStageDescription: srcStageDef?.description,
+            dstStageDescription: dstStageDef?.description,
+            srcStageScope: srcStageDef?.scope,
+            dstStageScope: dstStageDef?.scope,
+            isLegacyStage: normalized.__legacyStage,
+            isSatisfied: isStageSatisfied(src, normalized.srcStage)
+          };
         }).filter(Boolean);
       };
 
       const selectedDependencies = useMemo(() => {
         return selectedActivity ? getDependencies(selectedActivity.id) : [];
-      }, [selectedActivity, flow.edges, flow.activities]);
+      }, [selectedActivity, flow.edges, flow.activities, stageMap]);
 
       const openActivityDetails = (activityId) => {
         setSelectedActivityId(activityId);
@@ -995,6 +1168,14 @@
               </div>
             </div>
 
+            {hasLegacyStageEdges && (
+              <div className="bg-yellow-900/30 border border-yellow-700/40 text-yellow-100 rounded-lg p-4 mb-6">
+                <p className="text-sm">
+                  Some existing dependencies are missing stage assignments. Rewire those connections to choose source and destination stages so readiness reflects accurately.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {OPERATORS.map(operator => (
                 <div key={operator.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
@@ -1016,7 +1197,7 @@
                     ) : (
                       groupedActivities[operator.id]?.map(activity => {
                         const role = roles.find(r => r.id === activity.roleId);
-                        const deps = getDependencies(activity.id);
+                        const deps = getDependencies(activity.id, DEFAULT_DESTINATION_STAGE);
                         return (
                           <ActivityCard
                             key={activity.id}
@@ -1110,8 +1291,13 @@
               <div className="text-gray-400 mb-1">Waiting on:</div>
               <ul className="space-y-0.5 ml-2">
                 {dependencies.slice(0, 2).map((dep, i) => (
-                  <li key={i} className={dep.activity.completedAt ? 'line-through text-gray-500' : ''}>
-                    • {dep.activity.title} {dep.edgeType === 'loops' && '(revision)'}
+                  <li key={i} className="flex flex-wrap items-center gap-1">
+                    <span className={`${dep.isSatisfied ? 'line-through text-gray-500' : ''}`}>
+                      • {dep.dstStageLabel}: {dep.activity.title}
+                    </span>
+                    <span className="text-gray-500">({dep.srcStageLabel})</span>
+                    {dep.edgeType === 'loops' && <span className="text-orange-400">(revision)</span>}
+                    {dep.isLegacyStage && <span className="text-[10px] uppercase tracking-wide text-yellow-300 bg-yellow-900/40 px-1 py-0.5 rounded">Legacy</span>}
                   </li>
                 ))}
                 {dependencies.length > 2 && <li className="text-gray-400">+{dependencies.length - 2} more</li>}
@@ -1398,6 +1584,12 @@
       const [newRoleName, setNewRoleName] = useState('');
       const [newRoleOperator, setNewRoleOperator] = useState('');
       const [selectedUserIds, setSelectedUserIds] = useState([]);
+      const flowStages = useMemo(() => ensureFlowStages(flow), [flow]);
+      const sourceStageOptions = useMemo(() => flowStages.filter(stage => stage.scope === 'source' || stage.scope === 'both'), [flowStages]);
+      const destinationStageOptions = useMemo(() => flowStages.filter(stage => stage.scope === 'destination' || stage.scope === 'both'), [flowStages]);
+      const [sourceStage, setSourceStage] = useState(sourceStageOptions[0]?.id || DEFAULT_SOURCE_STAGE);
+      const [destinationStage, setDestinationStage] = useState(destinationStageOptions[0]?.id || DEFAULT_DESTINATION_STAGE);
+      const hasLegacyStageEdges = useMemo(() => flow.edges.some(edge => !edge.srcStage || !edge.dstStage), [flow.edges]);
 
       const availableActivities = flow.activities.filter(a => a.id !== activity.id && !a.completedAt);
 
@@ -1413,16 +1605,56 @@
         setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
       };
 
+      useEffect(() => {
+        if (!sourceStageOptions.some(stage => stage.id === sourceStage)) {
+          setSourceStage(sourceStageOptions[0]?.id || DEFAULT_SOURCE_STAGE);
+        }
+      }, [sourceStageOptions, sourceStage]);
+
+      useEffect(() => {
+        if (!destinationStageOptions.some(stage => stage.id === destinationStage)) {
+          setDestinationStage(destinationStageOptions[0]?.id || DEFAULT_DESTINATION_STAGE);
+        }
+      }, [destinationStageOptions, destinationStage]);
+
+      const selectedSourceStage = sourceStageOptions.find(stage => stage.id === sourceStage);
+      const selectedDestinationStage = destinationStageOptions.find(stage => stage.id === destinationStage);
+
       return (
         <Modal onClose={onClose} title="Wire Activity" size="large">
           <div className="space-y-4">
             <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium text-gray-100">{activity?.title}</h3><p className="text-sm text-gray-300 mt-1">Connect this activity to another</p></div>
+            {hasLegacyStageEdges && (
+              <div className="bg-yellow-900/30 border border-yellow-700/40 text-yellow-100 rounded p-3 text-sm">
+                Some existing connections still need stage assignments. New wires require selecting both source and destination stages.
+              </div>
+            )}
             <div><label className="block text-sm text-gray-200 mb-2">Connection type</label><select value={edgeType} onChange={(e) => setEdgeType(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="enables">Enables (this unlocks the other)</option><option value="requires">Requires (this depends on the other)</option></select></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-200 mb-2">Source stage</label>
+                <select value={sourceStage} onChange={(e) => setSourceStage(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                  {sourceStageOptions.map(stage => (
+                    <option key={stage.id} value={stage.id}>{stageNameForDisplay(stage)} ({stageScopeLabel(stage.scope)})</option>
+                  ))}
+                </select>
+                {selectedSourceStage?.description && <p className="text-xs text-gray-400 mt-1">{selectedSourceStage.description}</p>}
+              </div>
+              <div>
+                <label className="block text-sm text-gray-200 mb-2">Destination stage</label>
+                <select value={destinationStage} onChange={(e) => setDestinationStage(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                  {destinationStageOptions.map(stage => (
+                    <option key={stage.id} value={stage.id}>{stageNameForDisplay(stage)} ({stageScopeLabel(stage.scope)})</option>
+                  ))}
+                </select>
+                {selectedDestinationStage?.description && <p className="text-xs text-gray-400 mt-1">{selectedDestinationStage.description}</p>}
+              </div>
+            </div>
             <div className="flex gap-2 p-2 bg-gray-800 rounded"><button onClick={() => setMode('existing')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'existing' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Existing Activity</button><button onClick={() => setMode('new')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'new' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Create New</button></div>
             {mode === 'existing' ? (
               <>
                 <div><label className="block text-sm text-gray-200 mb-2">Select activity</label><select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableActivities.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}</select></div>
-                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (targetId) onWire(targetId, edgeType); }} disabled={!targetId} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Wire</button></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (targetId && sourceStage && destinationStage) onWire(targetId, edgeType, sourceStage, destinationStage); }} disabled={!targetId || !sourceStage || !destinationStage} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Wire</button></div>
               </>
             ) : (
               <>
@@ -1441,7 +1673,7 @@
                   </>
                 )}
                 <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={newDeliverable} onChange={(e) => setNewDeliverable(e.target.value)} placeholder="e.g., Reviewed draft" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (newTitle && newRoleId) onCreate(newTitle, newRoleId, newDeliverable, edgeType); }} disabled={!newTitle || !newRoleId} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create & Wire</button></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (newTitle && newRoleId && sourceStage && destinationStage) onCreate(newTitle, newRoleId, newDeliverable, edgeType, sourceStage, destinationStage); }} disabled={!newTitle || !newRoleId || !sourceStage || !destinationStage} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create & Wire</button></div>
               </>
             )}
           </div>
