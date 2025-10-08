@@ -5,13 +5,17 @@
 2. [Core Concepts](#core-concepts)
 3. [Getting Started](#getting-started)
 4. [Working with Projects & Flows](#working-with-projects--flows)
-5. [Creating Activities](#creating-activities)
-6. [Understanding Activity States](#understanding-activity-states)
-7. [Wiring Activities Together](#wiring-activities-together)
-8. [Completing Activities & Spawning Next Steps](#completing-activities--spawning-next-steps)
-9. [The Revision Workflow](#the-revision-workflow)
-10. [Coordination Patterns](#coordination-patterns)
-11. [Tips & Best Practices](#tips--best-practices)
+5. [Managing Team Members](#managing-team-members)
+6. [Creating Activities](#creating-activities)
+7. [Understanding Activity States](#understanding-activity-states)
+8. [Claiming Work & Priorities](#claiming-work--priorities)
+9. [Wiring Activities Together](#wiring-activities-together)
+10. [Completing Activities & Spawning Next Steps](#completing-activities--spawning-next-steps)
+11. [The Revision Workflow](#the-revision-workflow)
+12. [Coordination Patterns](#coordination-patterns)
+13. [Tips & Best Practices](#tips--best-practices)
+14. [Common Questions](#common-questions)
+15. [Getting Help](#getting-help)
 
 ---
 
@@ -150,6 +154,30 @@ Everyone on the project team sees all flows and activities. When you create a ro
 
 ---
 
+## Managing Team Members
+
+Projects evolve, and so do the people involved. Use the **Manage Users** button in the project view to keep the roster accurate.
+
+### Adding People Mid-Flight
+
+1. Click **Manage Users** from the project header.
+2. Enter the person's name in **Add New User**.
+3. Click **Add**. The teammate is now available for role assignments.
+
+### Removing People Who've Rolled Off
+
+1. Open **Manage Users**.
+2. Click **Remove** next to their name.
+3. Existing activities stay assigned, but the person no longer appears for future role assignments.
+
+### Why This Matters
+
+- Roles draw from the current project roster when you assign people.
+- Keeping the list accurate prevents accidental assignments to folks who are unavailable.
+- You can adjust the team as often as needed—there's no penalty for updating the roster during a flow.
+
+---
+
 ## Creating Activities
 
 ### When to Create Activities
@@ -181,6 +209,25 @@ Every activity needs a role. Ask yourself:
 ### Reusing Roles
 
 Once you've created a role, it's available for all activities in all flows. If you're creating another writing activity, just select the existing "Content Writer" role instead of creating a duplicate.
+
+### Editing Activities After Creation
+
+Made a typo or discovered a better framing? Click the **Edit** button on an activity card (pencil icon) while it's still active. You can update:
+
+- The activity title
+- The deliverable description
+- The assigned role (pick an existing role or create a new one on the fly)
+
+Edits keep the activity in place so you preserve its history and existing dependencies.
+
+### Removing Activities You Don't Need
+
+If an activity is no longer relevant, click the **Delete** button (trash icon). Deleting:
+
+- Removes the activity card from the flow
+- Cleans up any edges connected to it so nothing stays blocked
+
+This action can't be undone, so use it when you're confident the work is obsolete.
 
 ---
 
@@ -229,6 +276,30 @@ States update in real-time as you work:
 1. You complete Activity A
 2. Activity B's "Waiting on" list shows A as crossed out
 3. If A was the last blocker, Activity B turns green (ready)
+
+---
+
+## Claiming Work & Priorities
+
+### Claiming an Activity
+
+When an activity is ready and you're on the assigned role, click **Claim** on the card. You'll choose a priority before confirming:
+
+- **High – Focus** for urgent, time-sensitive work
+- **Medium – Normal** for standard throughput (default)
+- **Low – When available** for stretch items
+
+The activity switches to **In Progress** with your name on it, so everyone knows who's driving.
+
+### Changing Your Mind
+
+Need to hand it back? Click **Unclaim** while it's still in progress. The activity returns to the ready pool and teammates can claim it again (they'll pick a fresh priority).
+
+### Why Priorities Help
+
+- They make expectations explicit when multiple ready items exist.
+- The selection sticks with the activity while you're working, giving everyone shared context about the urgency you intended.
+- You can always re-evaluate by unclaiming and reclaiming with a different priority if circumstances change.
 
 ---
 
@@ -576,16 +647,19 @@ The power of Event Operator is emergence. Resist the urge to create 50 activitie
 ## Common Questions
 
 **Q: Can I edit an activity after creating it?**
-Not in the current version. If you need to change something, create a new activity with the correct details. This maintains the integrity of the dependency graph.
+Yes. While the activity is still active, click the pencil icon to update its title, deliverable, or role assignment.
 
 **Q: What if I claimed the wrong activity?**
-Currently you can't unclaim. Complete it if you did the work, or just leave it. In team use, communicate with your team about misclicks.
+Hit **Unclaim** and it will return to the ready pool so the right person can take it (or you can reclaim it with a different priority).
+
+**Q: Can I change the priority after claiming?**
+Yes. Unclaim the activity and claim it again with the priority that matches the new urgency.
 
 **Q: Can activities have OR gates instead of AND gates?**
 Not in the current version. All convergence points use AND gates (all dependencies must complete). This covers most real coordination patterns.
 
 **Q: How do I delete an activity?**
-You can't delete activities. If you created something by mistake, just ignore it. Completed and blocked activities don't get in the way of active work.
+Use the trash icon to remove it. This also clears any edges so nothing stays blocked by accident.
 
 **Q: Can I work across multiple flows simultaneously?**
 Yes! You can claim activities in different flows. Each flow's dependency graph is independent.
