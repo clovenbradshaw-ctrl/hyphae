@@ -52,6 +52,15 @@
     function RefreshIcon(props) {
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
     }
+    function EditIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
+    }
+    function TrashIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+    }
+    function UsersIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
+    }
 
     function EventOperator() {
       const [view, setView] = useState('welcome');
@@ -77,11 +86,30 @@
         }
       }, [selectedProject]);
 
-      const createProject = (name, team, user) => {
-        const project = { id: `p-${Date.now()}`, name, team, flows: [] };
+      const createProject = (name, users, currentUserName) => {
+        const project = { 
+          id: `p-${Date.now()}`, 
+          name, 
+          users: users.map(u => ({ id: `u-${Date.now()}-${Math.random()}`, name: u })),
+          flows: [] 
+        };
         setProjects([...projects, project]);
-        setCurrentUser(user);
+        setCurrentUser(currentUserName);
         setView('projects');
+      };
+
+      const addUserToProject = (projectId, userName) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          users: [...p.users, { id: `u-${Date.now()}`, name: userName }]
+        } : p));
+      };
+
+      const removeUserFromProject = (projectId, userId) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          users: p.users.filter(u => u.id !== userId)
+        } : p));
       };
 
       const createFlow = (projectId, name, deliverables, description) => {
@@ -115,6 +143,27 @@
         } : p));
       };
 
+      const updateActivity = (projectId, flowId, activityId, updates) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? { ...a, ...updates } : a)
+          } : f)
+        } : p));
+      };
+
+      const deleteActivity = (projectId, flowId, activityId) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.filter(a => a.id !== activityId),
+            edges: f.edges.filter(e => e.srcId !== activityId && e.dstId !== activityId)
+          } : f)
+        } : p));
+      };
+
       const createEdge = (projectId, flowId, srcId, dstId, type) => {
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
@@ -130,15 +179,19 @@
         } : p));
       };
 
-      const createRole = (name, operatorType) => {
+      const createRole = (name, operatorType, userIds = []) => {
         const role = {
           id: `r-${Date.now()}`,
           name,
           operatorType,
-          people: [currentUser]
+          userIds
         };
         setRoles([...roles, role]);
         return role;
+      };
+
+      const updateRole = (roleId, updates) => {
+        setRoles(prev => prev.map(r => r.id === roleId ? { ...r, ...updates } : r));
       };
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
@@ -150,6 +203,20 @@
               ...a,
               claimedBy: currentUser,
               priority
+            } : a)
+          } : f)
+        } : p));
+      };
+
+      const unclaimActivity = (projectId, flowId, activityId) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              claimedBy: null,
+              priority: null
             } : a)
           } : f)
         } : p));
@@ -198,8 +265,6 @@
         if (!targetActivity) return;
 
         const revisionId = `a-${Date.now()}`;
-        const role = roles.find(r => r.id === targetActivity.roleId);
-        const operator = OPERATORS.find(op => op.id === role?.operatorType);
         
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
@@ -230,7 +295,7 @@
       } else if (view === 'projects') {
         mainContent = <ProjectsView projects={projects} currentUser={currentUser} onSelectProject={(p) => { setSelectedProject(p); setView('flows'); }} onCreateProject={() => setShowModal('createProject')} />;
       } else if (view === 'flows' && selectedProject) {
-        mainContent = <FlowsView project={selectedProject} onBack={() => { setSelectedProject(null); setView('projects'); }} onSelectFlow={(f) => { setSelectedFlow(f); setView('activities'); }} onCreateFlow={() => setShowModal('createFlow')} />;
+        mainContent = <FlowsView project={selectedProject} onBack={() => { setSelectedProject(null); setView('projects'); }} onSelectFlow={(f) => { setSelectedFlow(f); setView('activities'); }} onCreateFlow={() => setShowModal('createFlow')} onManageUsers={() => setShowModal('manageUsers')} />;
       } else if (view === 'activities' && selectedProject && selectedFlow) {
         mainContent = (
           <ActivitiesView
@@ -240,7 +305,10 @@
             currentUser={currentUser}
             onBack={() => { setSelectedFlow(null); setView('flows'); }}
             onCreateActivity={() => setShowModal('createActivity')}
+            onEditActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('editActivity'); }}
+            onDeleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('deleteActivity'); }}
             onClaimActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('claimActivity'); }}
+            onUnclaimActivity={(aid) => unclaimActivity(selectedProject.id, selectedFlow.id, aid)}
             onCompleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('completeActivity'); }}
             onWireActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('wireActivity'); }}
             onRequestRevision={(reviewerId, targetId) => requestRevision(selectedProject.id, selectedFlow.id, reviewerId, targetId)}
@@ -251,12 +319,15 @@
       return (
         <>
           {mainContent}
-          {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, team) => { createProject(name, team, currentUser); setShowModal(null); }} />}
+          {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, users) => { createProject(name, users, currentUser); setShowModal(null); }} />}
           {showModal === 'createFlow' && selectedProject && <CreateFlowModal onClose={() => setShowModal(null)} onCreate={(name, del, desc) => { createFlow(selectedProject.id, name, del, desc); setShowModal(null); }} />}
-          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal flow={selectedFlow} roles={roles} onClose={() => setShowModal(null)} onCreate={(title, roleId, deliverable) => { createActivity(selectedProject.id, selectedFlow.id, title, roleId, deliverable); setShowModal(null); }} onCreateRole={createRole} />}
-          {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
-          {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(spawnNext) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId); if (spawnNext) { spawnActivity(modalData.projectId, modalData.flowId, modalData.activityId, spawnNext.title, spawnNext.roleId, spawnNext.deliverable); } setShowModal(null); setModalData({}); }} onCreateRole={createRole} />}
-          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={(targetId, edgeType) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType); setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable, edgeType) => { const newId = `a-${Date.now()}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} />}
+          {showModal === 'manageUsers' && selectedProject && <ManageUsersModal project={selectedProject} onClose={() => setShowModal(null)} onAddUser={(name) => addUserToProject(selectedProject.id, name)} onRemoveUser={(uid) => removeUserFromProject(selectedProject.id, uid)} />}
+          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal project={selectedProject} flow={selectedFlow} roles={roles} onClose={() => setShowModal(null)} onCreate={(title, roleId, deliverable) => { createActivity(selectedProject.id, selectedFlow.id, title, roleId, deliverable); setShowModal(null); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(spawnNext) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId); if (spawnNext) { spawnActivity(modalData.projectId, modalData.flowId, modalData.activityId, spawnNext.title, spawnNext.roleId, spawnNext.deliverable); } setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={(targetId, edgeType) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType); setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable, edgeType) => { const newId = `a-${Date.now()}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
         </>
       );
     }
@@ -314,7 +385,7 @@
                 {projects.map(project => (
                   <div key={project.id} onClick={() => onSelectProject(project)} className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors">
                     <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
-                    <p className="text-sm text-gray-300 mb-4">Team: {project.team.join(', ')}</p>
+                    <p className="text-sm text-gray-300 mb-4">Team: {project.users.map(u => u.name).join(', ')}</p>
                     <div className="flex items-center justify-between text-sm"><span className="text-gray-400">{project.flows.length} flows</span><ChevronRightIcon className="w-4 h-4 text-gray-600" /></div>
                   </div>
                 ))}
@@ -325,14 +396,17 @@
       );
     }
 
-    function FlowsView({ project, onBack, onSelectFlow, onCreateFlow }) {
+    function FlowsView({ project, onBack, onSelectFlow, onCreateFlow, onManageUsers }) {
       return (
         <div className="min-h-screen bg-gray-950 text-gray-100">
           <div className="max-w-7xl mx-auto p-6">
             <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"><ArrowLeftIcon className="w-4 h-4" />Back to Projects</button>
             <div className="flex items-center justify-between mb-8">
               <div><h1 className="text-2xl font-bold">{project.name}</h1><p className="text-gray-300">Coordination Flows</p></div>
-              <button onClick={onCreateFlow} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"><PlusIcon className="w-4 h-4" />New Flow</button>
+              <div className="flex gap-2">
+                <button onClick={onManageUsers} className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg font-medium transition-colors"><UsersIcon className="w-4 h-4" />Manage Users</button>
+                <button onClick={onCreateFlow} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"><PlusIcon className="w-4 h-4" />New Flow</button>
+              </div>
             </div>
             {project.flows.length === 0 ? (
               <div className="text-center py-20"><GitBranchIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" /><p className="text-gray-400 mb-4">No flows yet</p><button onClick={onCreateFlow} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">Create Your First Flow</button></div>
@@ -371,7 +445,7 @@
       return allComplete ? 'ready' : 'blocked';
     }
 
-    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onClaimActivity, onCompleteActivity, onWireActivity, onRequestRevision }) {
+    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision }) {
       const activitiesWithState = useMemo(() => {
         return flow.activities.map(activity => ({
           ...activity,
@@ -430,8 +504,12 @@
                             role={role}
                             operator={operator}
                             dependencies={deps}
+                            project={project}
                             currentUser={currentUser}
+                            onEdit={onEditActivity}
+                            onDelete={onDeleteActivity}
                             onClaim={onClaimActivity}
+                            onUnclaim={onUnclaimActivity}
                             onComplete={onCompleteActivity}
                             onWire={onWireActivity}
                             onRequestRevision={onRequestRevision}
@@ -448,9 +526,9 @@
       );
     }
 
-    function ActivityCard({ activity, role, operator, dependencies, currentUser, onClaim, onComplete, onWire, onRequestRevision }) {
+    function ActivityCard({ activity, role, operator, dependencies, project, currentUser, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision }) {
       const isMine = activity.claimedBy === currentUser;
-      const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.people.includes(currentUser);
+      const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
       const canComplete = isMine && activity.state === 'in_progress';
 
       const stateConfig = {
@@ -466,10 +544,12 @@
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
           <div className="flex items-start justify-between mb-2">
             <h4 className="font-medium text-sm flex-1">{activity.title}</h4>
-            <span className={`text-xs px-2 py-0.5 rounded ml-2 ${config.color}`}>{config.label}</span>
+            <div className="flex items-center gap-1 ml-2">
+              <span className={`text-xs px-2 py-0.5 rounded ${config.color}`}>{config.label}</span>
+            </div>
           </div>
           {activity.isRevision && <div className="text-xs text-orange-400 mb-2">🔄 Revision requested</div>}
-          {role && <div className="text-xs text-gray-300 mb-2">{role.name} • {role.people.join(', ')}</div>}
+          {role && <div className="text-xs text-gray-300 mb-2">{role.name} • {role.userIds.map(uid => project.users.find(u => u.id === uid)?.name).filter(Boolean).join(', ')}</div>}
           {activity.deliverable && <div className="text-xs text-gray-200 mb-2"><span className="text-gray-400">Delivers:</span> {activity.deliverable}</div>}
           {dependencies.length > 0 && (
             <div className="text-xs text-gray-300 mb-2">
@@ -484,19 +564,61 @@
               </ul>
             </div>
           )}
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {!activity.completedAt && (
+              <>
+                <button onClick={() => onEdit(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
+                <button onClick={() => onDelete(activity.id)} className="bg-red-900 hover:bg-red-800 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
+              </>
+            )}
             {canClaim && <button onClick={() => onClaim(activity.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
+            {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
             {canComplete && (
               <>
-                <button onClick={() => onComplete(activity.id)} className="flex-1 bg-green-600 hover:g-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
+                <button onClick={() => onComplete(activity.id)} className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
                 {operator.canRequestRevision && dependencies.length > 0 && (
-                  <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="flex-1 bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1"><RefreshIcon className="w-3 h-3" />Revise</button>
+                  <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
                 )}
               </>
             )}
-            {activity.state !== 'completed' && <button onClick={() => onWire(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Wire to another activity"><LinkIcon className="w-3 h-3" /></button>}
+            {activity.state !== 'completed' && <button onClick={() => onWire(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Wire"><LinkIcon className="w-3 h-3" /></button>}
           </div>
         </div>
+      );
+    }
+
+    function ManageUsersModal({ project, onClose, onAddUser, onRemoveUser }) {
+      const [newUserName, setNewUserName] = useState('');
+
+      return (
+        <Modal onClose={onClose} title="Manage Team Members">
+          <div className="space-y-4">
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
+              <p className="text-sm text-gray-100">Add or remove team members. Users can be assigned to roles.</p>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Current Team</label>
+              <div className="space-y-2">
+                {project.users.map(user => (
+                  <div key={user.id} className="flex items-center justify-between bg-gray-800 rounded px-4 py-2">
+                    <span className="text-gray-100">{user.name}</span>
+                    <button onClick={() => onRemoveUser(user.id)} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Add New User</label>
+              <div className="flex gap-2">
+                <input type="text" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} placeholder="User name" className="flex-1 bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                <button onClick={() => { if (newUserName.trim()) { onAddUser(newUserName.trim()); setNewUserName(''); } }} disabled={!newUserName.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 px-4 py-2 rounded transition-colors">Add</button>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Done</button>
+            </div>
+          </div>
+        </Modal>
       );
     }
 
@@ -531,20 +653,25 @@
       );
     }
 
-    function CreateActivityModal({ flow, roles, onClose, onCreate, onCreateRole }) {
+    function CreateActivityModal({ project, flow, roles, onClose, onCreate, onCreateRole, onUpdateRole }) {
       const [step, setStep] = useState('role');
       const [title, setTitle] = useState('');
       const [selectedRole, setSelectedRole] = useState('');
       const [newRoleName, setNewRoleName] = useState('');
       const [selectedOperator, setSelectedOperator] = useState('');
+      const [selectedUserIds, setSelectedUserIds] = useState([]);
       const [deliverable, setDeliverable] = useState('');
 
       const handleCreateRole = () => {
         if (newRoleName && selectedOperator) {
-          const role = onCreateRole(newRoleName, selectedOperator);
+          const role = onCreateRole(newRoleName, selectedOperator, selectedUserIds);
           setSelectedRole(role.id);
           setStep('activity');
         }
+      };
+
+      const toggleUser = (userId) => {
+        setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
       };
 
       return (
@@ -562,6 +689,7 @@
                 )}
                 <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Content Writer" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
                 <div><label className="block text-sm text-gray-200 mb-2">Select operator type</label><div className="grid grid-cols-3 gap-2">{OPERATORS.map(op => <button key={op.id} onClick={() => setSelectedOperator(op.id)} className={`p-3 border rounded text-left transition-colors ${selectedOperator === op.id ? 'border-blue-500 bg-blue-500/20' : 'border-gray-700 hover:border-gray-600'}`}><div className="font-medium text-sm">{op.seq}. {op.name}</div><div className="text-xs text-gray-300 mt-1">{op.desc}</div></button>)}</div></div>
+                <div><label className="block text-sm text-gray-200 mb-2">Assign users to this role</label><div className="space-y-2">{project.users.map(user => <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} /><span className="text-sm text-gray-100">{user.name}</span></label>)}</div></div>
                 <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={handleCreateRole} disabled={!newRoleName || !selectedOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role & Continue</button></div>
               </>
             ) : (
@@ -577,7 +705,48 @@
       );
     }
 
-    function ClaimActivityModal({ activity, roles, onClose, onClaim }) {
+    function EditActivityModal({ project, activity, roles, onClose, onUpdate, onCreateRole, onUpdateRole }) {
+      const [title, setTitle] = useState(activity?.title || '');
+      const [deliverable, setDeliverable] = useState(activity?.deliverable || '');
+      const [selectedRole, setSelectedRole] = useState(activity?.roleId || '');
+
+      useEffect(() => {
+        if (activity) {
+          setTitle(activity.title);
+          setDeliverable(activity.deliverable || '');
+          setSelectedRole(activity.roleId);
+        }
+      }, [activity]);
+
+      return (
+        <Modal onClose={onClose} title="Edit Activity">
+          <div className="space-y-4">
+            <div><label className="block text-sm text-gray-200 mb-2">Activity name</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Write article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={deliverable} onChange={(e) => setDeliverable(e.target.value)} placeholder="e.g., 800-word article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (title && selectedRole) onUpdate({ title, roleId: selectedRole, deliverable }); }} disabled={!title || !selectedRole} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Save</button></div>
+          </div>
+        </Modal>
+      );
+    }
+
+    function DeleteActivityModal({ activity, onClose, onDelete }) {
+      return (
+        <Modal onClose={onClose} title="Delete Activity">
+          <div className="space-y-4">
+            <div className="bg-red-900/30 border border-red-700/50 rounded p-4">
+              <p className="text-sm text-gray-100">Are you sure you want to delete this activity? This will also remove all edges connected to it. This action cannot be undone.</p>
+            </div>
+            <div className="bg-gray-900 rounded-lg p-4">
+              <h3 className="font-medium text-gray-100">{activity?.title}</h3>
+            </div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={onDelete} className="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded transition-colors">Delete</button></div>
+          </div>
+        </Modal>
+      );
+    }
+
+    function ClaimActivityModal({ activity, roles, project, onClose, onClaim }) {
       const [priority, setPriority] = useState('medium');
       return (
         <Modal onClose={onClose} title="Claim Activity">
@@ -590,7 +759,7 @@
       );
     }
 
-    function CompleteActivityModal({ activity, flow, roles, onClose, onComplete, onCreateRole }) {
+    function CompleteActivityModal({ project, activity, flow, roles, onClose, onComplete, onCreateRole, onUpdateRole }) {
       const [spawnNext, setSpawnNext] = useState(false);
       const [nextTitle, setNextTitle] = useState('');
       const [nextRoleId, setNextRoleId] = useState('');
@@ -598,13 +767,18 @@
       const [showNewRole, setShowNewRole] = useState(false);
       const [newRoleName, setNewRoleName] = useState('');
       const [newRoleOperator, setNewRoleOperator] = useState('');
+      const [selectedUserIds, setSelectedUserIds] = useState([]);
 
       const handleCreateRole = () => {
         if (newRoleName && newRoleOperator) {
-          const role = onCreateRole(newRoleName, newRoleOperator);
+          const role = onCreateRole(newRoleName, newRoleOperator, selectedUserIds);
           setNextRoleId(role.id);
           setShowNewRole(false);
         }
+      };
+
+      const toggleUser = (userId) => {
+        setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
       };
 
       return (
@@ -624,6 +798,7 @@
                   <>
                     <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
                     <div><label className="block text-sm text-gray-200 mb-2">Operator type</label><select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}</select></div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Assign users</label><div className="space-y-2">{project.users.map(user => <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} /><span className="text-sm text-gray-100">{user.name}</span></label>)}</div></div>
                     <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
                   </>
                 )}
@@ -636,7 +811,7 @@
       );
     }
 
-    function WireActivityModal({ activity, flow, roles, onClose, onWire, onCreate, onCreateRole }) {
+    function WireActivityModal({ project, activity, flow, roles, onClose, onWire, onCreate, onCreateRole, onUpdateRole }) {
       const [mode, setMode] = useState('existing');
       const [targetId, setTargetId] = useState('');
       const [edgeType, setEdgeType] = useState('enables');
@@ -646,15 +821,20 @@
       const [showNewRole, setShowNewRole] = useState(false);
       const [newRoleName, setNewRoleName] = useState('');
       const [newRoleOperator, setNewRoleOperator] = useState('');
+      const [selectedUserIds, setSelectedUserIds] = useState([]);
 
       const availableActivities = flow.activities.filter(a => a.id !== activity.id && !a.completedAt);
 
       const handleCreateRole = () => {
         if (newRoleName && newRoleOperator) {
-          const role = onCreateRole(newRoleName, newRoleOperator);
+          const role = onCreateRole(newRoleName, newRoleOperator, selectedUserIds);
           setNewRoleId(role.id);
           setShowNewRole(false);
         }
+      };
+
+      const toggleUser = (userId) => {
+        setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
       };
 
       return (
@@ -680,6 +860,7 @@
                   <>
                     <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
                     <div><label className="block text-sm text-gray-200 mb-2">Operator type</label><select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}</select></div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Assign users</label><div className="space-y-2">{project.users.map(user => <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} /><span className="text-sm text-gray-100">{user.name}</span></label>)}</div></div>
                     <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
                   </>
                 )}
