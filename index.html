@@ -61,12 +61,17 @@
         setAttachmentUrl('');
       }, [activity?.id]);
 
-      const isMine = activity.claimedBy === currentUser;
-      const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
-      const canComplete = isMine && activity.state === 'in_progress';
+      const stage = activity.activeStage || getActiveStage(activity);
+      const stageIndex = stage ? (activity.stages || []).findIndex(s => s.id === stage.id) : -1;
+      const stageName = stage ? (stage.name || `Stage ${stageIndex >= 0 ? stageIndex + 1 : 1}`) : 'Stage';
+      const stageState = activity.state || 'waiting';
+      const isMine = stage?.claimedBy === currentUser;
+      const canClaim = stageState === 'ready' && !stage?.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
+      const canComplete = isMine && stageState === 'in_progress';
+      const isFullyCompleted = isActivityFullyCompleted(activity);
 
       const comments = [...(activity.comments || [])].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-      const history = [...(activity.history || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      const history = [...(activity.stageHistory || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       const handleAddComment = () => {
         if (!currentUser || !commentText.trim()) return;
@@ -96,14 +101,14 @@
       const actionButtons = (
         <div className="flex flex-wrap gap-2">
           {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm">Claim</button>}
-          {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
+          {isMine && !isFullyCompleted && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
           {canComplete && <button onClick={() => onComplete(activity.id)} className="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded text-sm">Complete</button>}
           {canComplete && operator?.canRequestRevision && dependencies.length > 0 && (
             <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded text-sm">Request revision</button>
           )}
-          {!activity.completedAt && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
-          {!activity.completedAt && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
-          {!activity.completedAt && <button onClick={() => onDelete(activity.id)} className="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded text-sm">Delete</button>}
+          {!isFullyCompleted && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
+          {!isFullyCompleted && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
+          {!isFullyCompleted && <button onClick={() => onDelete(activity.id)} className="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded text-sm">Delete</button>}
         </div>
       );
 
@@ -124,19 +129,44 @@
                   <div className="space-y-2 text-sm text-gray-200">
                     {role && <div><span className="text-gray-400">Role:</span> {role.name}</div>}
                     {operator && <div><span className="text-gray-400">Operator:</span> {operator.name}</div>}
+                    {stage && <div><span className="text-gray-400">Stage:</span> {stageName}</div>}
+                    {stage && <div><span className="text-gray-400">Stage state:</span> {stageState.replace('_', ' ')}</div>}
                     {activity.deliverable && <div><span className="text-gray-400">Deliverable:</span> {activity.deliverable}</div>}
-                    {activity.claimedBy && <div><span className="text-gray-400">Claimed by:</span> {activity.claimedBy} {activity.priority && <span className="text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 ml-2 rounded">{activity.priority}</span>}</div>}
+                    {stage?.claimedBy && (
+                      <div>
+                        <span className="text-gray-400">Claimed by:</span> {stage.claimedBy}
+                        {stage.priority && <span className="text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 ml-2 rounded">{stage.priority}</span>}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500">Created {formatTimestamp(activity.createdAt)}</div>
                   </div>
                 </div>
+                {activity.stageStates && activity.stageStates.length > 0 && (
+                  <div className="text-sm text-gray-200">
+                    <div className="text-gray-400 mb-2">Stage progression</div>
+                    <div className="space-y-1">
+                      {activity.stageStates.map(({ stage: stageItem, state }) => {
+                        const idx = (activity.stages || []).findIndex(s => s.id === stageItem.id);
+                        const label = state === 'in_progress' ? 'In progress' : state === 'completed' ? 'Completed' : state === 'waiting' ? 'Waiting' : state === 'ready' ? 'Ready' : state === 'skipped' ? 'Skipped' : state;
+                        const isCurrent = stage?.id === stageItem.id;
+                        return (
+                          <div key={stageItem.id} className={`flex items-center justify-between rounded px-3 py-2 ${isCurrent ? 'bg-blue-900/30 border border-blue-700/40' : 'bg-gray-800/60 border border-gray-700/60'}`}>
+                            <div>{stageItem.name || `Stage ${idx + 1}`}</div>
+                            <div className="text-xs text-gray-300">{label}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {dependencies.length > 0 && (
                   <div className="text-sm text-gray-200">
                     <div className="text-gray-400 mb-2">Waiting on</div>
                     <ul className="space-y-1 ml-2">
                       {dependencies.map((dep, idx) => (
-                        <li key={idx} className="flex items-center gap-2">
+                        <li key={idx} className={`flex items-center gap-2 ${isActivityFullyCompleted(dep.activity) ? 'line-through text-gray-500' : ''}`}>
                           <ChevronRightIcon className="w-3 h-3 text-gray-500" />
-                          <span className={dep.activity.completedAt ? 'line-through text-gray-500' : ''}>{dep.activity.title}</span>
+                          <span className={isActivityFullyCompleted(dep.activity) ? 'line-through text-gray-500' : ''}>{dep.activity.title}</span>
                           {dep.edgeType === 'loops' && <span className="text-xs text-orange-400">(revision)</span>}
                         </li>
                       ))}
@@ -209,7 +239,10 @@
                     history.map(entry => (
                       <div key={entry.id} className="flex items-start gap-2">
                         <div className="text-xs text-gray-500 w-28 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</div>
-                        <div className="flex-1">{entry.text}</div>
+                        <div className="flex-1">
+                          <div className="text-gray-100">{formatStageHistory(entry, activity)}</div>
+                          {entry.stageId && <div className="text-xxs text-gray-500 uppercase mt-0.5">{(activity.stages || []).find(s => s.id === entry.stageId)?.name || `Stage ${(activity.stages || []).findIndex(s => s.id === entry.stageId) + 1}`}</div>}
+                        </div>
                       </div>
                     ))
                   )}
@@ -219,6 +252,39 @@
           </div>
         </div>
       );
+    }
+
+    function formatStageHistory(entry, activity) {
+      const stages = activity?.stages || [];
+      const stage = entry.stageId ? getStageById(activity, entry.stageId) : null;
+      const stageIdx = entry.stageId ? stages.findIndex(s => s.id === entry.stageId) : -1;
+      const stageLabel = stage ? (stage.name || `Stage ${stageIdx >= 0 ? stageIdx + 1 : 1}`) : 'this activity';
+      const actor = entry.actor || 'Someone';
+
+      switch (entry.action) {
+        case 'created':
+          return `${actor} created this activity`;
+        case 'spawned':
+          return `${actor} spawned this activity`;
+        case 'claimed':
+          return `${actor} claimed ${stageLabel}${entry.priority ? ` (priority: ${entry.priority})` : ''}`;
+        case 'unclaimed':
+          return `${actor} unclaimed ${stageLabel}`;
+        case 'completed':
+          return `${actor} completed ${stageLabel}`;
+        case 'skipped':
+          return `${actor} skipped ${stageLabel}`;
+        case 'commented':
+          return `${actor} commented`;
+        case 'attachment_added': {
+          const attachment = (activity.attachments || []).find(att => att.id === entry.attachmentId);
+          return `${actor} attached ${attachment?.name || 'a file'}`;
+        }
+        case 'revision_requested':
+          return `${actor} requested a revision`;
+        default:
+          return entry.text || `${actor} updated ${stageLabel}`;
+      }
     }
 
     function formatTimestamp(timestamp) {
@@ -264,19 +330,93 @@
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>;
     }
 
-    function computeActivityState(activity, allActivities, edges) {
-      if (activity.completedAt) return 'completed';
-      if (activity.claimedBy) return 'in_progress';
-      
-      const inbound = edges.filter(e => e.dstId === activity.id);
-      if (inbound.length === 0) return 'ready';
-      
-      const allComplete = inbound.every(edge => {
-        const src = allActivities.find(a => a.id === edge.srcId);
-        return src?.completedAt;
+    function getStageById(activity, stageId) {
+      return (activity?.stages || []).find(stage => stage.id === stageId) || null;
+    }
+
+    function getActiveStage(activity) {
+      if (!activity) return null;
+      return getStageById(activity, activity.currentStage) || (activity.stages || [])[0] || null;
+    }
+
+    function isStageSkipped(activity, stageId) {
+      return (activity?.skippedStages || []).includes(stageId);
+    }
+
+    function isStageComplete(activity, stage) {
+      if (!stage) return false;
+      if (isStageSkipped(activity, stage.id)) return true;
+      return Boolean(stage.completedAt);
+    }
+
+    function isActivityFullyCompleted(activity) {
+      const stages = activity?.stages || [];
+      if (stages.length === 0) return Boolean(activity?.completedAt);
+      return stages.every(stage => isStageComplete(activity, stage));
+    }
+
+    function updateStageReadReceipts(readBy = {}, stageId, userName, timestamp) {
+      if (!stageId || !userName) return readBy;
+      return {
+        ...readBy,
+        [stageId]: {
+          ...(readBy[stageId] || {}),
+          [userName]: timestamp
+        }
+      };
+    }
+
+    function getStageHistory(activity, stageId) {
+      return (activity?.stageHistory || []).filter(entry => entry.stageId === stageId);
+    }
+
+    function lastStageAction(activity, stageId) {
+      const history = getStageHistory(activity, stageId);
+      return history.length > 0 ? history[history.length - 1] : null;
+    }
+
+    function areStageDependenciesMet(activity, stage, allActivities) {
+      const deps = stage?.dependencies || [];
+      if (deps.length === 0) return true;
+      return deps.every(dep => {
+        if (dep.type === 'stage') {
+          const targetActivity = allActivities.find(a => a.id === dep.activityId);
+          if (!targetActivity) return false;
+          const targetStage = getStageById(targetActivity, dep.stageId);
+          if (!targetStage) return false;
+          return isStageComplete(targetActivity, targetStage);
+        }
+        if (dep.type === 'activity') {
+          const targetActivity = allActivities.find(a => a.id === dep.activityId);
+          return targetActivity ? isActivityFullyCompleted(targetActivity) : false;
+        }
+        return true;
       });
-      
-      return allComplete ? 'ready' : 'waiting';
+    }
+
+    function computeActivityState(activity, stage, allActivities, edges) {
+      if (!activity) return 'waiting';
+      const resolvedStage = stage || getActiveStage(activity);
+      if (!resolvedStage) return 'waiting';
+
+      if (isStageSkipped(activity, resolvedStage.id)) return 'skipped';
+      if (resolvedStage.completedAt) return 'completed';
+      if (resolvedStage.claimedBy) return 'in_progress';
+
+      const lastAction = lastStageAction(activity, resolvedStage.id);
+      if (lastAction?.action === 'skipped') return 'skipped';
+      if (lastAction?.action === 'completed') return 'completed';
+      if (lastAction?.action === 'claimed' && !lastAction?.reverted) return 'in_progress';
+
+      const inbound = edges.filter(e => e.dstId === activity.id);
+      const inboundSatisfied = inbound.every(edge => {
+        const src = allActivities.find(a => a.id === edge.srcId);
+        return src ? isActivityFullyCompleted(src) : false;
+      });
+
+      const stageDependenciesSatisfied = areStageDependenciesMet(activity, resolvedStage, allActivities);
+
+      return inboundSatisfied && stageDependenciesSatisfied ? 'ready' : 'waiting';
     }
 
     function EventOperator() {
@@ -345,35 +485,99 @@
 
       const createActivity = (projectId, flowId, title, roleId, deliverable = '') => {
         const timestamp = Date.now();
+        const activityId = `a-${timestamp}`;
+        const stageId = `stage-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
+        const role = roles.find(r => r.id === roleId);
+
+        const stage = {
+          id: stageId,
+          name: role?.name || 'Stage 1',
+          roleId,
+          operatorType: role?.operatorType || null,
+          claimedBy: null,
+          priority: null,
+          claimedAt: null,
+          completedAt: null,
+          dependencies: []
+        };
+
+        const historyEntry = {
+          id: `sh-${timestamp}`,
+          stageId,
+          action: 'created',
+          actor: currentUser || 'Someone',
+          timestamp
+        };
+
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
             activities: [...f.activities, {
-              id: `a-${Date.now()}`,
+              id: activityId,
               title,
-              roleId,
               deliverable,
-              claimedBy: null,
-              priority: null,
+              stages: [stage],
+              currentStage: stageId,
+              stageHistory: [historyEntry],
+              skippedStages: [],
               createdAt: timestamp,
               comments: [],
               attachments: [],
-              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} created this activity`, timestamp }],
-              readBy: {}
+              readBy: { [stageId]: {} },
+              completedAt: null
             }]
           } : f)
         } : p));
       };
 
+      const updateActivityRecord = (projectId, flowId, activityId, updater) => {
+        setProjects(prev => prev.map(p => {
+          if (p.id !== projectId) return p;
+          return {
+            ...p,
+            flows: p.flows.map(f => {
+              if (f.id !== flowId) return f;
+              return {
+                ...f,
+                activities: f.activities.map(a => a.id === activityId ? updater(a, f, p) : a)
+              };
+            })
+          };
+        }));
+      };
+
       const updateActivity = (projectId, flowId, activityId, updates) => {
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? { ...a, ...updates } : a)
-          } : f)
-        } : p));
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const { stageRoleId, stageUpdates, ...rest } = updates || {};
+          let nextActivity = { ...activity, ...rest };
+
+          if (stageRoleId) {
+            const activeStageId = nextActivity.currentStage;
+            const role = roles.find(r => r.id === stageRoleId);
+            nextActivity = {
+              ...nextActivity,
+              stages: (nextActivity.stages || []).map(stage => stage.id === activeStageId ? {
+                ...stage,
+                roleId: stageRoleId,
+                operatorType: role?.operatorType || stage.operatorType || null,
+                name: role?.name || stage.name
+              } : stage)
+            };
+          }
+
+          if (stageUpdates?.stageId && stageUpdates?.updates) {
+            nextActivity = {
+              ...nextActivity,
+              stages: (nextActivity.stages || []).map(stage => stage.id === stageUpdates.stageId ? {
+                ...stage,
+                ...stageUpdates.updates
+              } : stage)
+            };
+          }
+
+          return nextActivity;
+        });
       };
 
       const deleteActivity = (projectId, flowId, activityId) => {
@@ -419,76 +623,131 @@
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
         const timestamp = Date.now();
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              claimedBy: currentUser,
-              priority,
-              comments: [...(a.comments || []), {
-                id: `c-${timestamp}`,
-                author: currentUser,
-                content: `${currentUser} claimed this`,
-                createdAt: timestamp,
-                mentions: [],
-                system: true
-              }],
-              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} claimed (priority: ${priority})`, timestamp }],
-              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
-            } : a)
-          } : f)
-        } : p));
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const stage = getActiveStage(activity);
+          if (!stage) return activity;
+          const stageId = stage.id;
+          const stageIndex = (activity.stages || []).findIndex(s => s.id === stageId);
+          const stageLabel = stage.name || `Stage ${stageIndex + 1}`;
+          const actor = currentUser || 'Someone';
+
+          const updatedStage = {
+            ...stage,
+            claimedBy: currentUser,
+            claimedAt: timestamp,
+            priority: priority || stage.priority || null
+          };
+
+          const systemComment = {
+            id: `c-${timestamp}`,
+            author: actor,
+            content: `${actor} claimed ${stageLabel}${priority ? ` (priority: ${priority})` : ''}`,
+            createdAt: timestamp,
+            mentions: [],
+            system: true,
+            stageId
+          };
+
+          return {
+            ...activity,
+            stages: (activity.stages || []).map(s => s.id === stageId ? updatedStage : s),
+            comments: [...(activity.comments || []), systemComment],
+            stageHistory: [...(activity.stageHistory || []), { id: `sh-${timestamp}`, stageId, action: 'claimed', actor, timestamp, priority }],
+            readBy: updateStageReadReceipts(activity.readBy, stageId, currentUser, timestamp)
+          };
+        });
       };
 
       const unclaimActivity = (projectId, flowId, activityId) => {
         const timestamp = Date.now();
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              claimedBy: null,
-              priority: null,
-              comments: [...(a.comments || []), {
-                id: `c-${timestamp}`,
-                author: currentUser,
-                content: `${currentUser} unclaimed this`,
-                createdAt: timestamp,
-                mentions: [],
-                system: true
-              }],
-              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} unclaimed`, timestamp }],
-              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
-            } : a)
-          } : f)
-        } : p));
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const stage = getActiveStage(activity);
+          if (!stage) return activity;
+          const stageId = stage.id;
+          const stageIndex = (activity.stages || []).findIndex(s => s.id === stageId);
+          const stageLabel = stage.name || `Stage ${stageIndex + 1}`;
+          const actor = currentUser || 'Someone';
+
+          const updatedStage = {
+            ...stage,
+            claimedBy: null,
+            claimedAt: null,
+            priority: null
+          };
+
+          const systemComment = {
+            id: `c-${timestamp}`,
+            author: actor,
+            content: `${actor} unclaimed ${stageLabel}`,
+            createdAt: timestamp,
+            mentions: [],
+            system: true,
+            stageId
+          };
+
+          return {
+            ...activity,
+            stages: (activity.stages || []).map(s => s.id === stageId ? updatedStage : s),
+            comments: [...(activity.comments || []), systemComment],
+            stageHistory: [...(activity.stageHistory || []), { id: `sh-${timestamp}`, stageId, action: 'unclaimed', actor, timestamp }],
+            readBy: updateStageReadReceipts(activity.readBy, stageId, currentUser, timestamp)
+          };
+        });
       };
 
-      const completeActivity = (projectId, flowId, activityId) => {
+      const completeActivity = (projectId, flowId, activityId, options = {}) => {
         const timestamp = Date.now();
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              completedAt: timestamp,
-              comments: [...(a.comments || []), {
-                id: `c-${timestamp}`,
-                author: currentUser,
-                content: `${currentUser} completed this`,
-                createdAt: timestamp,
-                mentions: [],
-                system: true
-              }],
-              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${currentUser} marked complete`, timestamp }],
-              readBy: { ...(a.readBy || {}), [currentUser]: timestamp }
-            } : a)
-          } : f)
-        } : p));
+        const { skipStage = false } = options || {};
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const stage = getActiveStage(activity);
+          if (!stage) return activity;
+          const stageId = stage.id;
+          const stageIndex = (activity.stages || []).findIndex(s => s.id === stageId);
+          const stageLabel = stage.name || `Stage ${stageIndex + 1}`;
+          const actor = currentUser || 'Someone';
+
+          const updatedStage = {
+            ...stage,
+            claimedBy: null,
+            claimedAt: null,
+            priority: null,
+            completedAt: skipStage ? stage.completedAt : (stage.completedAt || timestamp)
+          };
+
+          let skippedStages = activity.skippedStages || [];
+          if (skipStage && !skippedStages.includes(stageId)) {
+            skippedStages = [...skippedStages, stageId];
+          }
+
+          const updatedStages = (activity.stages || []).map(s => s.id === stageId ? updatedStage : s);
+          const baseActivity = {
+            ...activity,
+            stages: updatedStages,
+            skippedStages
+          };
+
+          const pendingStage = updatedStages.find(s => !isStageComplete(baseActivity, s));
+          const overallCompletedAt = pendingStage ? activity.completedAt : (activity.completedAt || timestamp);
+
+          const systemComment = {
+            id: `c-${timestamp}`,
+            author: actor,
+            content: `${actor} ${skipStage ? 'skipped' : 'completed'} ${stageLabel}`,
+            createdAt: timestamp,
+            mentions: [],
+            system: true,
+            stageId
+          };
+
+          return {
+            ...baseActivity,
+            currentStage: pendingStage ? pendingStage.id : null,
+            completedAt: overallCompletedAt,
+            comments: [...(activity.comments || []), systemComment],
+            stageHistory: [...(activity.stageHistory || []), { id: `sh-${timestamp}`, stageId, action: skipStage ? 'skipped' : 'completed', actor, timestamp }],
+            readBy: updateStageReadReceipts(activity.readBy, stageId, currentUser, timestamp)
+          };
+        });
       };
 
       const addCommentToActivity = (projectId, flowId, activityId, author, content) => {
@@ -496,33 +755,29 @@
         if (!trimmed) return;
         const timestamp = Date.now();
         const mentions = extractMentions(trimmed);
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              comments: [...(a.comments || []), { id: `c-${timestamp}`, author, content: trimmed, createdAt: timestamp, mentions, system: false }],
-              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${author} commented`, timestamp }],
-              readBy: { ...(a.readBy || {}), [author]: timestamp }
-            } : a)
-          } : f)
-        } : p));
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const stage = getActiveStage(activity);
+          const stageId = stage?.id;
+          return {
+            ...activity,
+            comments: [...(activity.comments || []), { id: `c-${timestamp}`, author, content: trimmed, createdAt: timestamp, mentions, system: false, stageId }],
+            stageHistory: [...(activity.stageHistory || []), { id: `sh-${timestamp}`, stageId, action: 'commented', actor: author, timestamp }],
+            readBy: updateStageReadReceipts(activity.readBy, stageId, author, timestamp)
+          };
+        });
       };
 
       const addAttachmentToActivity = (projectId, flowId, activityId, attachment) => {
         const timestamp = Date.now();
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              attachments: [...(a.attachments || []), { ...attachment, id: attachment.id || `att-${timestamp}`, addedAt: timestamp }],
-              history: [...(a.history || []), { id: `h-${timestamp}`, text: `${attachment.addedBy} attached ${attachment.name}`, timestamp }]
-            } : a)
-          } : f)
-        } : p));
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const stage = getActiveStage(activity);
+          const stageId = stage?.id;
+          return {
+            ...activity,
+            attachments: [...(activity.attachments || []), { ...attachment, id: attachment.id || `att-${timestamp}`, addedAt: timestamp }],
+            stageHistory: [...(activity.stageHistory || []), { id: `sh-${timestamp}`, stageId, action: 'attachment_added', actor: attachment.addedBy || 'Someone', timestamp, attachmentId: attachment.id || `att-${timestamp}` }]
+          };
+        });
       };
 
       const removeAttachmentFromActivity = (projectId, flowId, activityId, attachmentId) => {
@@ -538,23 +793,44 @@
         } : p));
       };
 
-      const markActivityRead = (projectId, flowId, activityId, userName) => {
+      const markActivityRead = (projectId, flowId, activityId, userName, stageIdOverride) => {
         const timestamp = Date.now();
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => a.id === activityId ? {
-              ...a,
-              readBy: { ...(a.readBy || {}), [userName]: timestamp }
-            } : a)
-          } : f)
-        } : p));
+        updateActivityRecord(projectId, flowId, activityId, (activity) => {
+          const stage = stageIdOverride ? getStageById(activity, stageIdOverride) : getActiveStage(activity);
+          const stageId = stage?.id;
+          return {
+            ...activity,
+            readBy: updateStageReadReceipts(activity.readBy, stageId, userName, timestamp)
+          };
+        });
       };
 
       const spawnActivity = (projectId, flowId, sourceActivityId, title, roleId, deliverable = '') => {
-        const newActivityId = `a-${Date.now()}`;
         const timestamp = Date.now();
+        const newActivityId = `a-${timestamp}`;
+        const stageId = `stage-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
+        const role = roles.find(r => r.id === roleId);
+
+        const stage = {
+          id: stageId,
+          name: role?.name || 'Stage 1',
+          roleId,
+          operatorType: role?.operatorType || null,
+          claimedBy: null,
+          priority: null,
+          claimedAt: null,
+          completedAt: null,
+          dependencies: []
+        };
+
+        const historyEntry = {
+          id: `sh-${timestamp}`,
+          stageId,
+          action: 'spawned',
+          actor: currentUser || 'Someone',
+          timestamp
+        };
+
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
@@ -562,15 +838,16 @@
             activities: [...f.activities, {
               id: newActivityId,
               title,
-              roleId,
               deliverable,
-              claimedBy: null,
-              priority: null,
+              stages: [stage],
+              currentStage: stageId,
+              stageHistory: [historyEntry],
+              skippedStages: [],
               createdAt: timestamp,
               comments: [],
               attachments: [],
-              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} spawned this from another activity`, timestamp }],
-              readBy: {}
+              readBy: { [stageId]: {} },
+              completedAt: null
             }],
             edges: [...f.edges, {
               id: `e-${Date.now()}`,
@@ -594,20 +871,36 @@
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
-            activities: [...f.activities, {
-              id: revisionId,
-              title: `${targetActivity.title} (revision)`,
-              roleId: targetActivity.roleId,
-              deliverable: targetActivity.deliverable,
-              claimedBy: null,
-              priority: null,
-              isRevision: true,
-              createdAt: timestamp,
-              comments: [],
-              attachments: [],
-              history: [{ id: `h-${timestamp}`, text: `${currentUser || 'Someone'} requested a revision`, timestamp }],
-              readBy: {}
-            }],
+            activities: [...f.activities, (() => {
+              const baseStage = getActiveStage(targetActivity) || (targetActivity.stages || [])[0] || null;
+              const revisionStageId = `stage-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
+              const baseRole = roles.find(r => r.id === baseStage?.roleId);
+              return {
+                id: revisionId,
+                title: `${targetActivity.title} (revision)`,
+                deliverable: targetActivity.deliverable,
+                stages: [{
+                  id: revisionStageId,
+                  name: baseRole?.name || baseStage?.name || 'Stage 1',
+                  roleId: baseStage?.roleId || null,
+                  operatorType: baseRole?.operatorType || baseStage?.operatorType || null,
+                  claimedBy: null,
+                  priority: null,
+                  claimedAt: null,
+                  completedAt: null,
+                  dependencies: []
+                }],
+                currentStage: revisionStageId,
+                stageHistory: [{ id: `sh-${timestamp}`, stageId: revisionStageId, action: 'revision_requested', actor: currentUser || 'Someone', timestamp }],
+                skippedStages: [],
+                isRevision: true,
+                createdAt: timestamp,
+                comments: [],
+                attachments: [],
+                readBy: { [revisionStageId]: {} },
+                completedAt: null
+              };
+            })()],
             edges: [
               ...f.edges,
               { id: `e-${Date.now()}-1`, type: 'loops', srcId: reviewerId, dstId: revisionId },
@@ -717,11 +1010,13 @@
           totalFlows += project.flows.length;
           project.flows.forEach(flow => {
             flow.activities.forEach(activity => {
-              const state = computeActivityState(activity, flow.activities, flow.edges);
-              if (state === 'ready') totalReady++;
-              else if (state === 'waiting') totalWaiting++;
-              else if (state === 'in_progress') totalInProgress++;
-              else if (state === 'completed') totalCompleted++;
+              const stage = getActiveStage(activity);
+              const state = computeActivityState(activity, stage, flow.activities, flow.edges);
+              const normalized = state === 'skipped' ? 'completed' : state;
+              if (normalized === 'ready') totalReady++;
+              else if (normalized === 'waiting') totalWaiting++;
+              else if (normalized === 'in_progress') totalInProgress++;
+              else if (normalized === 'completed') totalCompleted++;
             });
           });
         });
@@ -734,8 +1029,11 @@
         projects.forEach(project => {
           project.flows.forEach(flow => {
             flow.activities.forEach(activity => {
-              if (activity.claimedBy === currentUser && !activity.completedAt) {
-                work.push({ project, flow, activity });
+              const stages = activity.stages || [];
+              const activeStage = getActiveStage(activity);
+              const stageState = computeActivityState(activity, activeStage, flow.activities, flow.edges);
+              if (stages.some(stage => stage.claimedBy === currentUser && !isStageComplete(activity, stage))) {
+                work.push({ project, flow, activity, stage: activeStage, stageState });
               }
             });
           });
@@ -786,16 +1084,20 @@
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">My Active Work</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {myWork.map(({ project, flow, activity }) => (
-                    <div key={activity.id} className="bg-gray-900 border border-blue-800 rounded-lg p-4 cursor-pointer hover:border-blue-700" onClick={() => onSelectFlow(project, flow)}>
-                      <div className="text-xs text-gray-400 mb-2">{project.name} → {flow.name}</div>
-                      <h4 className="font-medium mb-2">{activity.title}</h4>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded">In Progress</span>
-                        {activity.priority && <span className="text-xs text-gray-400">Priority: {activity.priority}</span>}
+                  {myWork.map(({ project, flow, activity, stage, stageState }) => {
+                    const stateLabel = stageState === 'in_progress' ? 'In Progress' : stageState === 'ready' ? 'Ready' : stageState === 'waiting' ? 'Waiting' : stageState === 'completed' ? 'Completed' : stageState === 'skipped' ? 'Skipped' : stageState;
+                    return (
+                      <div key={`${activity.id}-${stage?.id || 'stage'}`} className="bg-gray-900 border border-blue-800 rounded-lg p-4 cursor-pointer hover:border-blue-700" onClick={() => onSelectFlow(project, flow)}>
+                        <div className="text-xs text-gray-400 mb-2">{project.name} → {flow.name}</div>
+                        <h4 className="font-medium mb-1">{activity.title}</h4>
+                        {stage && <div className="text-xs text-gray-400 mb-2">Stage: {stage.name || `Stage ${(activity.stages || []).findIndex(s => s.id === stage.id) + 1}`}</div>}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded">{stateLabel}</span>
+                          {stage?.priority && <span className="text-xs text-gray-400">Priority: {stage.priority}</span>}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -856,11 +1158,13 @@
       const stats = useMemo(() => {
         let ready = 0, waiting = 0, inProgress = 0, completed = 0;
         flow.activities.forEach(activity => {
-          const state = computeActivityState(activity, flow.activities, flow.edges);
-          if (state === 'ready') ready++;
-          else if (state === 'waiting') waiting++;
-          else if (state === 'in_progress') inProgress++;
-          else if (state === 'completed') completed++;
+          const stage = getActiveStage(activity);
+          const state = computeActivityState(activity, stage, flow.activities, flow.edges);
+          const normalized = state === 'skipped' ? 'completed' : state;
+          if (normalized === 'ready') ready++;
+          else if (normalized === 'waiting') waiting++;
+          else if (normalized === 'in_progress') inProgress++;
+          else if (normalized === 'completed') completed++;
         });
         return { ready, waiting, inProgress, completed };
       }, [flow]);
@@ -898,10 +1202,19 @@
 
     function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead }) {
       const activitiesWithState = useMemo(() => {
-        return flow.activities.map(activity => ({
-          ...activity,
-          state: computeActivityState(activity, flow.activities, flow.edges)
-        }));
+        return flow.activities.map(activity => {
+          const stageStates = (activity.stages || []).map(stage => ({
+            stage,
+            state: computeActivityState(activity, stage, flow.activities, flow.edges)
+          }));
+          const activeStage = getActiveStage(activity);
+          return {
+            ...activity,
+            activeStage,
+            stageStates,
+            state: computeActivityState(activity, activeStage, flow.activities, flow.edges)
+          };
+        });
       }, [flow.activities, flow.edges]);
 
       const [selectedActivityId, setSelectedActivityId] = useState(null);
@@ -910,7 +1223,7 @@
         const grouped = {};
         OPERATORS.forEach(op => {
           grouped[op.id] = activitiesWithState.filter(activity => {
-            const role = roles.find(r => r.id === activity.roleId);
+            const role = roles.find(r => r.id === activity.activeStage?.roleId);
             return role?.operatorType === op.id;
           });
         });
@@ -928,7 +1241,7 @@
       }, [selectedActivityId, activitiesWithState]);
 
       const selectedRole = useMemo(() => {
-        return selectedActivity ? roles.find(r => r.id === selectedActivity.roleId) : null;
+        return selectedActivity && selectedActivity.activeStage ? roles.find(r => r.id === selectedActivity.activeStage.roleId) : null;
       }, [selectedActivity, roles]);
 
       const selectedOperator = useMemo(() => {
@@ -950,7 +1263,8 @@
       const openActivityDetails = (activityId) => {
         setSelectedActivityId(activityId);
         if (currentUser) {
-          onMarkRead(project.id, flow.id, activityId, currentUser);
+          const target = activitiesWithState.find(a => a.id === activityId);
+          onMarkRead(project.id, flow.id, activityId, currentUser, target?.activeStage?.id);
         }
       };
 
@@ -1015,12 +1329,13 @@
                       <p className="text-sm text-gray-400 text-center py-4">No activities</p>
                     ) : (
                       groupedActivities[operator.id]?.map(activity => {
-                        const role = roles.find(r => r.id === activity.roleId);
+                        const role = activity.activeStage ? roles.find(r => r.id === activity.activeStage.roleId) : null;
                         const deps = getDependencies(activity.id);
                         return (
                           <ActivityCard
                             key={activity.id}
                             activity={activity}
+                            stageStates={activity.stageStates}
                             role={role}
                             operator={operator}
                             dependencies={deps}
@@ -1069,23 +1384,39 @@
       );
     }
 
-    function ActivityCard({ activity, role, operator, dependencies, project, currentUser, isSelected, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision }) {
-      const isMine = activity.claimedBy === currentUser;
-      const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
-      const canComplete = isMine && activity.state === 'in_progress';
+    function ActivityCard({ activity, stageStates = [], role, operator, dependencies, project, currentUser, isSelected, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onComplete, onWire, onRequestRevision }) {
+      const stage = activity.activeStage || getActiveStage(activity);
+      const stageState = activity.state || 'waiting';
+      const stageIndex = stage ? (activity.stages || []).findIndex(s => s.id === stage.id) : -1;
+      const stageName = stage ? (stage.name || `Stage ${stageIndex >= 0 ? stageIndex + 1 : 1}`) : 'Stage';
+      const isMine = stage?.claimedBy === currentUser;
+      const canClaim = stageState === 'ready' && !stage?.claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
+      const canComplete = isMine && stageState === 'in_progress';
 
       const stateConfig = {
         ready: { label: 'Ready to start', color: 'bg-green-900 text-green-300' },
         waiting: { label: 'Waiting', color: 'bg-yellow-900 text-yellow-300' },
-        in_progress: { label: isMine ? 'You' : activity.claimedBy, color: isMine ? 'bg-blue-900 text-blue-300' : 'bg-gray-700 text-gray-300' },
-        completed: { label: '✓ Done', color: 'bg-gray-700 text-gray-400' }
+        in_progress: { label: isMine ? 'You' : stage?.claimedBy || 'In progress', color: isMine ? 'bg-blue-900 text-blue-300' : 'bg-gray-700 text-gray-300' },
+        completed: { label: '✓ Done', color: 'bg-gray-700 text-gray-400' },
+        skipped: { label: 'Skipped', color: 'bg-gray-800 text-gray-500' }
       };
 
-      const config = stateConfig[activity.state] || stateConfig.ready;
+      const config = stateConfig[stageState] || stateConfig.ready;
       const commentCount = activity.comments?.length || 0;
       const attachmentCount = activity.attachments?.length || 0;
-      const lastRead = activity.readBy?.[currentUser] || 0;
-      const hasUnread = (activity.comments || []).some(comment => !comment.system && comment.createdAt > lastRead && comment.author !== currentUser);
+      const stageId = stage?.id;
+      const lastRead = stageId ? activity.readBy?.[stageId]?.[currentUser] || 0 : 0;
+      const hasUnread = (activity.comments || []).some(comment => (!comment.system && (!comment.stageId || comment.stageId === stageId) && comment.createdAt > lastRead && comment.author !== currentUser));
+
+      const stageStateStyles = {
+        ready: 'bg-green-900/60 text-green-300',
+        waiting: 'bg-yellow-900/60 text-yellow-200',
+        in_progress: 'bg-blue-900/60 text-blue-200',
+        completed: 'bg-gray-800 text-gray-400',
+        skipped: 'bg-gray-900 text-gray-500'
+      };
+
+      const isFullyCompleted = isActivityFullyCompleted(activity);
 
       return (
         <div
@@ -1103,19 +1434,35 @@
             </div>
           </div>
           {activity.isRevision && <div className="text-xs text-orange-400 mb-2">🔄 Revision requested</div>}
-          {role && <div className="text-xs text-gray-300 mb-2">{role.name} • {role.userIds.map(uid => project.users.find(u => u.id === uid)?.name).filter(Boolean).join(', ')}</div>}
+          {role && <div className="text-xs text-gray-300 mb-1">{role.name} • {role.userIds.map(uid => project.users.find(u => u.id === uid)?.name).filter(Boolean).join(', ')}</div>}
+          {stage && <div className="text-xxs text-gray-500 uppercase tracking-wide mb-2">Active stage: {stageName}</div>}
           {activity.deliverable && <div className="text-xs text-gray-200 mb-2"><span className="text-gray-400">Delivers:</span> {activity.deliverable}</div>}
           {dependencies.length > 0 && (
             <div className="text-xs text-gray-300 mb-2">
               <div className="text-gray-400 mb-1">Waiting on:</div>
               <ul className="space-y-0.5 ml-2">
                 {dependencies.slice(0, 2).map((dep, i) => (
-                  <li key={i} className={dep.activity.completedAt ? 'line-through text-gray-500' : ''}>
+                  <li key={i} className={isActivityFullyCompleted(dep.activity) ? 'line-through text-gray-500' : ''}>
                     • {dep.activity.title} {dep.edgeType === 'loops' && '(revision)'}
                   </li>
                 ))}
                 {dependencies.length > 2 && <li className="text-gray-400">+{dependencies.length - 2} more</li>}
               </ul>
+            </div>
+          )}
+          {stageStates.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2 mb-2">
+              {stageStates.map(({ stage: stageItem, state }) => {
+                const idx = (activity.stages || []).findIndex(s => s.id === stageItem.id);
+                const label = state === 'in_progress' ? 'In Progress' : state === 'completed' ? 'Completed' : state === 'waiting' ? 'Waiting' : state === 'ready' ? 'Ready' : state === 'skipped' ? 'Skipped' : state;
+                const style = stageStateStyles[state] || stageStateStyles.ready;
+                const isCurrent = stageId === stageItem.id;
+                return (
+                  <span key={stageItem.id} className={`text-[10px] px-2 py-0.5 rounded ${style} ${isCurrent ? 'ring-1 ring-blue-400' : ''}`}>
+                    {(stageItem.name || `Stage ${idx + 1}`)}: {label}
+                  </span>
+                );
+              })}
             </div>
           )}
           <div className="flex items-center gap-3 text-xs text-gray-400 mt-3">
@@ -1128,14 +1475,14 @@
             {activity.createdAt && <div className="ml-auto text-gray-500">{formatRelativeTime(activity.createdAt)}</div>}
           </div>
           <div className="flex gap-1 mt-3 flex-wrap">
-            {!activity.completedAt && (
+            {!isFullyCompleted && (
               <>
                 <button onClick={(e) => { e.stopPropagation(); onEdit(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
                 <button onClick={(e) => { e.stopPropagation(); onDelete(activity.id); }} className="bg-red-900 hover:bg-red-800 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
               </>
             )}
             {canClaim && <button onClick={(e) => { e.stopPropagation(); onClaim(activity.id); }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
-            {isMine && !activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
+            {isMine && !isFullyCompleted && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
             {canComplete && (
               <>
                 <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
@@ -1144,7 +1491,7 @@
                 )}
               </>
             )}
-            {!activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
+            {!isFullyCompleted && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
           </div>
         </div>
       );
@@ -1282,15 +1629,17 @@
     }
 
     function EditActivityModal({ project, activity, roles, onClose, onUpdate, onCreateRole, onUpdateRole }) {
+      const activeStage = activity ? getActiveStage(activity) : null;
       const [title, setTitle] = useState(activity?.title || '');
       const [deliverable, setDeliverable] = useState(activity?.deliverable || '');
-      const [selectedRole, setSelectedRole] = useState(activity?.roleId || '');
+      const [selectedRole, setSelectedRole] = useState(activeStage?.roleId || '');
 
       useEffect(() => {
         if (activity) {
           setTitle(activity.title);
           setDeliverable(activity.deliverable || '');
-          setSelectedRole(activity.roleId);
+          const stage = getActiveStage(activity);
+          setSelectedRole(stage?.roleId || '');
         }
       }, [activity]);
 
@@ -1298,9 +1647,9 @@
         <Modal onClose={onClose} title="Edit Activity">
           <div className="space-y-4">
             <div><label className="block text-sm text-gray-200 mb-2">Activity name</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Write article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
-            <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Stage role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
             <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={deliverable} onChange={(e) => setDeliverable(e.target.value)} placeholder="e.g., 800-word article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (title && selectedRole) onUpdate({ title, roleId: selectedRole, deliverable }); }} disabled={!title || !selectedRole} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Save</button></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (title && selectedRole) onUpdate({ title, stageRoleId: selectedRole, deliverable }); }} disabled={!title || !selectedRole} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Save</button></div>
           </div>
         </Modal>
       );
@@ -1324,10 +1673,13 @@
 
     function ClaimActivityModal({ activity, roles, project, onClose, onClaim }) {
       const [priority, setPriority] = useState('medium');
+      const stage = activity ? getActiveStage(activity) : null;
+      const stageIndex = stage ? (activity.stages || []).findIndex(s => s.id === stage.id) : -1;
       return (
         <Modal onClose={onClose} title="Claim Activity">
           <div className="space-y-4">
             <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium mb-2 text-gray-100">{activity?.title}</h3></div>
+            {stage && <div className="text-xs text-gray-300">Stage: {stage.name || `Stage ${stageIndex >= 0 ? stageIndex + 1 : 1}`}</div>}
             <div><label className="block text-sm text-gray-200 mb-3">Priority</label><div className="space-y-2">{[{ value: 'high', label: 'High - Focus' }, { value: 'medium', label: 'Medium - Normal' }, { value: 'low', label: 'Low - When available' }].map(opt => <label key={opt.value} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="radio" name="priority" value={opt.value} checked={priority === opt.value} onChange={(e) => setPriority(e.target.value)} /><span className="text-sm text-gray-100">{opt.label}</span></label>)}</div></div>
             <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => onClaim(priority)} className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">Claim</button></div>
           </div>
@@ -1344,6 +1696,8 @@
       const [newRoleName, setNewRoleName] = useState('');
       const [newRoleOperator, setNewRoleOperator] = useState('');
       const [selectedUserIds, setSelectedUserIds] = useState([]);
+      const stage = activity ? getActiveStage(activity) : null;
+      const stageIndex = stage ? (activity.stages || []).findIndex(s => s.id === stage.id) : -1;
 
       const handleCreateRole = () => {
         if (newRoleName && newRoleOperator) {
@@ -1361,6 +1715,7 @@
         <Modal onClose={onClose} title="Complete Activity" size="large">
           <div className="space-y-4">
             <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium text-gray-100">{activity?.title}</h3></div>
+            {stage && <div className="text-xs text-gray-300">Completing stage: {stage.name || `Stage ${stageIndex >= 0 ? stageIndex + 1 : 1}`}</div>}
             <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4"><label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={spawnNext} onChange={(e) => setSpawnNext(e.target.checked)} className="w-4 h-4" /><span className="text-sm text-gray-100">Spawn next activity (what does this enable?)</span></label></div>
             {spawnNext && (
               <>
@@ -1399,7 +1754,7 @@
       const [newRoleOperator, setNewRoleOperator] = useState('');
       const [selectedUserIds, setSelectedUserIds] = useState([]);
 
-      const availableActivities = flow.activities.filter(a => a.id !== activity.id && !a.completedAt);
+      const availableActivities = flow.activities.filter(a => a.id !== activity.id && !isActivityFullyCompleted(a));
 
       const handleCreateRole = () => {
         if (newRoleName && newRoleOperator) {
@@ -1421,7 +1776,12 @@
             <div className="flex gap-2 p-2 bg-gray-800 rounded"><button onClick={() => setMode('existing')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'existing' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Existing Activity</button><button onClick={() => setMode('new')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'new' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Create New</button></div>
             {mode === 'existing' ? (
               <>
-                <div><label className="block text-sm text-gray-200 mb-2">Select activity</label><select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableActivities.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}</select></div>
+                <div><label className="block text-sm text-gray-200 mb-2">Select activity</label><select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableActivities.map(a => {
+                  const stage = getActiveStage(a);
+                  const state = computeActivityState(a, stage, flow.activities, flow.edges);
+                  const label = stage ? `${a.title} — ${stage.name || 'Stage'} (${state.replace('_', ' ')})` : `${a.title} (${state.replace('_', ' ')})`;
+                  return <option key={a.id} value={a.id}>{label}</option>;
+                })}</select></div>
                 <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (targetId) onWire(targetId, edgeType); }} disabled={!targetId} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Wire</button></div>
               </>
             ) : (
