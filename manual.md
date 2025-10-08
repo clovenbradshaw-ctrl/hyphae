@@ -35,7 +35,7 @@ Every activity in Event Operator is assigned to one of nine operator types. Thes
 
 1. **Starter** - Designs and initiates work
 2. **Doer** - Produces artifacts and outputs
-3. **Connector** - Links work across contexts
+3. **Compiler** - Packages work into reviewable form
 4. **Reviewer** - Evaluates and segments quality
 5. **Approver** - Alters state with authority
 6. **Documenter** - Records and formalizes
@@ -516,7 +516,7 @@ Approver: "Approve design" ──┬──> Doer: "Build landing page"
 **Example:**
 ```
 Doer: "Write section 1" ──┐
-Doer: "Write section 2" ──┼──> Connector: "Integrate all sections"
+Doer: "Write section 2" ──┼──> Compiler: "Integrate all sections"
 Doer: "Write section 3" ──┘
 ```
 
@@ -592,7 +592,7 @@ The title should make it obvious what needs to be done.
 
 The nine operator types help you think about coordination holistically:
 - Starting work (Starter)
-- Doing work (Doer, Connector)
+- Doing work (Doer, Compiler)
 - Quality gates (Reviewer, Approver)
 - Recording (Documenter)
 - Distribution (Convener, Steward)
