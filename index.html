@@ -8,29 +8,49 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
-    const { Plus, ArrowLeft, Layers, GitBranch, ChevronRight, X } = lucide;
+    const { useState, useEffect, useMemo } = React;
 
     const OPERATORS = [
-      { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', seq: 1, deliverableType: 'foundation' },
-      { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', seq: 2, deliverableType: 'core' },
-      { id: 'connector', name: 'Connector', desc: 'Links work across contexts', seq: 3, deliverableType: 'core' },
-      { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', seq: 4, deliverableType: 'foundation' },
-      { id: 'approver', name: 'Approver', desc: 'Alters state with authority', seq: 5, deliverableType: 'foundation' },
-      { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', seq: 6, deliverableType: 'foundation' },
-      { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', seq: 7, deliverableType: 'distribution' },
-      { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', seq: 8, deliverableType: 'distribution' },
-      { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, deliverableType: 'analytics' }
+      { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', seq: 1, canRequestRevision: false },
+      { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', seq: 2, canRequestRevision: false },
+      { id: 'connector', name: 'Connector', desc: 'Links work across contexts', seq: 3, canRequestRevision: false },
+      { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', seq: 4, canRequestRevision: true },
+      { id: 'approver', name: 'Approver', desc: 'Alters state with authority', seq: 5, canRequestRevision: true },
+      { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', seq: 6, canRequestRevision: false },
+      { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', seq: 7, canRequestRevision: false },
+      { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', seq: 8, canRequestRevision: false },
+      { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, canRequestRevision: false }
     ];
 
-    function Icon({ icon: IconComponent, ...props }) {
-      return React.createElement(IconComponent, props);
+    // Icons
+    function PlusIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>;
+    }
+    function ArrowLeftIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>;
+    }
+    function LayersIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>;
+    }
+    function GitBranchIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>;
+    }
+    function ChevronRightIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>;
+    }
+    function XIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>;
+    }
+    function LinkIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>;
+    }
+    function RefreshIcon(props) {
+      return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
     }
 
     function EventOperator() {
@@ -44,143 +64,163 @@
       const [modalData, setModalData] = useState({});
 
       useEffect(() => {
-        if (selectedProject) {
+        if (selectedProject && projects.length > 0) {
           const updated = projects.find(p => p.id === selectedProject.id);
-          if (updated) {
-            setSelectedProject(updated);
-          }
+          if (updated) setSelectedProject(updated);
         }
       }, [projects]);
 
       useEffect(() => {
         if (selectedFlow && selectedProject) {
           const updated = selectedProject.flows.find(f => f.id === selectedFlow.id);
-          if (updated) {
-            setSelectedFlow(updated);
-          }
+          if (updated) setSelectedFlow(updated);
         }
       }, [selectedProject]);
 
       const createProject = (name, team, user) => {
-        const project = {
-          id: `project-${Date.now()}`,
-          name,
-          team,
-          createdBy: user,
-          createdAt: Date.now(),
-          flows: []
-        };
+        const project = { id: `p-${Date.now()}`, name, team, flows: [] };
         setProjects([...projects, project]);
         setCurrentUser(user);
         setView('projects');
       };
 
       const createFlow = (projectId, name, deliverables, description) => {
-        setProjects(prevProjects => prevProjects.map(p => {
-          if (p.id === projectId) {
-            const flow = {
-              id: `flow-${Date.now()}`,
-              name,
-              deliverables,
-              description,
-              createdBy: currentUser,
-              createdAt: Date.now(),
-              activities: []
-            };
-            return { ...p, flows: [...p.flows, flow] };
-          }
-          return p;
-        }));
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: [...p.flows, {
+            id: `f-${Date.now()}`,
+            name,
+            deliverables,
+            description,
+            activities: [],
+            edges: []
+          }]
+        } : p));
       };
 
-      const createActivity = (projectId, flowId, title, roleId, accountabilities = [], deliverable = '', timing = null) => {
-        setProjects(projects.map(p => {
-          if (p.id === projectId) {
-            return {
-              ...p,
-              flows: p.flows.map(f => {
-                if (f.id === flowId) {
-                  const activity = {
-                    id: `activity-${Date.now()}`,
-                    title,
-                    roleId,
-                    accountabilities,
-                    deliverable,
-                    timing,
-                    status: 'unclaimed',
-                    claimedBy: null,
-                    priority: null,
-                    createdBy: currentUser,
-                    createdAt: Date.now()
-                  };
-                  return { ...f, activities: [...f.activities, activity] };
-                }
-                return f;
-              })
-            };
-          }
-          return p;
-        }));
+      const createActivity = (projectId, flowId, title, roleId, deliverable = '') => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: [...f.activities, {
+              id: `a-${Date.now()}`,
+              title,
+              roleId,
+              deliverable,
+              claimedBy: null,
+              priority: null
+            }]
+          } : f)
+        } : p));
       };
 
-      const createRole = (name, operatorType, people = []) => {
+      const createEdge = (projectId, flowId, srcId, dstId, type) => {
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            edges: [...f.edges, {
+              id: `e-${Date.now()}`,
+              type,
+              srcId,
+              dstId
+            }]
+          } : f)
+        } : p));
+      };
+
+      const createRole = (name, operatorType) => {
         const role = {
-          id: `role-${Date.now()}`,
+          id: `r-${Date.now()}`,
           name,
           operatorType,
-          people: [...people, currentUser],
-          createdBy: currentUser
+          people: [currentUser]
         };
         setRoles([...roles, role]);
         return role;
       };
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
-        setProjects(projects.map(p => {
-          if (p.id === projectId) {
-            return {
-              ...p,
-              flows: p.flows.map(f => {
-                if (f.id === flowId) {
-                  return {
-                    ...f,
-                    activities: f.activities.map(a =>
-                      a.id === activityId
-                        ? { ...a, status: 'claimed', claimedBy: currentUser, priority }
-                        : a
-                    )
-                  };
-                }
-                return f;
-              })
-            };
-          }
-          return p;
-        }));
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              claimedBy: currentUser,
+              priority
+            } : a)
+          } : f)
+        } : p));
       };
 
       const completeActivity = (projectId, flowId, activityId) => {
-        setProjects(projects.map(p => {
-          if (p.id === projectId) {
-            return {
-              ...p,
-              flows: p.flows.map(f => {
-                if (f.id === flowId) {
-                  return {
-                    ...f,
-                    activities: f.activities.map(a =>
-                      a.id === activityId
-                        ? { ...a, status: 'completed', completedAt: Date.now() }
-                        : a
-                    )
-                  };
-                }
-                return f;
-              })
-            };
-          }
-          return p;
-        }));
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: f.activities.map(a => a.id === activityId ? {
+              ...a,
+              completedAt: Date.now()
+            } : a)
+          } : f)
+        } : p));
+      };
+
+      const spawnActivity = (projectId, flowId, sourceActivityId, title, roleId, deliverable = '') => {
+        const newActivityId = `a-${Date.now()}`;
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: [...f.activities, {
+              id: newActivityId,
+              title,
+              roleId,
+              deliverable,
+              claimedBy: null,
+              priority: null
+            }],
+            edges: [...f.edges, {
+              id: `e-${Date.now()}`,
+              type: 'enables',
+              srcId: sourceActivityId,
+              dstId: newActivityId
+            }]
+          } : f)
+        } : p));
+      };
+
+      const requestRevision = (projectId, flowId, reviewerId, targetActivityId) => {
+        const flow = projects.find(p => p.id === projectId)?.flows.find(f => f.id === flowId);
+        const targetActivity = flow?.activities.find(a => a.id === targetActivityId);
+        if (!targetActivity) return;
+
+        const revisionId = `a-${Date.now()}`;
+        const role = roles.find(r => r.id === targetActivity.roleId);
+        const operator = OPERATORS.find(op => op.id === role?.operatorType);
+        
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          flows: p.flows.map(f => f.id === flowId ? {
+            ...f,
+            activities: [...f.activities, {
+              id: revisionId,
+              title: `${targetActivity.title} (revision)`,
+              roleId: targetActivity.roleId,
+              deliverable: targetActivity.deliverable,
+              claimedBy: null,
+              priority: null,
+              isRevision: true
+            }],
+            edges: [
+              ...f.edges,
+              { id: `e-${Date.now()}-1`, type: 'loops', srcId: reviewerId, dstId: revisionId },
+              { id: `e-${Date.now()}-2`, type: 'enables', srcId: revisionId, dstId: reviewerId }
+            ]
+          } : f)
+        } : p));
       };
 
       let mainContent;
@@ -188,32 +228,9 @@
       if (view === 'welcome') {
         mainContent = <WelcomeView onCreate={createProject} />;
       } else if (view === 'projects') {
-        mainContent = (
-          <ProjectsView
-            projects={projects}
-            currentUser={currentUser}
-            onSelectProject={(project) => {
-              setSelectedProject(project);
-              setView('flows');
-            }}
-            onCreateProject={() => setShowModal('createProject')}
-          />
-        );
+        mainContent = <ProjectsView projects={projects} currentUser={currentUser} onSelectProject={(p) => { setSelectedProject(p); setView('flows'); }} onCreateProject={() => setShowModal('createProject')} />;
       } else if (view === 'flows' && selectedProject) {
-        mainContent = (
-          <FlowsView
-            project={selectedProject}
-            onBack={() => {
-              setSelectedProject(null);
-              setView('projects');
-            }}
-            onSelectFlow={(flow) => {
-              setSelectedFlow(flow);
-              setView('activities');
-            }}
-            onCreateFlow={() => setShowModal('createFlow')}
-          />
-        );
+        mainContent = <FlowsView project={selectedProject} onBack={() => { setSelectedProject(null); setView('projects'); }} onSelectFlow={(f) => { setSelectedFlow(f); setView('activities'); }} onCreateFlow={() => setShowModal('createFlow')} />;
       } else if (view === 'activities' && selectedProject && selectedFlow) {
         mainContent = (
           <ActivitiesView
@@ -221,18 +238,12 @@
             flow={selectedFlow}
             roles={roles}
             currentUser={currentUser}
-            onBack={() => {
-              setSelectedFlow(null);
-              setView('flows');
-            }}
+            onBack={() => { setSelectedFlow(null); setView('flows'); }}
             onCreateActivity={() => setShowModal('createActivity')}
-            onClaimActivity={(activityId) => {
-              setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId });
-              setShowModal('claimActivity');
-            }}
-            onCompleteActivity={(activityId) => {
-              completeActivity(selectedProject.id, selectedFlow.id, activityId);
-            }}
+            onClaimActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('claimActivity'); }}
+            onCompleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('completeActivity'); }}
+            onWireActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('wireActivity'); }}
+            onRequestRevision={(reviewerId, targetId) => requestRevision(selectedProject.id, selectedFlow.id, reviewerId, targetId)}
           />
         );
       }
@@ -240,55 +251,12 @@
       return (
         <>
           {mainContent}
-
-          {showModal === 'createProject' && (
-            <CreateProjectModal
-              onClose={() => setShowModal(null)}
-              onCreate={(name, team) => {
-                createProject(name, team, currentUser);
-                setShowModal(null);
-              }}
-            />
-          )}
-
-          {showModal === 'createFlow' && selectedProject && (
-            <CreateFlowModal
-              onClose={() => setShowModal(null)}
-              onCreate={(name, deliverables, description) => {
-                createFlow(selectedProject.id, name, deliverables, description);
-                setShowModal(null);
-              }}
-            />
-          )}
-
-          {showModal === 'createActivity' && selectedProject && selectedFlow && (
-            <CreateActivityModal
-              flow={selectedFlow}
-              roles={roles}
-              onClose={() => setShowModal(null)}
-              onCreate={(title, roleId, accountabilities, deliverable, timing) => {
-                createActivity(selectedProject.id, selectedFlow.id, title, roleId, accountabilities, deliverable, timing);
-                setShowModal(null);
-              }}
-              onCreateRole={createRole}
-            />
-          )}
-
-          {showModal === 'claimActivity' && selectedFlow && (
-            <ClaimActivityModal
-              activity={selectedFlow.activities.find(a => a.id === modalData.activityId)}
-              roles={roles}
-              onClose={() => {
-                setShowModal(null);
-                setModalData({});
-              }}
-              onClaim={(priority) => {
-                claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority);
-                setShowModal(null);
-                setModalData({});
-              }}
-            />
-          )}
+          {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, team) => { createProject(name, team, currentUser); setShowModal(null); }} />}
+          {showModal === 'createFlow' && selectedProject && <CreateFlowModal onClose={() => setShowModal(null)} onCreate={(name, del, desc) => { createFlow(selectedProject.id, name, del, desc); setShowModal(null); }} />}
+          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal flow={selectedFlow} roles={roles} onClose={() => setShowModal(null)} onCreate={(title, roleId, deliverable) => { createActivity(selectedProject.id, selectedFlow.id, title, roleId, deliverable); setShowModal(null); }} onCreateRole={createRole} />}
+          {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(spawnNext) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId); if (spawnNext) { spawnActivity(modalData.projectId, modalData.flowId, modalData.activityId, spawnNext.title, spawnNext.roleId, spawnNext.deliverable); } setShowModal(null); setModalData({}); }} onCreateRole={createRole} />}
+          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={(targetId, edgeType) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType); setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable, edgeType) => { const newId = `a-${Date.now()}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} />}
         </>
       );
     }
@@ -303,65 +271,28 @@
           <div className="max-w-2xl w-full">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4">EVENT_OPERATOR</h1>
-              <p className="text-gray-300 text-lg">Projects contain flows, flows contain activities</p>
+              <p className="text-gray-300 text-lg">Emergent coordination through dependencies</p>
             </div>
-
             <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
               <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
-              
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm text-gray-200 mb-2">Project name</label>
-                  <input
-                    type="text"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="e.g., Marketing, Product Development"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  />
+                  <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Marketing, Product Development" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
                 </div>
-                
                 <div>
                   <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
-                  <input
-                    type="text"
-                    value={team}
-                    onChange={(e) => setTeam(e.target.value)}
-                    placeholder="e.g., alex, pat, sam"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  />
+                  <input type="text" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g., alex, pat, sam" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
                 </div>
-                
                 <div>
                   <label className="block text-sm text-gray-200 mb-2">Your name</label>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    placeholder="Your name"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  />
+                  <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Your name" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
                 </div>
               </div>
-
-              <button
-                onClick={() => {
-                  if (projectName && userName) {
-                    const teamList = team ? team.split(',').map(s => s.trim()) : [userName];
-                    onCreate(projectName, teamList, userName);
-                  }
-                }}
-                disabled={!projectName || !userName}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
-              >
-                Create Project
-              </button>
+              <button onClick={() => { if (projectName && userName) { const teamList = team ? team.split(',').map(s => s.trim()) : [userName]; onCreate(projectName, teamList, userName); } }} disabled={!projectName || !userName} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors">Create Project</button>
             </div>
-
             <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Projects organize related coordination cycles. Within each project, you will create flows that represent complete coordination cycles moving through the nine-operator sequence. Each flow produces up to three deliverables.
-              </p>
+              <p className="text-sm text-gray-300 leading-relaxed">Activities spawn new activities. Dependencies compute states. Structure emerges through action.</p>
             </div>
           </div>
         </div>
@@ -373,46 +304,18 @@
         <div className="min-h-screen bg-gray-950 text-gray-100">
           <div className="max-w-7xl mx-auto p-6">
             <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-2xl font-bold">Projects</h1>
-                <p className="text-gray-300">You: {currentUser}</p>
-              </div>
-              <button
-                onClick={onCreateProject}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <Icon icon={Plus} className="w-4 h-4" />
-                New Project
-              </button>
+              <div><h1 className="text-2xl font-bold">Projects</h1><p className="text-gray-300">You: {currentUser}</p></div>
+              <button onClick={onCreateProject} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"><PlusIcon className="w-4 h-4" />New Project</button>
             </div>
-
             {projects.length === 0 ? (
-              <div className="text-center py-20">
-                <Icon icon={Layers} className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No projects yet</p>
-                <button
-                  onClick={onCreateProject}
-                  className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
-                >
-                  Create Your First Project
-                </button>
-              </div>
+              <div className="text-center py-20"><LayersIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" /><p className="text-gray-400 mb-4">No projects yet</p><button onClick={onCreateProject} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">Create Your First Project</button></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map(project => (
-                  <div
-                    key={project.id}
-                    onClick={() => onSelectProject(project)}
-                    className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
-                  >
+                  <div key={project.id} onClick={() => onSelectProject(project)} className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors">
                     <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
-                    <p className="text-sm text-gray-300 mb-4">
-                      Team: {project.team.join(', ')}
-                    </p>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">{project.flows.length} flows</span>
-                      <Icon icon={ChevronRight} className="w-4 h-4 text-gray-600" />
-                    </div>
+                    <p className="text-sm text-gray-300 mb-4">Team: {project.team.join(', ')}</p>
+                    <div className="flex items-center justify-between text-sm"><span className="text-gray-400">{project.flows.length} flows</span><ChevronRightIcon className="w-4 h-4 text-gray-600" /></div>
                   </div>
                 ))}
               </div>
@@ -426,73 +329,23 @@
       return (
         <div className="min-h-screen bg-gray-950 text-gray-100">
           <div className="max-w-7xl mx-auto p-6">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"
-            >
-              <Icon icon={ArrowLeft} className="w-4 h-4" />
-              Back to Projects
-            </button>
-
+            <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"><ArrowLeftIcon className="w-4 h-4" />Back to Projects</button>
             <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-2xl font-bold">{project.name}</h1>
-                <p className="text-gray-300">Coordination Flows</p>
-              </div>
-              <button
-                onClick={onCreateFlow}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <Icon icon={Plus} className="w-4 h-4" />
-                New Flow
-              </button>
+              <div><h1 className="text-2xl font-bold">{project.name}</h1><p className="text-gray-300">Coordination Flows</p></div>
+              <button onClick={onCreateFlow} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"><PlusIcon className="w-4 h-4" />New Flow</button>
             </div>
-
             {project.flows.length === 0 ? (
-              <div className="text-center py-20">
-                <Icon icon={GitBranch} className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No flows yet</p>
-                <button
-                  onClick={onCreateFlow}
-                  className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
-                >
-                  Create Your First Flow
-                </button>
-              </div>
+              <div className="text-center py-20"><GitBranchIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" /><p className="text-gray-400 mb-4">No flows yet</p><button onClick={onCreateFlow} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">Create Your First Flow</button></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {project.flows.map(flow => {
-                  const completedActivities = flow.activities.filter(a => a.status === 'completed').length;
-                  const totalActivities = flow.activities.length;
-                  
+                  const completed = flow.activities.filter(a => a.completedAt).length;
                   return (
-                    <div
-                      key={flow.id}
-                      onClick={() => onSelectFlow(flow)}
-                      className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors"
-                    >
+                    <div key={flow.id} onClick={() => onSelectFlow(flow)} className="bg-gray-900 border border-gray-800 rounded-lg p-6 cursor-pointer hover:border-gray-700 transition-colors">
                       <h3 className="text-lg font-semibold mb-2">{flow.name}</h3>
-                      {flow.description && (
-                        <p className="text-sm text-gray-300 mb-4">{flow.description}</p>
-                      )}
-                      
-                      <div className="mb-4">
-                        <div className="text-xs text-gray-400 mb-2">Deliverables:</div>
-                        <div className="space-y-1">
-                          {flow.deliverables.map((deliverable, idx) => (
-                            <div key={idx} className="text-sm text-gray-200">
-                              • {deliverable}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">
-                          {totalActivities} activities ({completedActivities} completed)
-                        </span>
-                        <Icon icon={ChevronRight} className="w-4 h-4 text-gray-600" />
-                      </div>
+                      {flow.description && <p className="text-sm text-gray-300 mb-4">{flow.description}</p>}
+                      <div className="mb-4"><div className="text-xs text-gray-400 mb-2">Deliverables:</div><div className="space-y-1">{flow.deliverables.map((d, i) => <div key={i} className="text-sm text-gray-200">• {d}</div>)}</div></div>
+                      <div className="flex items-center justify-between text-sm"><span className="text-gray-400">{flow.activities.length} activities ({completed} completed)</span><ChevronRightIcon className="w-4 h-4 text-gray-600" /></div>
                     </div>
                   );
                 })}
@@ -503,87 +356,85 @@
       );
     }
 
-    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onClaimActivity, onCompleteActivity }) {
-      const groupedActivities = {};
+    function computeActivityState(activity, allActivities, edges) {
+      if (activity.completedAt) return 'completed';
+      if (activity.claimedBy) return 'in_progress';
       
-      OPERATORS.forEach(op => {
-        groupedActivities[op.id] = flow.activities.filter(activity => {
-          const role = roles.find(r => r.id === activity.roleId);
-          return role?.operatorType === op.id;
-        });
+      const inbound = edges.filter(e => e.dstId === activity.id);
+      if (inbound.length === 0) return 'ready';
+      
+      const allComplete = inbound.every(edge => {
+        const src = allActivities.find(a => a.id === edge.srcId);
+        return src?.completedAt;
       });
+      
+      return allComplete ? 'ready' : 'blocked';
+    }
+
+    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onClaimActivity, onCompleteActivity, onWireActivity, onRequestRevision }) {
+      const activitiesWithState = useMemo(() => {
+        return flow.activities.map(activity => ({
+          ...activity,
+          state: computeActivityState(activity, flow.activities, flow.edges)
+        }));
+      }, [flow.activities, flow.edges]);
+
+      const groupedActivities = useMemo(() => {
+        const grouped = {};
+        OPERATORS.forEach(op => {
+          grouped[op.id] = activitiesWithState.filter(activity => {
+            const role = roles.find(r => r.id === activity.roleId);
+            return role?.operatorType === op.id;
+          });
+        });
+        return grouped;
+      }, [activitiesWithState, roles]);
+
+      const getDependencies = (activityId) => {
+        const inbound = flow.edges.filter(e => e.dstId === activityId);
+        return inbound.map(edge => {
+          const src = flow.activities.find(a => a.id === edge.srcId);
+          return src ? { activity: src, edgeType: edge.type } : null;
+        }).filter(Boolean);
+      };
 
       return (
         <div className="min-h-screen bg-gray-950 text-gray-100">
           <div className="max-w-7xl mx-auto p-6">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"
-            >
-              <Icon icon={ArrowLeft} className="w-4 h-4" />
-              Back to Flows
-            </button>
-
+            <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-gray-100 mb-6 transition-colors"><ArrowLeftIcon className="w-4 h-4" />Back to Flows</button>
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
               <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="text-sm text-gray-400 mb-1">{project.name}</div>
-                  <h1 className="text-2xl font-bold mb-2">{flow.name}</h1>
-                  {flow.description && (
-                    <p className="text-gray-300">{flow.description}</p>
-                  )}
-                </div>
-                <button
-                  onClick={onCreateActivity}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Icon icon={Plus} className="w-4 h-4" />
-                  New Activity
-                </button>
+                <div><div className="text-sm text-gray-400 mb-1">{project.name}</div><h1 className="text-2xl font-bold mb-2">{flow.name}</h1>{flow.description && <p className="text-gray-300">{flow.description}</p>}</div>
+                <button onClick={onCreateActivity} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"><PlusIcon className="w-4 h-4" />New Activity</button>
               </div>
-
-              <div>
-                <div className="text-sm text-gray-300 mb-2">Flow Deliverables:</div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {flow.deliverables.map((deliverable, idx) => (
-                    <div key={idx} className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-200">
-                      {deliverable}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <div><div className="text-sm text-gray-300 mb-2">Flow Deliverables:</div><div className="grid grid-cols-1 md:grid-cols-3 gap-3">{flow.deliverables.map((d, i) => <div key={i} className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-200">{d}</div>)}</div></div>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {OPERATORS.map(operator => (
                 <div key={operator.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
                   <div className="mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold">{operator.seq}. {operator.name}</h3>
-                      <span className="text-xs bg-gray-800 px-2 py-1 rounded">
-                        {groupedActivities[operator.id]?.length || 0}
-                      </span>
-                    </div>
+                    <div className="flex items-center justify-between mb-1"><h3 className="font-semibold">{operator.seq}. {operator.name}</h3><span className="text-xs bg-gray-800 px-2 py-1 rounded">{groupedActivities[operator.id]?.length || 0}</span></div>
                     <p className="text-xs text-gray-300">{operator.desc}</p>
-                    <div className="text-xs text-gray-400 mt-1">
-                      Contributes to: {operator.deliverableType} deliverables
-                    </div>
                   </div>
-
                   <div className="space-y-2">
                     {groupedActivities[operator.id]?.length === 0 ? (
                       <p className="text-sm text-gray-400 text-center py-4">No activities</p>
                     ) : (
                       groupedActivities[operator.id]?.map(activity => {
                         const role = roles.find(r => r.id === activity.roleId);
+                        const deps = getDependencies(activity.id);
                         return (
                           <ActivityCard
                             key={activity.id}
                             activity={activity}
                             role={role}
+                            operator={operator}
+                            dependencies={deps}
                             currentUser={currentUser}
                             onClaim={onClaimActivity}
                             onComplete={onCompleteActivity}
+                            onWire={onWireActivity}
+                            onRequestRevision={onRequestRevision}
                           />
                         );
                       })
@@ -597,85 +448,53 @@
       );
     }
 
-    function ActivityCard({ activity, role, currentUser, onClaim, onComplete }) {
+    function ActivityCard({ activity, role, operator, dependencies, currentUser, onClaim, onComplete, onWire, onRequestRevision }) {
       const isMine = activity.claimedBy === currentUser;
-      const canClaim = activity.status === 'unclaimed' && role?.people.includes(currentUser);
+      const canClaim = activity.state === 'ready' && !activity.claimedBy && role?.people.includes(currentUser);
+      const canComplete = isMine && activity.state === 'in_progress';
 
-      const getTimingDisplay = () => {
-        if (!activity.timing) return null;
-        if (activity.timing.type === 'estimated') {
-          return `~${activity.timing.hours}h`;
-        } else {
-          const date = new Date(activity.timing.date);
-          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
+      const stateConfig = {
+        ready: { label: 'Ready to start', color: 'bg-green-900 text-green-300' },
+        blocked: { label: 'Blocked', color: 'bg-yellow-900 text-yellow-300' },
+        in_progress: { label: isMine ? 'You' : activity.claimedBy, color: isMine ? 'bg-blue-900 text-blue-300' : 'bg-gray-700 text-gray-300' },
+        completed: { label: '✓ Done', color: 'bg-gray-700 text-gray-400' }
       };
+
+      const config = stateConfig[activity.state] || stateConfig.ready;
 
       return (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
           <div className="flex items-start justify-between mb-2">
-            <h4 className="font-medium text-sm">{activity.title}</h4>
-            <span className={`text-xs px-2 py-0.5 rounded ${
-              activity.status === 'completed' ? 'bg-green-900 text-green-300' :
-              isMine ? 'bg-blue-900 text-blue-300' :
-              activity.claimedBy ? 'bg-gray-700 text-gray-300' :
-              'bg-gray-700 text-gray-300'
-            }`}>
-              {activity.status === 'completed' ? '✓ Done' :
-               isMine ? 'You' :
-               activity.claimedBy || 'Available'}
-            </span>
+            <h4 className="font-medium text-sm flex-1">{activity.title}</h4>
+            <span className={`text-xs px-2 py-0.5 rounded ml-2 ${config.color}`}>{config.label}</span>
           </div>
-
-          {role && (
+          {activity.isRevision && <div className="text-xs text-orange-400 mb-2">🔄 Revision requested</div>}
+          {role && <div className="text-xs text-gray-300 mb-2">{role.name} • {role.people.join(', ')}</div>}
+          {activity.deliverable && <div className="text-xs text-gray-200 mb-2"><span className="text-gray-400">Delivers:</span> {activity.deliverable}</div>}
+          {dependencies.length > 0 && (
             <div className="text-xs text-gray-300 mb-2">
-              {role.name} • {role.people.join(', ')}
-            </div>
-          )}
-
-          {activity.deliverable && (
-            <div className="text-xs text-gray-200 mb-2">
-              <span className="text-gray-400">Delivers:</span> {activity.deliverable}
-            </div>
-          )}
-
-          {activity.accountabilities && activity.accountabilities.length > 0 && (
-            <div className="text-xs text-gray-300 mb-2">
-              <div className="text-gray-400 mb-1">Accountabilities:</div>
-              <ul className="space-y-0.5 ml-3">
-                {activity.accountabilities.slice(0, 2).map((acc, idx) => (
-                  <li key={idx} className="list-disc">{acc}</li>
+              <div className="text-gray-400 mb-1">Waiting on:</div>
+              <ul className="space-y-0.5 ml-2">
+                {dependencies.slice(0, 2).map((dep, i) => (
+                  <li key={i} className={dep.activity.completedAt ? 'line-through text-gray-500' : ''}>
+                    • {dep.activity.title} {dep.edgeType === 'loops' && '(revision)'}
+                  </li>
                 ))}
-                {activity.accountabilities.length > 2 && (
-                  <li className="text-gray-400">+{activity.accountabilities.length - 2} more</li>
-                )}
+                {dependencies.length > 2 && <li className="text-gray-400">+{dependencies.length - 2} more</li>}
               </ul>
             </div>
           )}
-
-          {activity.timing && (
-            <div className="text-xs text-gray-400 mb-2">
-              {getTimingDisplay()}
-            </div>
-          )}
-
           <div className="flex gap-2 mt-2">
-            {canClaim && (
-              <button
-                onClick={() => onClaim(activity.id)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors"
-              >
-                Claim
-              </button>
+            {canClaim && <button onClick={() => onClaim(activity.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
+            {canComplete && (
+              <>
+                <button onClick={() => onComplete(activity.id)} className="flex-1 bg-green-600 hover:g-green-700 text-xs py-1 px-2 rounded transition-colors">Complete</button>
+                {operator.canRequestRevision && dependencies.length > 0 && (
+                  <button onClick={() => { const lastDep = dependencies[dependencies.length - 1]; if (lastDep) onRequestRevision(activity.id, lastDep.activity.id); }} className="flex-1 bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1"><RefreshIcon className="w-3 h-3" />Revise</button>
+                )}
+              </>
             )}
-            {isMine && activity.status === 'claimed' && (
-              <button
-                onClick={() => onComplete(activity.id)}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors"
-              >
-                Complete
-              </button>
-            )}
+            {activity.state !== 'completed' && <button onClick={() => onWire(activity.id)} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Wire to another activity"><LinkIcon className="w-3 h-3" /></button>}
           </div>
         </div>
       );
@@ -684,53 +503,12 @@
     function CreateProjectModal({ onClose, onCreate }) {
       const [name, setName] = useState('');
       const [team, setTeam] = useState('');
-
       return (
         <Modal onClose={onClose} title="Create Project">
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Project name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Marketing, Product Development"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
-              <input
-                type="text"
-                value={team}
-                onChange={(e) => setTeam(e.target.value)}
-                placeholder="e.g., alex, pat, sam"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onClose}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (name) {
-                    const teamList = team ? team.split(',').map(s => s.trim()) : [];
-                    onCreate(name, teamList);
-                  }
-                }}
-                disabled={!name}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-              >
-                Create Project
-              </button>
-            </div>
+            <div><label className="block text-sm text-gray-200 mb-2">Project name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Marketing" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label><input type="text" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g., alex, pat, sam" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (name) { const teamList = team ? team.split(',').map(s => s.trim()) : []; onCreate(name, teamList); } }} disabled={!name} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create</button></div>
           </div>
         </Modal>
       );
@@ -740,88 +518,14 @@
       const [name, setName] = useState('');
       const [description, setDescription] = useState('');
       const [deliverables, setDeliverables] = useState(['', '', '']);
-
       return (
         <Modal onClose={onClose} title="Create Flow" size="large">
           <div className="space-y-4">
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
-              <p className="text-sm text-gray-100">
-                Flows represent complete coordination cycles through the nine-operator sequence. Define up to three deliverables that this flow will produce.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Flow name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Newsletter Creation, Product Launch"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Description (optional)</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of this coordination cycle"
-                rows={2}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">
-                Flow Deliverables (1-3 required)
-              </label>
-              <div className="space-y-2">
-                {deliverables.map((deliverable, idx) => (
-                  <input
-                    key={idx}
-                    type="text"
-                    value={deliverable}
-                    onChange={(e) => {
-                      const updated = [...deliverables];
-                      updated[idx] = e.target.value;
-                      setDeliverables(updated);
-                    }}
-                    placeholder={
-                      idx === 0 ? 'e.g., Published article' :
-                      idx === 1 ? 'e.g., Social media promotion package' :
-                      'e.g., Performance analytics report'
-                    }
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400"
-                  />
-                ))}
-              </div>
-              <p className="text-xs text-gray-300 mt-2">
-                Activities will implicitly contribute to these deliverables through their operator types.
-              </p>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onClose}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const validDeliverables = deliverables.filter(d => d.trim());
-                  if (name && validDeliverables.length > 0) {
-                    onCreate(name, validDeliverables, description);
-                  }
-                }}
-                disabled={!name || !deliverables.some(d => d.trim())}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-              >
-                Create Flow
-              </button>
-            </div>
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4"><p className="text-sm text-gray-100">Flows represent coordination cycles. Define up to three deliverables.</p></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Flow name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Newsletter Creation" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Description (optional)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description" rows={2} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400" /></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Flow Deliverables (1-3)</label><div className="space-y-2">{deliverables.map((d, i) => <input key={i} type="text" value={d} onChange={(e) => { const u = [...deliverables]; u[i] = e.target.value; setDeliverables(u); }} placeholder={i === 0 ? 'e.g., Published article' : i === 1 ? 'e.g., Social media package' : 'e.g., Analytics report'} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400" />)}</div></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { const valid = deliverables.filter(d => d.trim()); if (name && valid.length > 0) onCreate(name, valid, description); }} disabled={!name || !deliverables.some(d => d.trim())} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create</button></div>
           </div>
         </Modal>
       );
@@ -833,11 +537,7 @@
       const [selectedRole, setSelectedRole] = useState('');
       const [newRoleName, setNewRoleName] = useState('');
       const [selectedOperator, setSelectedOperator] = useState('');
-      const [accountabilities, setAccountabilities] = useState(['']);
       const [deliverable, setDeliverable] = useState('');
-      const [timingType, setTimingType] = useState('estimated');
-      const [estimatedHours, setEstimatedHours] = useState('');
-      const [dueDate, setDueDate] = useState('');
 
       const handleCreateRole = () => {
         if (newRoleName && selectedOperator) {
@@ -847,286 +547,29 @@
         }
       };
 
-      const handleSelectExistingRole = () => {
-        if (selectedRole) {
-          setStep('activity');
-        }
-      };
-
-      const handleCreateActivity = () => {
-        if (title && selectedRole) {
-          const validAccountabilities = accountabilities.filter(a => a.trim());
-          const timing = timingType === 'estimated' 
-            ? { type: 'estimated', hours: parseFloat(estimatedHours) || 0 }
-            : { type: 'dueDate', date: dueDate };
-          
-          onCreate(title, selectedRole, validAccountabilities, deliverable, timing);
-        }
-      };
-
-      const addAccountability = () => {
-        setAccountabilities([...accountabilities, '']);
-      };
-
-      const removeAccountability = (index) => {
-        setAccountabilities(accountabilities.filter((_, i) => i !== index));
-      };
-
-      const updateAccountability = (index, value) => {
-        const updated = [...accountabilities];
-        updated[index] = value;
-        setAccountabilities(updated);
-      };
-
-      const selectedOperatorObj = OPERATORS.find(op => op.id === selectedOperator);
-
       return (
         <Modal onClose={onClose} title="Create Activity" size="large">
           <div className="space-y-4">
             {step === 'role' ? (
               <>
-                <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4">
-                  <p className="text-sm text-gray-100">
-                    Each activity requires a role. The role defines who performs the work and what type of operator it represents in the coordination sequence.
-                  </p>
-                </div>
-
+                <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4"><p className="text-sm text-gray-100">Each activity needs a role (who does it) and operator type (what kind of work).</p></div>
                 {roles.length > 0 && (
                   <>
-                    <div>
-                      <label className="block text-sm text-gray-200 mb-2">Select an existing role</label>
-                      <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
-                      >
-                        <option value="">Choose a role...</option>
-                        {roles.map(role => {
-                          const op = OPERATORS.find(o => o.id === role.operatorType);
-                          return (
-                            <option key={role.id} value={role.id}>
-                              {role.name} ({op?.name}) - {role.people.join(', ')}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-
-                    {selectedRole && (
-                      <button
-                        onClick={handleSelectExistingRole}
-                        className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors"
-                      >
-                        Continue with Selected Role
-                      </button>
-                    )}
-
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-700"></div>
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-gray-900 text-gray-300">or create a new role</span>
-                      </div>
-                    </div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Select existing role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+                    {selectedRole && <button onClick={() => setStep('activity')} className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">Continue</button>}
+                    <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700"></div></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-gray-900 text-gray-300">or create new role</span></div></div>
                   </>
                 )}
-
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">New role name</label>
-                  <input
-                    type="text"
-                    value={newRoleName}
-                    onChange={(e) => setNewRoleName(e.target.value)}
-                    placeholder="e.g., Content Writer"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Select operator type</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {OPERATORS.map(op => (
-                      <button
-                        key={op.id}
-                        onClick={() => setSelectedOperator(op.id)}
-                        className={`p-3 border rounded text-left transition-colors ${
-                          selectedOperator === op.id
-                            ? 'border-blue-500 bg-blue-500/20'
-                            : 'border-gray-700 hover:border-gray-600'
-                        }`}
-                      >
-                        <div className="font-medium text-sm">{op.seq}. {op.name}</div>
-                        <div className="text-xs text-gray-300 mt-1">{op.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={onClose}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreateRole}
-                    disabled={!newRoleName || !selectedOperator}
-                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-                  >
-                    Create Role & Continue
-                  </button>
-                </div>
+                <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Content Writer" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                <div><label className="block text-sm text-gray-200 mb-2">Select operator type</label><div className="grid grid-cols-3 gap-2">{OPERATORS.map(op => <button key={op.id} onClick={() => setSelectedOperator(op.id)} className={`p-3 border rounded text-left transition-colors ${selectedOperator === op.id ? 'border-blue-500 bg-blue-500/20' : 'border-gray-700 hover:border-gray-600'}`}><div className="font-medium text-sm">{op.seq}. {op.name}</div><div className="text-xs text-gray-300 mt-1">{op.desc}</div></button>)}</div></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={handleCreateRole} disabled={!newRoleName || !selectedOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role & Continue</button></div>
               </>
             ) : (
               <>
-                <div className="bg-gray-800 rounded p-3 mb-4">
-                  <div className="text-sm text-gray-300">Role selected:</div>
-                  <div className="font-medium text-gray-100">
-                    {roles.find(r => r.id === selectedRole)?.name}
-                  </div>
-                  {selectedOperatorObj && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      Contributes to: {selectedOperatorObj.deliverableType} deliverables
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setStep('role')}
-                    className="text-xs text-blue-400 hover:text-blue-300 mt-1"
-                  >
-                    Change role
-                  </button>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Activity name</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g., Write housing article"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                    autoFocus
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">
-                    Accountabilities
-                    <span className="ml-1 text-gray-400">(What needs to be done?)</span>
-                  </label>
-                  <div className="space-y-2">
-                    {accountabilities.map((accountability, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={accountability}
-                          onChange={(e) => updateAccountability(index, e.target.value)}
-                          placeholder="e.g., Research local housing trends"
-                          className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400"
-                        />
-                        {accountabilities.length > 1 && (
-                          <button
-                            onClick={() => removeAccountability(index)}
-                            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
-                          >
-                            <Icon icon={X} className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={addAccountability}
-                    className="mt-2 text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    + Add accountability
-                  </button>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">
-                    Deliverable
-                    <span className="ml-1 text-gray-400">(What gets produced?)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={deliverable}
-                    onChange={(e) => setDeliverable(e.target.value)}
-                    placeholder="e.g., 800-word article with 2 images"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Timeline</label>
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
-                      <input
-                        type="radio"
-                        name="timingType"
-                        value="estimated"
-                        checked={timingType === 'estimated'}
-                        onChange={(e) => setTimingType(e.target.value)}
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm text-gray-100 block mb-1">Estimated time to complete</span>
-                        {timingType === 'estimated' && (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={estimatedHours}
-                              onChange={(e) => setEstimatedHours(e.target.value)}
-                              placeholder="0"
-                              min="0"
-                              step="0.5"
-                              className="w-20 bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
-                            />
-                            <span className="text-sm text-gray-300">hours</span>
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                    
-                    <label className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
-                      <input
-                        type="radio"
-                        name="timingType"
-                        value="dueDate"
-                        checked={timingType === 'dueDate'}
-                        onChange={(e) => setTimingType(e.target.value)}
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm text-gray-100 block mb-1">Specific due date</span>
-                        {timingType === 'dueDate' && (
-                          <input
-                            type="date"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            className="bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm text-gray-100"
-                          />
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => setStep('role')}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleCreateActivity}
-                    disabled={!title}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
-                  >
-                    Create Activity
-                  </button>
-                </div>
+                <div className="bg-gray-800 rounded p-3 mb-4"><div className="text-sm text-gray-300">Role: {roles.find(r => r.id === selectedRole)?.name}</div><button onClick={() => setStep('role')} className="text-xs text-blue-400 hover:text-blue-300 mt-1">Change</button></div>
+                <div><label className="block text-sm text-gray-200 mb-2">Activity name</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Write article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
+                <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={deliverable} onChange={(e) => setDeliverable(e.target.value)} placeholder="e.g., 800-word article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                <div className="flex gap-3 pt-4"><button onClick={() => setStep('role')} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Back</button><button onClick={() => { if (title && selectedRole) onCreate(title, selectedRole, deliverable); }} disabled={!title} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create</button></div>
               </>
             )}
           </div>
@@ -1136,87 +579,129 @@
 
     function ClaimActivityModal({ activity, roles, onClose, onClaim }) {
       const [priority, setPriority] = useState('medium');
-      
-      const role = roles.find(r => r.id === activity?.roleId);
-      const operator = OPERATORS.find(op => op.id === role?.operatorType);
-
       return (
         <Modal onClose={onClose} title="Claim Activity">
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-4">
-              <h3 className="font-medium mb-2 text-gray-100">{activity?.title}</h3>
-              {role && (
-                <p className="text-sm text-gray-300">
-                  Role: {role.name} ({operator?.name})
-                </p>
-              )}
-            </div>
+            <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium mb-2 text-gray-100">{activity?.title}</h3></div>
+            <div><label className="block text-sm text-gray-200 mb-3">Priority</label><div className="space-y-2">{[{ value: 'high', label: 'High - Focus' }, { value: 'medium', label: 'Medium - Normal' }, { value: 'low', label: 'Low - When available' }].map(opt => <label key={opt.value} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="radio" name="priority" value={opt.value} checked={priority === opt.value} onChange={(e) => setPriority(e.target.value)} /><span className="text-sm text-gray-100">{opt.label}</span></label>)}</div></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => onClaim(priority)} className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">Claim</button></div>
+          </div>
+        </Modal>
+      );
+    }
 
-            <div>
-              <label className="block text-sm text-gray-200 mb-3">Priority</label>
-              <div className="space-y-2">
-                {[
-                  { value: 'high', label: 'High - I will focus on this' },
-                  { value: 'medium', label: 'Medium - Among other work' },
-                  { value: 'low', label: 'Low - When I have space' }
-                ].map(opt => (
-                  <label
-                    key={opt.value}
-                    className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"
-                  >
-                    <input
-                      type="radio"
-                      name="priority"
-                      value={opt.value}
-                      checked={priority === opt.value}
-                      onChange={(e) => setPriority(e.target.value)}
-                    />
-                    <span className="text-sm text-gray-100">{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+    function CompleteActivityModal({ activity, flow, roles, onClose, onComplete, onCreateRole }) {
+      const [spawnNext, setSpawnNext] = useState(false);
+      const [nextTitle, setNextTitle] = useState('');
+      const [nextRoleId, setNextRoleId] = useState('');
+      const [nextDeliverable, setNextDeliverable] = useState('');
+      const [showNewRole, setShowNewRole] = useState(false);
+      const [newRoleName, setNewRoleName] = useState('');
+      const [newRoleOperator, setNewRoleOperator] = useState('');
 
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onClose}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => onClaim(priority)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors"
-              >
-                Claim Activity
-              </button>
-            </div>
+      const handleCreateRole = () => {
+        if (newRoleName && newRoleOperator) {
+          const role = onCreateRole(newRoleName, newRoleOperator);
+          setNextRoleId(role.id);
+          setShowNewRole(false);
+        }
+      };
+
+      return (
+        <Modal onClose={onClose} title="Complete Activity" size="large">
+          <div className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium text-gray-100">{activity?.title}</h3></div>
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4"><label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={spawnNext} onChange={(e) => setSpawnNext(e.target.checked)} className="w-4 h-4" /><span className="text-sm text-gray-100">Spawn next activity (what does this enable?)</span></label></div>
+            {spawnNext && (
+              <>
+                <div><label className="block text-sm text-gray-200 mb-2">Next activity title</label><input type="text" value={nextTitle} onChange={(e) => setNextTitle(e.target.value)} placeholder="e.g., Review article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                {!showNewRole ? (
+                  <>
+                    <div><label className="block text-sm text-gray-200 mb-2">Role for next activity</label><select value={nextRoleId} onChange={(e) => setNextRoleId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+                    <button onClick={() => setShowNewRole(true)} className="text-sm text-blue-400 hover:text-blue-300">+ Create new role</button>
+                  </>
+                ) : (
+                  <>
+                    <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Operator type</label><select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}</select></div>
+                    <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
+                  </>
+                )}
+                <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={nextDeliverable} onChange={(e) => setNextDeliverable(e.target.value)} placeholder="e.g., Reviewed article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+              </>
+            )}
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { onComplete(spawnNext && nextTitle && nextRoleId ? { title: nextTitle, roleId: nextRoleId, deliverable: nextDeliverable } : null); }} disabled={spawnNext && (!nextTitle || !nextRoleId)} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Complete</button></div>
+          </div>
+        </Modal>
+      );
+    }
+
+    function WireActivityModal({ activity, flow, roles, onClose, onWire, onCreate, onCreateRole }) {
+      const [mode, setMode] = useState('existing');
+      const [targetId, setTargetId] = useState('');
+      const [edgeType, setEdgeType] = useState('enables');
+      const [newTitle, setNewTitle] = useState('');
+      const [newRoleId, setNewRoleId] = useState('');
+      const [newDeliverable, setNewDeliverable] = useState('');
+      const [showNewRole, setShowNewRole] = useState(false);
+      const [newRoleName, setNewRoleName] = useState('');
+      const [newRoleOperator, setNewRoleOperator] = useState('');
+
+      const availableActivities = flow.activities.filter(a => a.id !== activity.id && !a.completedAt);
+
+      const handleCreateRole = () => {
+        if (newRoleName && newRoleOperator) {
+          const role = onCreateRole(newRoleName, newRoleOperator);
+          setNewRoleId(role.id);
+          setShowNewRole(false);
+        }
+      };
+
+      return (
+        <Modal onClose={onClose} title="Wire Activity" size="large">
+          <div className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium text-gray-100">{activity?.title}</h3><p className="text-sm text-gray-300 mt-1">Connect this activity to another</p></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Connection type</label><select value={edgeType} onChange={(e) => setEdgeType(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="enables">Enables (this unlocks the other)</option><option value="requires">Requires (this depends on the other)</option></select></div>
+            <div className="flex gap-2 p-2 bg-gray-800 rounded"><button onClick={() => setMode('existing')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'existing' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Existing Activity</button><button onClick={() => setMode('new')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'new' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Create New</button></div>
+            {mode === 'existing' ? (
+              <>
+                <div><label className="block text-sm text-gray-200 mb-2">Select activity</label><select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableActivities.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}</select></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (targetId) onWire(targetId, edgeType); }} disabled={!targetId} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Wire</button></div>
+              </>
+            ) : (
+              <>
+                <div><label className="block text-sm text-gray-200 mb-2">New activity title</label><input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g., Review article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                {!showNewRole ? (
+                  <>
+                    <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={newRoleId} onChange={(e) => setNewRoleId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+                    <button onClick={() => setShowNewRole(true)} className="text-sm text-blue-400 hover:text-blue-300">+ Create new role</button>
+                  </>
+                ) : (
+                  <>
+                    <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Operator type</label><select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}</select></div>
+                    <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
+                  </>
+                )}
+                <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={newDeliverable} onChange={(e) => setNewDeliverable(e.target.value)} placeholder="e.g., Reviewed draft" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (newTitle && newRoleId) onCreate(newTitle, newRoleId, newDeliverable, edgeType); }} disabled={!newTitle || !newRoleId} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create & Wire</button></div>
+              </>
+            )}
           </div>
         </Modal>
       );
     }
 
     function Modal({ children, onClose, title, size = 'medium' }) {
-      const sizeClasses = {
-        medium: 'max-w-2xl',
-        large: 'max-w-4xl'
-      };
-
+      const sizeClasses = { medium: 'max-w-2xl', large: 'max-w-4xl' };
       return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
           <div className={`bg-gray-900 rounded-lg border border-gray-800 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
             <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
-              <button
-                onClick={onClose}
-                className="text-gray-300 hover:text-gray-100 transition-colors"
-              >
-                <Icon icon={X} className="w-5 h-5" />
-              </button>
+              <button onClick={onClose} className="text-gray-300 hover:text-gray-100 transition-colors"><XIcon className="w-5 h-5" /></button>
             </div>
-            <div className="p-6">
-              {children}
-            </div>
+            <div className="p-6">{children}</div>
           </div>
         </div>
       );
@@ -1226,4 +711,4 @@
     root.render(<EventOperator />);
   </script>
 </body>
-</html>v
+</html>
