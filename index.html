@@ -36,6 +36,74 @@
       supportsRevision: op.canRequestRevision
     }));
 
+    function createDefaultStageConfig() {
+      return OPERATORS.map(op => ({
+        stageKey: op.id,
+        active: true,
+        assignedRoleIds: [],
+        assignedUserIds: [],
+        optedOutUserIds: []
+      }));
+    }
+
+    function normalizeStageConfigEntry(entry) {
+      if (!entry) return null;
+      const stageKey = entry.stageKey || entry.operatorKey || entry.key || entry.id;
+      if (!stageKey) return null;
+      return {
+        ...entry,
+        stageKey,
+        active: entry.active !== false,
+        assignedRoleIds: Array.isArray(entry.assignedRoleIds) ? entry.assignedRoleIds : [],
+        assignedUserIds: Array.isArray(entry.assignedUserIds) ? entry.assignedUserIds : [],
+        optedOutUserIds: Array.isArray(entry.optedOutUserIds) ? entry.optedOutUserIds : []
+      };
+    }
+
+    function getFlowStageConfig(flow) {
+      const existing = Array.isArray(flow?.stageConfig) ? flow.stageConfig : [];
+      const normalized = existing
+        .map(normalizeStageConfigEntry)
+        .filter(Boolean);
+      const configMap = new Map(normalized.map(entry => [entry.stageKey, entry]));
+      const ordered = OPERATORS.map(op => {
+        const existingEntry = configMap.get(op.id);
+        if (existingEntry) {
+          return { ...existingEntry, stageKey: op.id, active: existingEntry.active !== false };
+        }
+        return {
+          stageKey: op.id,
+          active: true,
+          assignedRoleIds: [],
+          assignedUserIds: [],
+          optedOutUserIds: []
+        };
+      });
+      normalized.forEach(entry => {
+        if (!ordered.find(item => item.stageKey === entry.stageKey)) {
+          ordered.push(entry);
+        }
+      });
+      return ordered;
+    }
+
+    function getFirstActiveStage(orderedStages = []) {
+      for (const stage of orderedStages) {
+        if (!stage?.skipped) return stage;
+      }
+      return orderedStages[0] || null;
+    }
+
+    function normalizeRole(role) {
+      if (!role) return null;
+      return {
+        ...role,
+        userIds: Array.isArray(role.userIds) ? role.userIds : [],
+        parentRoleId: role.parentRoleId || null,
+        childRoleIds: Array.isArray(role.childRoleIds) ? role.childRoleIds : []
+      };
+    }
+
     function getStageIdentity(stage) {
       return stage?.id || stage?.key || stage?.name;
     }
@@ -73,21 +141,42 @@
             skipped: false
           }));
 
+      const stageConfig = getFlowStageConfig(flow || {});
+      const stageConfigMap = new Map(stageConfig.map(entry => [entry.stageKey, entry]));
+
       return [...stages]
-        .map((stage, idx) => ({
-          ...stage,
-          order: stage.order ?? idx,
-          operatorKey: stage.operatorKey || stage.key,
-          tier: stage.tier || DEFAULT_STAGE_BLUEPRINT[idx]?.tier,
-          uid: getStageIdentity(stage)
-        }))
+        .map((stage, idx) => {
+          const operatorKey = stage.operatorKey || stage.key;
+          const config = stageConfigMap.get(operatorKey) || null;
+          const skipped = config ? !config.active : stage.skipped;
+          return {
+            ...stage,
+            order: stage.order ?? idx,
+            operatorKey,
+            tier: stage.tier || DEFAULT_STAGE_BLUEPRINT[idx]?.tier,
+            uid: getStageIdentity(stage),
+            skipped: skipped ?? false,
+            stageConfig: config || null
+          };
+        })
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
 
     function findStageForRole(flow, role) {
-      if (!role) return null;
+      if (!role || !flow) return null;
       const orderedStages = getOrderedStages(flow);
-      return orderedStages.find(stage => stage.operatorKey === role.operatorType || stage.key === role.operatorType) || null;
+      const stageConfig = getFlowStageConfig(flow);
+      for (const config of stageConfig) {
+        if (config.active === false) continue;
+        if (config.assignedRoleIds?.includes(role.id)) {
+          const stage = orderedStages.find(stageItem => {
+            const identity = getStageIdentity(stageItem);
+            return identity === config.stageKey || stageItem.operatorKey === config.stageKey || stageItem.key === config.stageKey;
+          });
+          if (stage) return stage;
+        }
+      }
+      return null;
     }
 
     function createStageHistoryEntry(stageId, timestamp) {
@@ -147,7 +236,7 @@
 
     function getActivityDefaultStageId(activity, orderedStages = []) {
       if (!activity) {
-        const firstStage = orderedStages[0];
+        const firstStage = getFirstActiveStage(orderedStages);
         return firstStage ? getStageIdentity(firstStage) : null;
       }
       if (activity.currentStageId) return activity.currentStageId;
@@ -156,7 +245,7 @@
         const lastEntry = activity.stageHistory[activity.stageHistory.length - 1];
         if (lastEntry?.stageId) return lastEntry.stageId;
       }
-      const firstStage = orderedStages[0];
+      const firstStage = getFirstActiveStage(orderedStages);
       return firstStage ? getStageIdentity(firstStage) : null;
     }
 
@@ -552,6 +641,10 @@
       const [modalData, setModalData] = useState({});
 
       useEffect(() => {
+        setRoles(prev => prev.map(normalizeRole));
+      }, []);
+
+      useEffect(() => {
         if (selectedProject && projects.length > 0) {
           const updated = projects.find(p => p.id === selectedProject.id);
           if (updated) setSelectedProject(updated);
@@ -571,10 +664,19 @@
           const nextProjects = prev.map(project => {
             let projectChanged = false;
             const nextFlows = project.flows.map(flow => {
-              if (!Array.isArray(flow.edges) || flow.edges.length === 0) return flow;
-              const orderedStages = getOrderedStages(flow);
-              const fallbackStageId = orderedStages[0] ? getStageIdentity(orderedStages[0]) : null;
-              let flowChanged = false;
+              const stageConfig = getFlowStageConfig(flow);
+              const needsStageConfig = !Array.isArray(flow.stageConfig);
+              if (!Array.isArray(flow.edges) || flow.edges.length === 0) {
+                if (needsStageConfig) {
+                  projectChanged = true;
+                  return { ...flow, stageConfig };
+                }
+                return flow;
+              }
+              const orderedStages = getOrderedStages({ ...flow, stageConfig });
+              const firstStage = getFirstActiveStage(orderedStages);
+              const fallbackStageId = firstStage ? getStageIdentity(firstStage) : null;
+              let flowChanged = needsStageConfig;
               const nextEdges = flow.edges.map(edge => {
                 if (edge.srcStage && edge.dstStage && edge.stageInferred !== undefined) return edge;
                 const srcActivity = flow.activities.find(a => a.id === edge.srcId);
@@ -594,7 +696,7 @@
               });
               if (!flowChanged) return flow;
               projectChanged = true;
-              return { ...flow, edges: nextEdges };
+              return { ...flow, edges: nextEdges, stageConfig };
             });
             if (!projectChanged) return project;
             mutated = true;
@@ -638,6 +740,7 @@
             name,
             deliverables,
             description,
+            stageConfig: createDefaultStageConfig(),
             stages: createDefaultStages(),
             activities: [],
             edges: []
@@ -657,7 +760,7 @@
             if (f.id !== flowId) return f;
             const orderedStages = getOrderedStages(f);
             const explicitStage = explicitStageId ? orderedStages.find(stage => getStageIdentity(stage) === explicitStageId) : null;
-            const targetStage = explicitStage || findStageForRole(f, role) || orderedStages[0] || null;
+            const targetStage = explicitStage || findStageForRole(f, role) || getFirstActiveStage(orderedStages) || null;
             const stageId = targetStage ? getStageIdentity(targetStage) : explicitStageId;
             const entry = stageId ? createStageHistoryEntry(stageId, timestamp) : null;
             if (entry) {
@@ -701,7 +804,7 @@
 
               if (updates.roleId) {
                 const nextRole = roles.find(r => r.id === updates.roleId);
-                const stage = findStageForRole(f, nextRole) || (orderedStages[0] || null);
+                const stage = findStageForRole(f, nextRole) || getFirstActiveStage(orderedStages) || null;
                 if (stage) currentStageId = getStageIdentity(stage);
               }
               if (updates.stageId) currentStageId = updates.stageId;
@@ -751,7 +854,8 @@
               const orderedStages = getOrderedStages(f);
               const srcActivity = f.activities.find(a => a.id === srcId);
               const dstActivity = f.activities.find(a => a.id === dstId);
-              const fallbackStageId = orderedStages[0] ? getStageIdentity(orderedStages[0]) : null;
+              const firstStage = getFirstActiveStage(orderedStages);
+              const fallbackStageId = firstStage ? getStageIdentity(firstStage) : null;
               const inferredSrcStage = providedSrcStage || getActivityDefaultStageId(srcActivity, orderedStages) || fallbackStageId;
               const inferredDstStage = providedDstStage || getActivityDefaultStageId(dstActivity, orderedStages) || fallbackStageId;
               const stageInferred = !providedSrcStage || !providedDstStage;
@@ -769,19 +873,67 @@
         } : p));
       };
 
-      const createRole = (name, operatorType, userIds = []) => {
-        const role = {
-          id: `r-${Date.now()}`,
+      const createRole = (name, userIds = [], parentRoleId = null) => {
+        const timestamp = Date.now();
+        const newRole = normalizeRole({
+          id: `r-${timestamp}`,
           name,
-          operatorType,
-          userIds
-        };
-        setRoles([...roles, role]);
-        return role;
+          userIds,
+          parentRoleId: parentRoleId || null,
+          childRoleIds: []
+        });
+        setRoles(prev => {
+          const normalizedPrev = prev.map(normalizeRole).map(role => ({ ...role }));
+          let nextRoles = normalizedPrev;
+          if (newRole.parentRoleId) {
+            nextRoles = nextRoles.map(role => {
+              if (role.id !== newRole.parentRoleId) return role;
+              const childRoleIds = Array.from(new Set([...(role.childRoleIds || []), newRole.id]));
+              return { ...role, childRoleIds };
+            });
+          }
+          return [...nextRoles, newRole];
+        });
+        return newRole;
       };
 
       const updateRole = (roleId, updates) => {
-        setRoles(prev => prev.map(r => r.id === roleId ? { ...r, ...updates } : r));
+        setRoles(prev => {
+          const normalizedPrev = prev.map(normalizeRole);
+          const targetRole = normalizedPrev.find(role => role.id === roleId);
+          if (!targetRole) return normalizedPrev;
+          const hasParentUpdate = Object.prototype.hasOwnProperty.call(updates, 'parentRoleId');
+          const nextParentId = hasParentUpdate ? (updates.parentRoleId || null) : targetRole.parentRoleId;
+          let updatedRoles = normalizedPrev.map(role => {
+            if (role.id !== roleId) return role;
+            const merged = {
+              ...role,
+              ...updates,
+              parentRoleId: nextParentId
+            };
+            if (Object.prototype.hasOwnProperty.call(updates, 'userIds')) {
+              merged.userIds = Array.isArray(updates.userIds) ? updates.userIds : role.userIds;
+            }
+            return normalizeRole(merged);
+          });
+
+          if (targetRole.parentRoleId && targetRole.parentRoleId !== nextParentId) {
+            updatedRoles = updatedRoles.map(role => {
+              if (role.id !== targetRole.parentRoleId) return role;
+              return { ...role, childRoleIds: role.childRoleIds.filter(id => id !== roleId) };
+            });
+          }
+
+          if (nextParentId) {
+            updatedRoles = updatedRoles.map(role => {
+              if (role.id !== nextParentId) return role;
+              const childRoleIds = Array.from(new Set([...(role.childRoleIds || []), roleId]));
+              return { ...role, childRoleIds };
+            });
+          }
+
+          return updatedRoles.map(normalizeRole);
+        });
       };
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
@@ -1067,7 +1219,7 @@
             ...f,
             activities: [...f.activities, (() => {
               const orderedStages = getOrderedStages(f);
-              const initialStage = findStageForRole(f, role) || orderedStages[0] || null;
+              const initialStage = findStageForRole(f, role) || getFirstActiveStage(orderedStages) || null;
               const stageId = initialStage ? getStageIdentity(initialStage) : null;
               const entry = stageId ? createStageHistoryEntry(stageId, timestamp) : null;
               if (entry) {
@@ -1092,7 +1244,7 @@
             edges: [...f.edges, (() => {
               const orderedStages = getOrderedStages(f);
               const srcActivity = f.activities.find(a => a.id === sourceActivityId);
-              const initialStage = findStageForRole(f, role) || orderedStages[0] || null;
+              const initialStage = findStageForRole(f, role) || getFirstActiveStage(orderedStages) || null;
               const stageId = initialStage ? getStageIdentity(initialStage) : null;
               const srcStageId = getActivityDefaultStageId(srcActivity, orderedStages);
               return {
@@ -1188,12 +1340,26 @@
           flows: p.flows.map(f => {
             if (f.id !== flowId) return f;
             const existingStages = Array.isArray(f.stages) && f.stages.length > 0 ? f.stages : createDefaultStages();
+            let targetStageKey = null;
+            let updatedStageRef = null;
             const updatedStages = existingStages.map(stage => {
               const identity = getStageIdentity(stage);
-              if (identity !== stageId && stage.key !== stageId) return stage;
-              return { ...stage, ...updater(stage) };
+              const matches = identity === stageId || stage.key === stageId || stage.operatorKey === stageId;
+              if (!matches) return stage;
+              const updatedStage = { ...stage, ...updater(stage) };
+              targetStageKey = stage.operatorKey || stage.key || identity;
+              updatedStageRef = updatedStage;
+              return updatedStage;
             });
-            return { ...f, stages: updatedStages };
+            const normalizedConfig = getFlowStageConfig(f);
+            const nextStageConfig = targetStageKey
+              ? normalizedConfig.map(entry => {
+                  if (entry.stageKey !== targetStageKey) return entry;
+                  const isActive = updatedStageRef ? !updatedStageRef.skipped : entry.active !== false;
+                  return { ...entry, active: isActive };
+                })
+              : normalizedConfig;
+            return { ...f, stages: updatedStages, stageConfig: nextStageConfig };
           })
         } : p));
       };
@@ -1327,9 +1493,10 @@
           project.flows.forEach(flow => {
             const orderedStages = getOrderedStages(flow);
             flow.activities.forEach(activity => {
-              const stageIdSeed = activity.currentStageId || activity.stageId || (orderedStages[0] ? getStageIdentity(orderedStages[0]) : null);
+              const firstStage = getFirstActiveStage(orderedStages);
+              const stageIdSeed = activity.currentStageId || activity.stageId || (firstStage ? getStageIdentity(firstStage) : null);
               const { currentStageId, stageHistory } = ensureStageTracking(activity, stageIdSeed, activity.createdAt || Date.now());
-              const currentStage = currentStageId ? orderedStages.find(stage => getStageIdentity(stage) === currentStageId) : orderedStages[0] || null;
+              const currentStage = currentStageId ? orderedStages.find(stage => getStageIdentity(stage) === currentStageId) : firstStage || null;
               const activityForState = { ...activity, currentStageId, stageHistory };
               const state = currentStage ? computeActivityState(activityForState, currentStage, flow.activities, flow.edges) : 'waiting';
               if (state === 'ready') totalReady++;
@@ -1349,11 +1516,12 @@
           project.flows.forEach(flow => {
             const orderedStages = getOrderedStages(flow);
             flow.activities.forEach(activity => {
-              const stageIdSeed = activity.currentStageId || activity.stageId || (orderedStages[0] ? getStageIdentity(orderedStages[0]) : null);
+              const firstStage = getFirstActiveStage(orderedStages);
+              const stageIdSeed = activity.currentStageId || activity.stageId || (firstStage ? getStageIdentity(firstStage) : null);
               const { currentStageId, stageHistory } = ensureStageTracking(activity, stageIdSeed, activity.createdAt || Date.now());
               const activeEntry = currentStageId ? getLatestStageHistoryEntry(stageHistory, currentStageId) : null;
               if (activeEntry?.claimedBy === currentUser && !activity.completedAt) {
-                const currentStage = currentStageId ? orderedStages.find(stage => getStageIdentity(stage) === currentStageId) : orderedStages[0] || null;
+                const currentStage = currentStageId ? orderedStages.find(stage => getStageIdentity(stage) === currentStageId) : firstStage || null;
                 const activityForState = { ...activity, currentStageId, stageHistory };
                 const activeStageState = currentStage ? computeActivityState(activityForState, currentStage, flow.activities, flow.edges) : 'waiting';
                 work.push({ project, flow, activity: { ...activity, activeStageEntry: activeEntry, activeStageState, activeStage: currentStage } });
@@ -1489,9 +1657,10 @@
         let ready = 0, waiting = 0, inProgress = 0, completed = 0;
         const orderedStages = getOrderedStages(flow);
         flow.activities.forEach(activity => {
-          const stageIdSeed = activity.currentStageId || activity.stageId || (orderedStages[0] ? getStageIdentity(orderedStages[0]) : null);
+          const firstStage = getFirstActiveStage(orderedStages);
+          const stageIdSeed = activity.currentStageId || activity.stageId || (firstStage ? getStageIdentity(firstStage) : null);
           const { currentStageId, stageHistory } = ensureStageTracking(activity, stageIdSeed, activity.createdAt || Date.now());
-          const currentStage = currentStageId ? orderedStages.find(stage => getStageIdentity(stage) === currentStageId) : orderedStages[0] || null;
+          const currentStage = currentStageId ? orderedStages.find(stage => getStageIdentity(stage) === currentStageId) : firstStage || null;
           const activityForState = { ...activity, currentStageId, stageHistory };
           const state = currentStage ? computeActivityState(activityForState, currentStage, flow.activities, flow.edges) : 'waiting';
           if (state === 'ready') ready++;
@@ -2071,12 +2240,10 @@
       const [title, setTitle] = useState('');
       const [selectedRole, setSelectedRole] = useState('');
       const [newRoleName, setNewRoleName] = useState('');
-      const [selectedOperator, setSelectedOperator] = useState(initialOperatorId || '');
       const [selectedUserIds, setSelectedUserIds] = useState([]);
       const [deliverable, setDeliverable] = useState('');
 
       useEffect(() => {
-        setSelectedOperator(initialOperatorId || '');
         setSelectedRole('');
         setStep('role');
         setTitle('');
@@ -2085,12 +2252,11 @@
         setSelectedUserIds([]);
       }, [initialOperatorId, project.id, flow.id]);
 
-      const availableRoles = initialOperatorId ? roles.filter(r => r.operatorType === initialOperatorId) : roles;
-      const operatorChoices = initialOperatorId ? OPERATORS.filter(op => op.id === initialOperatorId) : OPERATORS;
+      const availableRoles = roles;
 
       const handleCreateRole = () => {
-        if (newRoleName && selectedOperator) {
-          const role = onCreateRole(newRoleName, selectedOperator, selectedUserIds);
+        if (newRoleName) {
+          const role = onCreateRole(newRoleName, selectedUserIds);
           setSelectedRole(role.id);
           setStep('activity');
         }
@@ -2105,18 +2271,17 @@
           <div className="space-y-4">
             {step === 'role' ? (
               <>
-                <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4"><p className="text-sm text-gray-100">Each activity needs a role (who does it) and operator type (what kind of work).</p></div>
+                <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4 mb-4"><p className="text-sm text-gray-100">Each activity needs a role—pick a team or group responsible for this work.</p></div>
                 {availableRoles.length > 0 && (
                   <>
-                    <div><label className="block text-sm text-gray-200 mb-2">Select existing role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableRoles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Select existing role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
                     {selectedRole && <button onClick={() => setStep('activity')} className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">Continue</button>}
                     <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700"></div></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-gray-900 text-gray-300">or create new role</span></div></div>
                   </>
                 )}
                 <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Content Writer" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                <div><label className="block text-sm text-gray-200 mb-2">Select operator type</label><div className="grid grid-cols-3 gap-2">{operatorChoices.map(op => <button key={op.id} onClick={() => setSelectedOperator(op.id)} className={`p-3 border rounded text-left transition-colors ${selectedOperator === op.id ? 'border-blue-500 bg-blue-500/20' : 'border-gray-700 hover:border-gray-600'}`}><div className="font-medium text-sm">{op.seq}. {op.name}</div><div className="text-xs text-gray-300 mt-1">{op.desc}</div></button>)}</div></div>
                 <div><label className="block text-sm text-gray-200 mb-2">Assign users to this role</label><div className="space-y-2">{project.users.map(user => <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} /><span className="text-sm text-gray-100">{user.name}</span></label>)}</div></div>
-                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={handleCreateRole} disabled={!newRoleName || !selectedOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role & Continue</button></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={handleCreateRole} disabled={!newRoleName} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role & Continue</button></div>
               </>
             ) : (
               <>
@@ -2148,7 +2313,7 @@
         <Modal onClose={onClose} title="Edit Activity">
           <div className="space-y-4">
             <div><label className="block text-sm text-gray-200 mb-2">Activity name</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Write article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
-            <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+            <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
             <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={deliverable} onChange={(e) => setDeliverable(e.target.value)} placeholder="e.g., 800-word article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
             <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (title && selectedRole) onUpdate({ title, roleId: selectedRole, deliverable }); }} disabled={!title || !selectedRole} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Save</button></div>
           </div>
@@ -2262,7 +2427,6 @@
       const [newDeliverable, setNewDeliverable] = useState('');
       const [showNewRole, setShowNewRole] = useState(false);
       const [newRoleName, setNewRoleName] = useState('');
-      const [newRoleOperator, setNewRoleOperator] = useState('');
       const [selectedUserIds, setSelectedUserIds] = useState([]);
       const orderedStages = useMemo(() => getOrderedStages(flow), [flow]);
       const stageOptions = useMemo(() => orderedStages.map(stage => ({ id: getStageIdentity(stage), name: stage.name, skipped: stage.skipped })), [orderedStages]);
@@ -2301,14 +2465,14 @@
       useEffect(() => {
         if (!newRoleId) return;
         const role = roles.find(r => r.id === newRoleId);
-        const stage = findStageForRole(flow, role) || orderedStages[0] || null;
+        const stage = findStageForRole(flow, role) || getFirstActiveStage(orderedStages) || null;
         const inferred = stage ? getStageIdentity(stage) : stageOptions[0]?.id || '';
         setNewInitialStageId(inferred || '');
       }, [newRoleId, roles, flow, orderedStages, stageOptions]);
 
       const handleCreateRole = () => {
-        if (newRoleName && newRoleOperator) {
-          const role = onCreateRole(newRoleName, newRoleOperator, selectedUserIds);
+        if (newRoleName) {
+          const role = onCreateRole(newRoleName, selectedUserIds);
           setNewRoleId(role.id);
           setShowNewRole(false);
         }
@@ -2367,15 +2531,14 @@
                 <div><label className="block text-sm text-gray-200 mb-2">New activity title</label><input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g., Review article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
                 {!showNewRole ? (
                   <>
-                    <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={newRoleId} onChange={(e) => setNewRoleId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => { const op = OPERATORS.find(o => o.id === r.operatorType); return <option key={r.id} value={r.id}>{r.name} ({op?.name})</option>; })}</select></div>
+                    <div><label className="block text-sm text-gray-200 mb-2">Role</label><select value={newRoleId} onChange={(e) => setNewRoleId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
                     <button onClick={() => setShowNewRole(true)} className="text-sm text-blue-400 hover:text-blue-300">+ Create new role</button>
                   </>
                 ) : (
                   <>
                     <div><label className="block text-sm text-gray-200 mb-2">New role name</label><input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="e.g., Editor" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                    <div><label className="block text-sm text-gray-200 mb-2">Operator type</label><select value={newRoleOperator} onChange={(e) => setNewRoleOperator(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{OPERATORS.map(op => <option key={op.id} value={op.id}>{op.seq}. {op.name}</option>)}</select></div>
                     <div><label className="block text-sm text-gray-200 mb-2">Assign users</label><div className="space-y-2">{project.users.map(user => <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} /><span className="text-sm text-gray-100">{user.name}</span></label>)}</div></div>
-                    <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName || !newRoleOperator} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
+                    <div className="flex gap-2"><button onClick={handleCreateRole} disabled={!newRoleName} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create Role</button><button onClick={() => setShowNewRole(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button></div>
                   </>
                 )}
                 <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={newDeliverable} onChange={(e) => setNewDeliverable(e.target.value)} placeholder="e.g., Reviewed draft" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
