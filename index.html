@@ -40,6 +40,48 @@
       supportsRevision: op.canRequestRevision
     }));
 
+    function generatePulseMockData() {
+      const flows = [
+        {
+          id: 'mock-1',
+          name: 'Newsletter Flow',
+          activities: [
+            { stage: 'starter', state: 'ready', count: 2 },
+            { stage: 'doer', state: 'in_progress', count: 3 },
+            { stage: 'compiler', state: 'ready', count: 1 },
+            { stage: 'reviewer', state: 'in_progress', count: 4 },
+            { stage: 'approver', state: 'blocked', count: 0 },
+            { stage: 'documenter', state: 'waiting', count: 0 }
+          ]
+        },
+        {
+          id: 'mock-2',
+          name: 'Product Development',
+          activities: [
+            { stage: 'starter', state: 'in_progress', count: 1 },
+            { stage: 'doer', state: 'in_progress', count: 2 },
+            { stage: 'compiler', state: 'ready', count: 1 },
+            { stage: 'reviewer', state: 'ready', count: 2 },
+            { stage: 'approver', state: 'in_progress', count: 1 },
+            { stage: 'documenter', state: 'completed', count: 1 },
+            { stage: 'integrator', state: 'ready', count: 1 }
+          ]
+        },
+        {
+          id: 'mock-3',
+          name: 'Marketing Campaign',
+          activities: [
+            { stage: 'starter', state: 'completed', count: 0 },
+            { stage: 'doer', state: 'in_progress', count: 3 },
+            { stage: 'compiler', state: 'ready', count: 2 },
+            { stage: 'reviewer', state: 'in_progress', count: 1 }
+          ]
+        }
+      ];
+
+      return flows;
+    }
+
     function createDefaultStageConfig() {
       return OPERATORS.map(op => ({
         stageKey: op.id,
@@ -151,6 +193,55 @@
         conditions: '',
         skipped: false
       }));
+    }
+
+    const PULSE_STAGE_LOOKUP = DEFAULT_STAGE_BLUEPRINT.reduce((acc, stage) => {
+      acc[stage.key] = stage;
+      return acc;
+    }, {});
+
+    const PULSE_STAGE_GROUPS = DEFAULT_STAGE_BLUEPRINT.reduce((groups, stage) => {
+      if (!groups[stage.tier]) groups[stage.tier] = [];
+      groups[stage.tier].push({
+        id: stage.key,
+        name: stage.name,
+        desc: stage.description,
+        tier: stage.tier
+      });
+      return groups;
+    }, { genesis: [], evaluation: [], continuity: [] });
+
+    function getPulseStageKey(stage) {
+      if (!stage) return 'unassigned';
+      return stage.operatorKey || stage.key || stage.id || stage.uid || stage.name || 'unassigned';
+    }
+
+    function getPulseStageMeta(stageId) {
+      if (!stageId) return null;
+      if (PULSE_STAGE_LOOKUP[stageId]) return PULSE_STAGE_LOOKUP[stageId];
+      return {
+        key: stageId,
+        name: stageId.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        description: 'Custom stage',
+        tier: 'genesis'
+      };
+    }
+
+    function getPulseStagesForTier(tier, aggregatedData = []) {
+      const defaults = Array.isArray(PULSE_STAGE_GROUPS[tier]) ? PULSE_STAGE_GROUPS[tier] : [];
+      const map = new Map(defaults.map(stage => [stage.id, stage]));
+      aggregatedData.forEach(entry => {
+        const meta = getPulseStageMeta(entry.stage);
+        if (meta && meta.tier === tier && !map.has(meta.key)) {
+          map.set(meta.key, {
+            id: meta.key,
+            name: meta.name,
+            desc: meta.description,
+            tier: tier
+          });
+        }
+      });
+      return Array.from(map.values());
     }
 
     function getOrderedStages(flow) {
@@ -658,6 +749,527 @@
       return 'waiting';
     }
 
+    function buildPulseDataFromProjects(projects = []) {
+      const flows = [];
+      const lookup = {};
+      projects.forEach(project => {
+        if (!project || !Array.isArray(project.flows)) return;
+        project.flows.forEach(flow => {
+          if (!flow) return;
+          const orderedStages = getOrderedStages(flow);
+          const stageMap = new Map(orderedStages.map(stage => [getStageIdentity(stage), stage]));
+          const firstStage = getFirstActiveStage(orderedStages);
+          const aggregated = {};
+          (flow.activities || []).forEach(activity => {
+            const stageIdSeed = activity?.currentStageId || activity?.stageId || (firstStage ? getStageIdentity(firstStage) : null);
+            const { currentStageId, stageHistory } = ensureStageTracking(activity, stageIdSeed, activity?.createdAt || Date.now());
+            const resolvedStage = currentStageId ? (stageMap.get(currentStageId) || null) : firstStage;
+            const fallbackStage = resolvedStage || firstStage || orderedStages[0] || null;
+            const stageKey = getPulseStageKey(fallbackStage);
+            const activityForState = { ...activity, currentStageId, stageHistory };
+            const state = fallbackStage ? computeActivityState(activityForState, fallbackStage, flow.activities || [], flow.edges || []) : 'waiting';
+            const key = `${stageKey}:${state}`;
+            if (!aggregated[key]) {
+              aggregated[key] = { stage: stageKey, state, count: 0 };
+            }
+            aggregated[key].count += 1;
+          });
+          if (Object.keys(aggregated).length === 0) {
+            orderedStages.forEach(stage => {
+              const stageKey = getPulseStageKey(stage);
+              const key = `${stageKey}:waiting`;
+              if (!aggregated[key]) aggregated[key] = { stage: stageKey, state: 'waiting', count: 0 };
+            });
+          }
+          const flowId = `${project.id || 'project'}::${flow.id || Math.random().toString(36).slice(2, 8)}`;
+          flows.push({
+            id: flowId,
+            name: `${project?.name || 'Project'} – ${flow?.name || 'Flow'}`,
+            activities: Object.values(aggregated)
+          });
+          lookup[flowId] = { project, flow };
+        });
+      });
+      return { flows, lookup };
+    }
+
+    function LoadingScreen({ onComplete }) {
+      const [progress, setProgress] = useState(0);
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setProgress(prev => {
+            if (prev >= 100) {
+              clearInterval(timer);
+              setTimeout(() => {
+                if (onComplete) onComplete();
+              }, 200);
+              return 100;
+            }
+            return prev + 2;
+          });
+        }, 30);
+        return () => clearInterval(timer);
+      }, [onComplete]);
+
+      return (
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+          <div className="text-center space-y-8">
+            <div className="relative">
+              <div className="text-6xl font-bold text-blue-400 mb-2">EO</div>
+              <div className="text-sm text-gray-400 tracking-widest uppercase">Emergent Organizing</div>
+            </div>
+            <div className="w-64 mx-auto">
+              <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="mt-2 text-xs text-gray-500">Loading system metabolism...</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ActivityPulse({ count, state }) {
+      const getColor = () => {
+        switch (state) {
+          case 'ready':
+            return 'bg-green-500';
+          case 'in_progress':
+            return 'bg-blue-500';
+          case 'blocked':
+            return 'bg-red-500';
+          case 'waiting':
+            return 'bg-yellow-500';
+          case 'completed':
+            return 'bg-gray-600';
+          default:
+            return 'bg-gray-700';
+        }
+      };
+      const dots = Math.min(count || 0, 5);
+      return (
+        <div className="flex items-center gap-1">
+          {Array.from({ length: dots }).map((_, idx) => (
+            <div
+              key={idx}
+              className={`w-2 h-2 rounded-full ${getColor()} animate-pulse`}
+              style={{ animationDelay: `${idx * 200}ms` }}
+            />
+          ))}
+          {dots === 0 && <div className="w-2 h-2 rounded-full bg-gray-800" />}
+        </div>
+      );
+    }
+
+    function StageCell({ stage, activities = [], onClick, tier }) {
+      const totalActivities = activities.reduce((sum, a) => sum + (a.count || 0), 0);
+      const flowState = (() => {
+        if (activities.some(a => a.state === 'blocked' && (a.count || 0) > 0)) return 'blocked';
+        if (activities.some(a => a.state === 'in_progress' && (a.count || 0) > 0)) return 'flowing';
+        if (activities.some(a => a.state === 'ready' && (a.count || 0) > 0)) return 'ready';
+        if (totalActivities === 0) return 'empty';
+        return 'waiting';
+      })();
+
+      const getBorderColor = () => {
+        switch (flowState) {
+          case 'flowing':
+            return 'border-blue-500/50';
+          case 'ready':
+            return 'border-green-500/50';
+          case 'blocked':
+            return 'border-red-500/50';
+          case 'waiting':
+            return 'border-yellow-500/50';
+          default:
+            return 'border-gray-700';
+        }
+      };
+
+      const handleClick = () => {
+        if (onClick) onClick();
+      };
+
+      return (
+        <button
+          onClick={handleClick}
+          className={`bg-gray-900 border-2 ${getBorderColor()} rounded-lg p-4 transition-all text-left relative overflow-hidden group ${onClick ? 'hover:bg-gray-800 hover:scale-[1.02]' : 'cursor-default'}`}
+          type="button"
+        >
+          <div
+            className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity ${
+              flowState === 'flowing'
+                ? 'bg-blue-500'
+                : flowState === 'ready'
+                  ? 'bg-green-500'
+                  : flowState === 'blocked'
+                    ? 'bg-red-500'
+                    : 'bg-gray-500'
+            }`}
+          />
+          <div className="relative z-10">
+            <div className="font-semibold text-gray-100 mb-1">{stage.name}</div>
+            <div className="text-xs text-gray-400 mb-3">{stage.desc}</div>
+            <div className="space-y-2">
+              {activities.length > 0 ? (
+                activities.map((activity, idx) => (
+                  <div key={`${activity.state}-${idx}`} className="flex items-center justify-between">
+                    <ActivityPulse count={activity.count || 0} state={activity.state} />
+                    <span className="text-xs text-gray-500">{activity.count || 0}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-between">
+                  <ActivityPulse count={0} state="empty" />
+                  <span className="text-xs text-gray-500">0</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 text-xs text-gray-600">Total: {totalActivities}</div>
+          </div>
+        </button>
+      );
+    }
+
+    function TierBand({ tier, aggregatedData, onStageClick }) {
+      const tierNames = {
+        genesis: 'GENESIS',
+        evaluation: 'EVALUATION',
+        continuity: 'CONTINUITY'
+      };
+      const tierColors = {
+        genesis: 'text-blue-400',
+        evaluation: 'text-purple-400',
+        continuity: 'text-green-400'
+      };
+      const stages = getPulseStagesForTier(tier, aggregatedData);
+      return (
+        <div className="space-y-3">
+          <div className={`text-xs font-bold tracking-widest ${tierColors[tier]} uppercase flex items-center gap-2`}>
+            <span>{tierNames[tier]}</span>
+            <div className="flex-1 h-px bg-gray-800" />
+            <span className="text-[10px] text-gray-600">
+              {tier === 'genesis' ? 'Formation' : tier === 'evaluation' ? 'Refinement' : 'Recursion'}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {stages.map(stage => {
+              const stageActivities = aggregatedData.filter(a => a.stage === stage.id);
+              return (
+                <StageCell
+                  key={stage.id}
+                  stage={stage}
+                  activities={stageActivities}
+                  onClick={onStageClick ? () => onStageClick(stage) : null}
+                  tier={tier}
+                />
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function SystemView({ flows, onFlowClick, onStageClick, isEmbedded = false, onClose = null }) {
+      const aggregateActivities = () => {
+        const aggregated = {};
+        flows.forEach(flow => {
+          (flow.activities || []).forEach(activity => {
+            const key = `${activity.stage}-${activity.state}`;
+            if (!aggregated[key]) {
+              aggregated[key] = { stage: activity.stage, state: activity.state, count: 0 };
+            }
+            aggregated[key].count += activity.count || 0;
+          });
+        });
+        return Object.values(aggregated);
+      };
+
+      const aggregatedData = aggregateActivities();
+      const totalReady = aggregatedData.filter(a => a.state === 'ready').reduce((sum, a) => sum + (a.count || 0), 0);
+      const totalInProgress = aggregatedData.filter(a => a.state === 'in_progress').reduce((sum, a) => sum + (a.count || 0), 0);
+      const totalBlocked = aggregatedData.filter(a => a.state === 'blocked').reduce((sum, a) => sum + (a.count || 0), 0);
+
+      const containerClass = isEmbedded ? 'bg-gray-950 text-gray-100' : 'min-h-screen bg-gray-950 text-gray-100';
+      const sectionWidthClass = isEmbedded ? '' : 'max-w-7xl mx-auto';
+      const headerWrapperClass = isEmbedded ? 'border-b border-gray-800 bg-gray-900/80' : 'border-b border-gray-800 bg-gray-900/50 backdrop-blur';
+      const bodyPaddingClass = isEmbedded ? 'px-6 py-6' : 'px-6 py-8';
+
+      return (
+        <div className={containerClass}>
+          <div className={headerWrapperClass}>
+            <div className={`${sectionWidthClass} px-6 py-4`}> 
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold mb-1">The Pulse</h1>
+                  <p className="text-sm text-gray-400">System metabolism across all flows</p>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex gap-4">
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-400">{totalReady}</div>
+                      <div className="text-xs text-gray-400">Ready</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-400">{totalInProgress}</div>
+                      <div className="text-xs text-gray-400">In Progress</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-red-400">{totalBlocked}</div>
+                      <div className="text-xs text-gray-400">Blocked</div>
+                    </div>
+                  </div>
+                  {onClose && (
+                    <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-100 transition-colors border border-gray-700 rounded px-3 py-1">
+                      Close
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={`${sectionWidthClass} ${bodyPaddingClass}`}>
+            <div className="space-y-8">
+              <TierBand tier="genesis" aggregatedData={aggregatedData} onStageClick={onStageClick} />
+              <TierBand tier="evaluation" aggregatedData={aggregatedData} onStageClick={onStageClick} />
+              <TierBand tier="continuity" aggregatedData={aggregatedData} onStageClick={onStageClick} />
+            </div>
+            <div className="mt-12">
+              <h2 className="text-lg font-semibold mb-4">Active Flows</h2>
+              {flows.length === 0 ? (
+                <div className="text-sm text-gray-500 bg-gray-900 border border-gray-800 rounded-lg p-4">No flows yet.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {flows.map(flow => {
+                    const totalActivities = (flow.activities || []).reduce((sum, a) => sum + (a.count || 0), 0);
+                    const hasBlocked = (flow.activities || []).some(a => a.state === 'blocked' && (a.count || 0) > 0);
+                    const hasInProgress = (flow.activities || []).some(a => a.state === 'in_progress' && (a.count || 0) > 0);
+                    const healthStatus = hasBlocked ? '⊗ Blocked' : hasInProgress ? '✓ Flowing' : '○ Dormant';
+                    const healthColor = hasBlocked ? 'text-red-400' : hasInProgress ? 'text-green-400' : 'text-gray-500';
+                    const clickable = typeof onFlowClick === 'function';
+                    return (
+                      <button
+                        key={flow.id}
+                        onClick={clickable ? () => onFlowClick(flow) : undefined}
+                        className={`bg-gray-900 border border-gray-800 rounded-lg p-4 transition-all text-left ${clickable ? 'hover:border-blue-500' : 'cursor-default opacity-90'}`}
+                        type="button"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-medium text-gray-100">{flow.name}</h3>
+                          <span className={`text-xs ${healthColor}`}>{healthStatus}</span>
+                        </div>
+                        <div className="text-sm text-gray-400">{totalActivities} tracked</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function FlowView({ flow, onBack, onStageClick, onClose = null }) {
+      const aggregateFlowActivities = () => {
+        const aggregated = {};
+        (flow.activities || []).forEach(activity => {
+          const key = `${activity.stage}-${activity.state}`;
+          if (!aggregated[key]) {
+            aggregated[key] = { stage: activity.stage, state: activity.state, count: 0 };
+          }
+          aggregated[key].count += activity.count || 0;
+        });
+        return Object.values(aggregated);
+      };
+      const aggregatedData = aggregateFlowActivities();
+      const handleStageClick = onStageClick
+        ? (stage) => onStageClick(flow, stage)
+        : null;
+
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100">
+          <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex items-center justify-between">
+                <button onClick={onBack} className="text-sm text-gray-400 hover:text-gray-100 mb-3 flex items-center gap-2">
+                  ← Back to System View
+                </button>
+                {onClose && (
+                  <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-100 border border-gray-700 rounded px-3 py-1">
+                    Close
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold mb-1">{flow.name}</h1>
+                  <p className="text-sm text-gray-400">Flow-specific activity metabolism</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="space-y-8">
+              <TierBand tier="genesis" aggregatedData={aggregatedData} onStageClick={handleStageClick} />
+              <TierBand tier="evaluation" aggregatedData={aggregatedData} onStageClick={handleStageClick} />
+              <TierBand tier="continuity" aggregatedData={aggregatedData} onStageClick={handleStageClick} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function StageView({ flow, stage, onBack, onClose = null }) {
+      const stageActivities = (flow.activities || []).filter(a => a.stage === stage.id);
+      const groupedByState = {
+        ready: stageActivities.filter(a => a.state === 'ready'),
+        in_progress: stageActivities.filter(a => a.state === 'in_progress'),
+        blocked: stageActivities.filter(a => a.state === 'blocked'),
+        waiting: stageActivities.filter(a => a.state === 'waiting')
+      };
+      return (
+        <div className="min-h-screen bg-gray-950 text-gray-100">
+          <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex items-center justify-between">
+                <button onClick={onBack} className="text-sm text-gray-400 hover:text-gray-100 mb-3 flex items-center gap-2">
+                  ← Back to {flow.name}
+                </button>
+                {onClose && (
+                  <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-100 border border-gray-700 rounded px-3 py-1">
+                    Close
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold mb-1">{stage.name} Stage</h1>
+                  <p className="text-sm text-gray-400">{flow.name} · {stage.desc}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Ready', key: 'ready', badgeClass: 'bg-green-900/50 text-green-300' },
+                { label: 'In Progress', key: 'in_progress', badgeClass: 'bg-blue-900/50 text-blue-300' },
+                { label: 'Blocked', key: 'blocked', badgeClass: 'bg-red-900/50 text-red-300' },
+                { label: 'Waiting', key: 'waiting', badgeClass: 'bg-yellow-900/50 text-yellow-300' }
+              ].map(column => (
+                <div key={column.key} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-100">{column.label}</h3>
+                    <span className={`text-xs ${column.badgeClass} px-2 py-1 rounded`}>
+                      {groupedByState[column.key].reduce((sum, a) => sum + (a.count || 0), 0)}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {groupedByState[column.key].map((activity, idx) => (
+                      <div key={`${column.key}-${idx}`} className={`bg-gray-900 border rounded p-3 ${column.key === 'ready' ? 'border-green-500/30' : column.key === 'in_progress' ? 'border-blue-500/30' : column.key === 'blocked' ? 'border-red-500/30' : 'border-yellow-500/30'}`}>
+                        <div className="text-sm text-gray-200 mb-2">Activity {idx + 1}</div>
+                        <ActivityPulse count={activity.count || 0} state={column.key} />
+                      </div>
+                    ))}
+                    {groupedByState[column.key].length === 0 && (
+                      <div className="text-xs text-gray-500 bg-gray-900 border border-gray-800 rounded p-3">No activities</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PulsePreview({ flows, onFlowClick, onStageClick, emptyState }) {
+      if (!flows || flows.length === 0) {
+        return (
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-sm text-gray-400">
+            {emptyState || 'No flow data yet. Create a project to start tracking activity.'}
+          </div>
+        );
+      }
+      return (
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          <SystemView flows={flows} onFlowClick={onFlowClick} onStageClick={onStageClick} isEmbedded />
+        </div>
+      );
+    }
+
+    function ThePulse({ flows = [], initialView = 'system', initialFlowId = null, initialStage = null, showLoading = true, onClose = null }) {
+      const [loading, setLoading] = useState(showLoading);
+      const [view, setView] = useState(initialView);
+      const [selectedFlowId, setSelectedFlowId] = useState(initialFlowId);
+      const [selectedStage, setSelectedStage] = useState(initialStage);
+
+      useEffect(() => {
+        if (!showLoading) {
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+        setView(initialView || 'system');
+        setSelectedFlowId(initialFlowId || null);
+        setSelectedStage(initialStage || null);
+      }, [flows, showLoading, initialView, initialFlowId, initialStage]);
+
+      const selectedFlow = useMemo(() => flows.find(flow => flow.id === selectedFlowId) || null, [flows, selectedFlowId]);
+
+      useEffect(() => {
+        if (loading && !showLoading) {
+          setLoading(false);
+        }
+      }, [loading, showLoading]);
+
+      if (loading) {
+        return <LoadingScreen onComplete={() => setLoading(false)} />;
+      }
+
+      const handleFlowClick = (flow) => {
+        setSelectedFlowId(flow?.id || null);
+        setSelectedStage(null);
+        setView('flow');
+      };
+
+      const handleStageClick = (flow, stage) => {
+        if (flow) {
+          setSelectedFlowId(flow.id);
+        } else if (!selectedFlowId && flows.length > 0) {
+          setSelectedFlowId(flows[0].id);
+        }
+        setSelectedStage(stage);
+        setView('stage');
+      };
+
+      const handleBackToSystem = () => {
+        setSelectedFlowId(null);
+        setSelectedStage(null);
+        setView('system');
+      };
+
+      const handleBackToFlow = () => {
+        setSelectedStage(null);
+        setView('flow');
+      };
+
+      if (view === 'stage' && selectedFlow && selectedStage) {
+        return <StageView flow={selectedFlow} stage={selectedStage} onBack={handleBackToFlow} onClose={onClose} />;
+      }
+
+      if (view === 'flow' && selectedFlow) {
+        return <FlowView flow={selectedFlow} onBack={handleBackToSystem} onStageClick={(flowArg, stage) => handleStageClick(flowArg, stage)} onClose={onClose} />;
+      }
+
+      return <SystemView flows={flows} onFlowClick={handleFlowClick} onStageClick={stage => handleStageClick(null, stage)} onClose={onClose} />;
+    }
+
     function EventOperator() {
       const [view, setView] = useState('welcome');
       const [currentUser, setCurrentUser] = useState('');
@@ -667,6 +1279,14 @@
       const [roles, setRoles] = useState([]);
       const [showModal, setShowModal] = useState(null);
       const [modalData, setModalData] = useState({});
+      const [pulseModal, setPulseModal] = useState({
+        open: false,
+        flows: [],
+        showLoading: true,
+        initialView: 'system',
+        initialFlowId: null,
+        initialStage: null
+      });
 
       useEffect(() => {
         setRoles(prev => prev.map(normalizeRole));
@@ -1416,12 +2036,38 @@
         skipStage(projectId, flowId, activityId, note);
       };
 
+      const openPulse = (flows, options = {}) => {
+        setPulseModal({
+          open: true,
+          flows,
+          showLoading: options.showLoading !== false,
+          initialView: options.initialView || 'system',
+          initialFlowId: options.initialFlowId || null,
+          initialStage: options.initialStage || null
+        });
+      };
+
+      const closePulse = () => {
+        setPulseModal(prev => ({ ...prev, open: false }));
+      };
+
       let mainContent;
 
       if (view === 'welcome') {
-        mainContent = <WelcomeView onCreate={createProject} />;
+        mainContent = <WelcomeView onCreate={createProject} onOpenPulse={() => openPulse(generatePulseMockData(), { showLoading: true })} />;
       } else if (view === 'dashboard') {
-        mainContent = <DashboardView projects={projects} currentUser={currentUser} roles={roles} onSelectFlow={(p, f) => { setSelectedProject(p); setSelectedFlow(f); setView('activities'); }} onCreateProject={() => setShowModal('createProject')} onManageUsers={(p) => { setSelectedProject(p); setShowModal('manageUsers'); }} onCreateFlow={(p) => { setSelectedProject(p); setShowModal('createFlow'); }} />;
+        mainContent = (
+          <DashboardView
+            projects={projects}
+            currentUser={currentUser}
+            roles={roles}
+            onSelectFlow={(p, f) => { setSelectedProject(p); setSelectedFlow(f); setView('activities'); }}
+            onCreateProject={() => setShowModal('createProject')}
+            onManageUsers={(p) => { setSelectedProject(p); setShowModal('manageUsers'); }}
+            onCreateFlow={(p) => { setSelectedProject(p); setShowModal('createFlow'); }}
+            onOpenPulse={(flows, options = {}) => openPulse(flows, { showLoading: false, ...options })}
+          />
+        );
       } else if (view === 'activities' && selectedProject && selectedFlow) {
         mainContent = (
           <ActivitiesView
@@ -1456,6 +2102,21 @@
       return (
         <>
           {mainContent}
+          {pulseModal.open && (
+            <div className="fixed inset-0 z-[60]">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+              <div className="relative z-10 min-h-full overflow-y-auto">
+                <ThePulse
+                  flows={pulseModal.flows}
+                  initialView={pulseModal.initialView}
+                  initialFlowId={pulseModal.initialFlowId}
+                  initialStage={pulseModal.initialStage}
+                  showLoading={pulseModal.showLoading}
+                  onClose={closePulse}
+                />
+              </div>
+            </div>
+          )}
           {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, users) => { createProject(name, users, currentUser); setShowModal(null); }} />}
           {showModal === 'createFlow' && selectedProject && <CreateFlowModal onClose={() => setShowModal(null)} onCreate={(name, del, desc) => { createFlow(selectedProject.id, name, del, desc); setShowModal(null); }} />}
           {showModal === 'manageUsers' && selectedProject && <ManageUsersModal project={selectedProject} onClose={() => setShowModal(null)} onAddUser={(name) => addUserToProject(selectedProject.id, name)} onRemoveUser={(uid) => removeUserFromProject(selectedProject.id, uid)} />}
@@ -1469,45 +2130,58 @@
       );
     }
 
-    function WelcomeView({ onCreate }) {
+    function WelcomeView({ onCreate, onOpenPulse }) {
       const [projectName, setProjectName] = useState('');
       const [team, setTeam] = useState('');
       const [userName, setUserName] = useState('');
+      const mockPulseData = useMemo(() => generatePulseMockData(), []);
 
       return (
         <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full">
+          <div className="max-w-5xl w-full">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4">EO</h1>
               <p className="text-gray-300 text-lg">Emergent Organizing</p>
             </div>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
-              <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Project name</label>
-                  <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Marketing, Product Development" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+            <div className="grid gap-8 lg:grid-cols-2">
+              <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
+                <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Project name</label>
+                    <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Marketing, Product Development" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
+                    <input type="text" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g., alex, pat, sam" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Your name</label>
+                    <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Your name" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
-                  <input type="text" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g., alex, pat, sam" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Your name</label>
-                  <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Your name" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                <button onClick={() => { if (projectName && userName) { const teamList = team ? team.split(',').map(s => s.trim()).filter(Boolean) : [userName]; onCreate(projectName, teamList, userName); } }} disabled={!projectName || !userName} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors">Create Project</button>
+                <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
+                  <p className="text-sm text-gray-300 leading-relaxed">Activities advance stage by stage. Dependencies compute readiness at each step so everyone can see what’s blocking progress.</p>
                 </div>
               </div>
-              <button onClick={() => { if (projectName && userName) { const teamList = team ? team.split(',').map(s => s.trim()) : [userName]; onCreate(projectName, teamList, userName); } }} disabled={!projectName || !userName} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors">Create Project</button>
-            </div>
-            <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
-              <p className="text-sm text-gray-300 leading-relaxed">Activities advance stage by stage. Dependencies compute readiness at each step so everyone can see what’s blocking progress.</p>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-100">Preview the Pulse</h3>
+                    <p className="text-sm text-gray-400">See how flows pulse across the EO metabolism.</p>
+                  </div>
+                  <button onClick={() => onOpenPulse && onOpenPulse(mockPulseData)} className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors">Open Interactive</button>
+                </div>
+                <PulsePreview flows={mockPulseData} emptyState="" />
+              </div>
             </div>
           </div>
         </div>
       );
     }
 
-    function DashboardView({ projects, currentUser, roles, onSelectFlow, onCreateProject, onManageUsers, onCreateFlow }) {
+    function DashboardView({ projects, currentUser, roles, onSelectFlow, onCreateProject, onManageUsers, onCreateFlow, onOpenPulse }) {
       const allStats = useMemo(() => {
         let totalProjects = projects.length;
         let totalFlows = 0;
@@ -1560,6 +2234,19 @@
         return work;
       }, [projects, currentUser]);
 
+      const { flows: pulseFlows, lookup: pulseLookup } = useMemo(() => buildPulseDataFromProjects(projects), [projects]);
+      const hasPulseData = pulseFlows.length > 0;
+
+      const handlePulseFlowClick = (flow) => {
+        if (!flow) return;
+        const mapping = pulseLookup[flow.id];
+        if (mapping) {
+          onSelectFlow(mapping.project, mapping.flow);
+        } else if (onOpenPulse) {
+          onOpenPulse(pulseFlows, { initialView: 'flow', initialFlowId: flow.id });
+        }
+      };
+
       return (
         <div className="min-h-screen bg-gray-950 text-gray-100">
           <div className="border-b border-gray-800 bg-gray-900/50">
@@ -1597,6 +2284,30 @@
                 <div className="text-2xl font-bold text-blue-400">{allStats.totalInProgress}</div>
                 <div className="text-sm text-gray-400">In Progress</div>
               </div>
+            </div>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-10">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold">System Pulse</h2>
+                  <p className="text-sm text-gray-400">Aggregate signals across every flow in your portfolio.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onOpenPulse && onOpenPulse(pulseFlows)}
+                    disabled={!hasPulseData}
+                    className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    Open Interactive Pulse
+                  </button>
+                </div>
+              </div>
+              <PulsePreview
+                flows={pulseFlows}
+                onFlowClick={hasPulseData ? handlePulseFlowClick : undefined}
+                onStageClick={() => onOpenPulse && onOpenPulse(pulseFlows)}
+                emptyState="Add a flow to see the EO metabolism in action."
+              />
             </div>
 
             {myWork.length > 0 && (
