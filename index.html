@@ -16,15 +16,15 @@
     const { useState, useEffect, useMemo } = React;
 
     const OPERATORS = [
-      { id: 'starter', name: 'Starter', desc: 'Designs & initiates work', seq: 1, canRequestRevision: false },
-      { id: 'doer', name: 'Doer', desc: 'Produces artifacts & outputs', seq: 2, canRequestRevision: false },
-      { id: 'compiler', name: 'Compiler', desc: 'Packages work into reviewable form', seq: 3, canRequestRevision: false },
-      { id: 'reviewer', name: 'Reviewer', desc: 'Evaluates & segments quality', seq: 4, canRequestRevision: true },
-      { id: 'approver', name: 'Approver', desc: 'Alters state with authority', seq: 5, canRequestRevision: true },
-      { id: 'documenter', name: 'Documenter', desc: 'Records & formalizes', seq: 6, canRequestRevision: false },
-      { id: 'convener', name: 'Convener', desc: 'Assembles people & resources', seq: 7, canRequestRevision: false },
-      { id: 'steward', name: 'Steward', desc: 'Supervises ongoing work', seq: 8, canRequestRevision: false },
-      { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrates next cycle', seq: 9, canRequestRevision: false }
+      { id: 'starter', name: 'Starter', desc: 'Conceives and designs work', seq: 1, tier: 'genesis', canRequestRevision: false },
+      { id: 'doer', name: 'Doer', desc: 'Builds and produces artifacts', seq: 2, tier: 'genesis', canRequestRevision: false },
+      { id: 'compiler', name: 'Compiler', desc: 'Packages work into coherent form', seq: 3, tier: 'genesis', canRequestRevision: false },
+      { id: 'reviewer', name: 'Reviewer', desc: 'Tests and evaluates quality', seq: 4, tier: 'evaluation', canRequestRevision: true },
+      { id: 'approver', name: 'Approver', desc: 'Authorizes and validates', seq: 5, tier: 'evaluation', canRequestRevision: true },
+      { id: 'documenter', name: 'Documenter', desc: 'Records and formalizes', seq: 6, tier: 'evaluation', canRequestRevision: false },
+      { id: 'integrator', name: 'Integrator', desc: 'Synthesizes into coherent wholes', seq: 7, tier: 'continuity', canRequestRevision: false },
+      { id: 'maintainer', name: 'Maintainer', desc: 'Preserves and sustains systems', seq: 8, tier: 'continuity', canRequestRevision: false },
+      { id: 'evolver', name: 'Evolver', desc: 'Transforms and reinitiates cycles', seq: 9, tier: 'continuity', canRequestRevision: false }
     ];
 
     const DEFAULT_STAGE_BLUEPRINT = OPERATORS.map((op, index) => ({
@@ -32,6 +32,7 @@
       name: op.name,
       description: op.desc,
       order: index,
+      tier: op.tier,
       supportsRevision: op.canRequestRevision
     }));
 
@@ -48,6 +49,7 @@
         name: stage.name,
         description: stage.description,
         order: idx,
+        tier: stage.tier,
         roleId: null,
         supportsRevision: stage.supportsRevision,
         conditions: '',
@@ -64,6 +66,7 @@
             name: stage.name,
             description: stage.description,
             order: idx,
+            tier: stage.tier,
             roleId: null,
             supportsRevision: stage.supportsRevision,
             conditions: '',
@@ -75,6 +78,7 @@
           ...stage,
           order: stage.order ?? idx,
           operatorKey: stage.operatorKey || stage.key,
+          tier: stage.tier || DEFAULT_STAGE_BLUEPRINT[idx]?.tier,
           uid: getStageIdentity(stage)
         }))
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
