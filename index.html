@@ -85,7 +85,7 @@
       return OPERATORS.map(op => ({
         stageKey: op.id,
         active: true,
-        assignedRoleIds: [],
+        assignedTeamIds: [],
         assignedUserIds: [],
         optedOutUserIds: []
       }));
@@ -96,6 +96,7 @@
       const stageKey = entry.stageKey || entry.operatorKey || entry.key || entry.id;
       if (!stageKey) return null;
       const {
+        assignedTeamIds: entryAssignedTeamIds,
         assignedRoleIds: entryAssignedRoleIds,
         assignedUserIds: entryAssignedUserIds,
         optedOutUserIds: entryOptedOutUserIds,
@@ -105,7 +106,8 @@
         excludedUserIds,
         ...rest
       } = entry;
-      const assignedRoleIds = toUniqueIds([
+      const assignedTeamIds = toUniqueIds([
+        ...(Array.isArray(entryAssignedTeamIds) ? entryAssignedTeamIds : []),
         ...(Array.isArray(entryAssignedRoleIds) ? entryAssignedRoleIds : []),
         ...(Array.isArray(roleIds) ? roleIds : []),
         ...(roleId ? [roleId] : [])
@@ -122,7 +124,7 @@
         ...rest,
         stageKey,
         active: entry.active !== false,
-        assignedRoleIds,
+        assignedTeamIds,
         assignedUserIds,
         optedOutUserIds
       };
@@ -142,7 +144,7 @@
         return {
           stageKey: op.id,
           active: true,
-          assignedRoleIds: [],
+          assignedTeamIds: [],
           assignedUserIds: [],
           optedOutUserIds: []
         };
@@ -237,7 +239,9 @@
       const stageConfig = getFlowStageConfig(flow);
       for (const config of stageConfig) {
         if (config.active === false) continue;
-        if (config.assignedRoleIds?.includes(role.id)) {
+        const assignedTeams = Array.isArray(config.assignedTeamIds) ? config.assignedTeamIds : [];
+        const legacyAssignedRoles = Array.isArray(config.assignedRoleIds) ? config.assignedRoleIds : [];
+        if (role && (assignedTeams.includes(role.id) || legacyAssignedRoles.includes(role.id))) {
           const stage = orderedStages.find(stageItem => {
             const identity = getStageIdentity(stageItem);
             return identity === config.stageKey || stageItem.operatorKey === config.stageKey || stageItem.key === config.stageKey;
@@ -1105,6 +1109,7 @@
           let mutated = false;
           const nextProjects = prev.map(project => {
             let projectChanged = false;
+            const teams = Array.isArray(project.teams) ? project.teams : [];
             const nextFlows = project.flows.map(flow => {
               const stageConfig = getFlowStageConfig(flow);
               const needsStageConfig = !Array.isArray(flow.stageConfig);
@@ -1140,20 +1145,24 @@
               projectChanged = true;
               return { ...flow, edges: nextEdges, stageConfig };
             });
+            if (teams !== project.teams) {
+              projectChanged = true;
+            }
             if (!projectChanged) return project;
             mutated = true;
-            return { ...project, flows: nextFlows };
+            return { ...project, teams, flows: nextFlows };
           });
           return mutated ? nextProjects : prev;
         });
       }, []);
 
       const createProject = (name, users, currentUserName) => {
-        const project = { 
-          id: `p-${Date.now()}`, 
-          name, 
+        const project = {
+          id: `p-${Date.now()}`,
+          name,
           users: users.map(u => ({ id: `u-${Date.now()}-${Math.random()}`, name: u })),
-          flows: [] 
+          teams: [],
+          flows: []
         };
         setProjects([...projects, project]);
         setCurrentUser(currentUserName);
@@ -1213,7 +1222,6 @@
               activities: [...f.activities, {
                 id: activityId,
                 title,
-                roleId,
                 deliverable,
                 currentStageId: stageId,
                 skippedStages: [],
@@ -1243,14 +1251,15 @@
               let currentStageId = baseTracking.currentStageId;
               let stageHistory = baseTracking.stageHistory;
               const stageReadBy = { ...baseTracking.stageReadBy };
+              const { roleId: nextRoleId, ...restUpdates } = updates || {};
 
-              if (updates.roleId) {
-                const nextRole = roles.find(r => r.id === updates.roleId);
+              if (nextRoleId) {
+                const nextRole = roles.find(r => r.id === nextRoleId);
                 const stage = findStageForRole(f, nextRole) || getFirstActiveStage(orderedStages) || null;
                 if (stage) currentStageId = getStageIdentity(stage);
               }
-              if (updates.stageId) currentStageId = updates.stageId;
-              if (updates.currentStageId) currentStageId = updates.currentStageId;
+              if (restUpdates.stageId) currentStageId = restUpdates.stageId;
+              if (restUpdates.currentStageId) currentStageId = restUpdates.currentStageId;
 
               if (currentStageId && !getLatestStageHistoryEntry(stageHistory, currentStageId)) {
                 stageHistory = [...stageHistory, createStageHistoryEntry(currentStageId, timestamp)];
@@ -1261,7 +1270,7 @@
 
               const merged = {
                 ...a,
-                ...updates,
+                ...restUpdates,
                 currentStageId,
                 stageHistory,
                 stageReadBy,
@@ -1670,7 +1679,6 @@
               return {
                 id: newActivityId,
                 title,
-                roleId,
                 deliverable,
                 currentStageId: stageId,
                 skippedStages: [],
