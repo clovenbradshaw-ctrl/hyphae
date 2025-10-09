@@ -1100,6 +1100,7 @@
       const [view, setView] = useState('welcome');
       const [currentUser, setCurrentUser] = useState('');
       const [projects, setProjects] = useState([]);
+      const [roles, setRoles] = useState([]);
       const [selectedProject, setSelectedProject] = useState(null);
       const [selectedFlow, setSelectedFlow] = useState(null);
       const [showModal, setShowModal] = useState(null);
@@ -1119,10 +1120,51 @@
         }
       }, [selectedProject]);
 
-      const roles = useMemo(() => {
+      const selectedProjectTeams = useMemo(() => {
         if (!selectedProject) return [];
         return Array.isArray(selectedProject.teams) ? selectedProject.teams : [];
       }, [selectedProject]);
+
+      const migrateRolesToTeams = () => {
+        setProjects(prev => prev.map(project => {
+          if (project.teams && project.teams.length > 0) return project;
+
+          const roleMap = new Map();
+
+          (project.flows || []).forEach(flow => {
+            (flow.activities || []).forEach(activity => {
+              if (activity && activity.roleId) {
+                const availableRoles = Array.isArray(project.roles) ? project.roles : roles;
+                const role = Array.isArray(availableRoles)
+                  ? availableRoles.find(r => r && r.id === activity.roleId)
+                  : null;
+                if (role && !roleMap.has(role.id)) {
+                  roleMap.set(role.id, role);
+                }
+              }
+            });
+          });
+
+          if (roleMap.size === 0) {
+            return { ...project, teams: Array.isArray(project.teams) ? project.teams : [] };
+          }
+
+          const teams = Array.from(roleMap.values()).map(role => ({
+            id: role.id ? role.id.replace('role-', 'team-') : `team-${Math.random().toString(36).slice(2, 7)}`,
+            name: role.name || 'Team',
+            userIds: Array.isArray(role.userIds) ? role.userIds : [],
+            color: ['blue', 'green', 'purple', 'orange'][Math.floor(Math.random() * 4)]
+          }));
+
+          return { ...project, teams };
+        }));
+
+        setRoles([]);
+      };
+
+      useEffect(() => {
+        migrateRolesToTeams();
+      }, []);
 
       useEffect(() => {
         setProjects(prev => {
@@ -1912,7 +1954,7 @@
       if (view === 'welcome') {
         mainContent = <WelcomeView onCreate={createProject} projects={projects} />;
       } else if (view === 'dashboard') {
-        mainContent = <DashboardView projects={projects} currentUser={currentUser} roles={roles} onSelectFlow={(p, f) => { setSelectedProject(p); setSelectedFlow(f); setView('activities'); }} onCreateProject={() => setShowModal('createProject')} onManageUsers={(p) => { setSelectedProject(p); setShowModal('manageUsers'); }} onManageTeams={(p) => { setSelectedProject(p); setShowModal('manageTeams'); }} onCreateFlow={(p) => { setSelectedProject(p); setShowModal('createFlow'); }} />;
+        mainContent = <DashboardView projects={projects} currentUser={currentUser} roles={selectedProjectTeams} onSelectFlow={(p, f) => { setSelectedProject(p); setSelectedFlow(f); setView('activities'); }} onCreateProject={() => setShowModal('createProject')} onManageUsers={(p) => { setSelectedProject(p); setShowModal('manageUsers'); }} onManageTeams={(p) => { setSelectedProject(p); setShowModal('manageTeams'); }} onCreateFlow={(p) => { setSelectedProject(p); setShowModal('createFlow'); }} />;
       } else if (view === 'activities' && selectedProject && selectedFlow) {
         mainContent = (
           <ActivitiesView
