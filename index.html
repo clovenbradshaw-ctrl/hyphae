@@ -27,6 +27,10 @@
       { id: 'evolver', name: 'Evolver', desc: 'Transforms and reinitiates cycles', seq: 9, tier: 'continuity', canRequestRevision: false }
     ];
 
+    function toUniqueIds(list = []) {
+      return Array.from(new Set((Array.isArray(list) ? list : []).filter(Boolean)));
+    }
+
     const DEFAULT_STAGE_BLUEPRINT = OPERATORS.map((op, index) => ({
       key: op.id,
       name: op.name,
@@ -50,13 +54,36 @@
       if (!entry) return null;
       const stageKey = entry.stageKey || entry.operatorKey || entry.key || entry.id;
       if (!stageKey) return null;
+      const {
+        assignedRoleIds: entryAssignedRoleIds,
+        assignedUserIds: entryAssignedUserIds,
+        optedOutUserIds: entryOptedOutUserIds,
+        roleId,
+        roleIds,
+        userIds: entryUserIds,
+        excludedUserIds,
+        ...rest
+      } = entry;
+      const assignedRoleIds = toUniqueIds([
+        ...(Array.isArray(entryAssignedRoleIds) ? entryAssignedRoleIds : []),
+        ...(Array.isArray(roleIds) ? roleIds : []),
+        ...(roleId ? [roleId] : [])
+      ]);
+      const assignedUserIds = toUniqueIds([
+        ...(Array.isArray(entryAssignedUserIds) ? entryAssignedUserIds : []),
+        ...(Array.isArray(entryUserIds) ? entryUserIds : [])
+      ]);
+      const optedOutUserIds = toUniqueIds([
+        ...(Array.isArray(entryOptedOutUserIds) ? entryOptedOutUserIds : []),
+        ...(Array.isArray(excludedUserIds) ? excludedUserIds : [])
+      ]);
       return {
-        ...entry,
+        ...rest,
         stageKey,
         active: entry.active !== false,
-        assignedRoleIds: Array.isArray(entry.assignedRoleIds) ? entry.assignedRoleIds : [],
-        assignedUserIds: Array.isArray(entry.assignedUserIds) ? entry.assignedUserIds : [],
-        optedOutUserIds: Array.isArray(entry.optedOutUserIds) ? entry.optedOutUserIds : []
+        assignedRoleIds,
+        assignedUserIds,
+        optedOutUserIds
       };
     }
 
@@ -96,11 +123,12 @@
 
     function normalizeRole(role) {
       if (!role) return null;
+      const { operatorType: _deprecatedOperatorType, ...rest } = role;
       return {
-        ...role,
-        userIds: Array.isArray(role.userIds) ? role.userIds : [],
-        parentRoleId: role.parentRoleId || null,
-        childRoleIds: Array.isArray(role.childRoleIds) ? role.childRoleIds : []
+        ...rest,
+        userIds: toUniqueIds(rest.userIds),
+        parentRoleId: rest.parentRoleId || null,
+        childRoleIds: toUniqueIds(rest.childRoleIds)
       };
     }
 
@@ -878,7 +906,7 @@
         const newRole = normalizeRole({
           id: `r-${timestamp}`,
           name,
-          userIds,
+          userIds: toUniqueIds(userIds),
           parentRoleId: parentRoleId || null,
           childRoleIds: []
         });
@@ -912,7 +940,7 @@
               parentRoleId: nextParentId
             };
             if (Object.prototype.hasOwnProperty.call(updates, 'userIds')) {
-              merged.userIds = Array.isArray(updates.userIds) ? updates.userIds : role.userIds;
+              merged.userIds = Array.isArray(updates.userIds) ? toUniqueIds(updates.userIds) : role.userIds;
             }
             return normalizeRole(merged);
           });

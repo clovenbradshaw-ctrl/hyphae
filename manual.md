@@ -31,34 +31,34 @@ The key insight: **Activities spawn new activities, dependencies compute states,
 
 ### The Nine Operators
 
-Every activity in Event Operator is assigned to one of nine operator types. These represent different kinds of coordination work:
+Every activity in Event Operator is assigned to one of nine operator stages. These represent different kinds of coordination work:
 
-1. **Starter** - Designs and initiates work
-2. **Doer** - Produces artifacts and outputs
-3. **Compiler** - Packages work into reviewable form
-4. **Reviewer** - Evaluates and segments quality
-5. **Approver** - Alters state with authority
+1. **Starter** - Conceives and designs work
+2. **Doer** - Builds and produces artifacts
+3. **Compiler** - Packages work into coherent form
+4. **Reviewer** - Tests and evaluates quality
+5. **Approver** - Authorizes and validates
 6. **Documenter** - Records and formalizes
-7. **Convener** - Assembles people and resources
-8. **Steward** - Supervises ongoing work
-9. **Coordinator** - Orchestrates the next cycle
+7. **Integrator** - Synthesizes into coherent wholes
+8. **Maintainer** - Preserves and sustains systems
+9. **Evolver** - Transforms and reinitiates cycles
 
 **Important:** These aren't rigid stages you must follow in order. They're semantic labels that help you understand what type of work is happening. Activities can appear in any order based on actual coordination needs.
 
 ### Roles
 
-Roles connect people to operator types. A role has:
-- A name (e.g., "Content Writer")
-- An operator type (e.g., Doer)
-- A list of people who can perform that role
+Roles are reusable team/group assignments. Each role has:
+- A name (e.g., "Content Team")
+- A list of direct members (people who belong to the role)
+- Optional nesting (a parent role and any child roles)
 
-You create roles as you need them. When you create an activity, you either pick an existing role or create a new one.
+You create roles as you need them. When you create an activity, you either pick an existing role or create a new one, and flows decide which stages those roles participate in.
 
 ### Activities
 
 Activities are units of work. Each activity has:
 - A title (what needs to be done)
-- A role (who does it and what operator type)
+- A role (the team or group responsible)
 - An optional deliverable (what gets produced)
 - A state (blocked, ready, in progress, or completed)
 - Dependencies (what it's waiting on)
@@ -109,14 +109,14 @@ These deliverables are your north star - all activities in the flow contribute t
 
 ### 3. Create Your First Activity
 
-Click into a flow and you'll see the nine operator columns. Initially they're all empty.
+Click into a flow and you'll see the nine operator stages. Initially they're all empty.
 
 Click "New Activity" to create your first piece of work.
 
 **Step 1: Choose or Create a Role**
 - If this is your first activity, you'll need to create a role
-- Enter a role name (e.g., "Content Writer")
-- Select the operator type that matches this work (e.g., Doer)
+- Enter a role name (e.g., "Content Team")
+- Add the people who belong in that role
 - Click "Create Role & Continue"
 
 **Step 2: Define the Activity**
@@ -151,6 +151,16 @@ Each flow is independent with its own activities and dependency graph.
 ### Team Visibility
 
 Everyone on the project team sees all flows and activities. When you create a role, you're automatically added to it, so you can claim activities in that role.
+
+### Stage Configuration
+
+Every flow keeps a stage configuration describing which of the nine stages are active and who can work in them. Each stage entry stores:
+- Whether the stage is active or skipped for this flow
+- Which roles are assigned to the stage
+- Individual users added directly to the stage
+- People who are explicitly opted out (even if their role is assigned)
+
+Inactive stages are skipped automatically. Assigning a role makes everyone in that role—including nested child roles—eligible for work in that stage. You can also assign or opt out specific users for fine-grained control.
 
 ---
 
@@ -197,14 +207,14 @@ You have two options for creating activities:
 ### The Role Decision
 
 Every activity needs a role. Ask yourself:
-1. **What type of work is this?** → Choose operator type
-2. **Who does this kind of work?** → Name the role
+1. **Which team or group owns this work?** → Pick or create the role
+2. **Does the flow's stage configuration already cover them?** → Assign the role to the right stages if needed
 
 **Examples:**
-- Writing content → Doer → "Content Writer"
-- Checking quality → Reviewer → "Editor"
-- Final sign-off → Approver → "Director"
-- Organizing meeting → Convener → "Project Manager"
+- Writing content → "Content Team" (assigned to Doer stage in flow config)
+- Checking quality → "Editorial Review" (assigned to Reviewer stage)
+- Final sign-off → "Leadership" (assigned to Approver stage)
+- Organizing meeting → "Logistics" (assigned to Integrator stage)
 
 ### Reusing Roles
 
@@ -421,7 +431,7 @@ Event Operator makes this natural without losing history.
 
 ### Who Can Request Revisions
 
-Only **Reviewer** and **Approver** operator types can request revisions. These roles have a "Revise" button when completing activities.
+Only activities currently in the **Reviewer** or **Approver** stages can request revisions. Anyone assigned to those stages sees a "Revise" button when completing the work.
 
 ### How to Request a Revision
 
@@ -544,14 +554,14 @@ Doer: "Write article" → Reviewer: "Review article"
 
 **How to build:**
 1. Create Approver activity
-2. Wire to multiple downstream activities (Convener, Steward, etc.)
+2. Wire to multiple downstream activities (Integrator, Maintainer, etc.)
 3. When approved, all distribution activities become ready
 
 **Example:**
 ```
-Approver: "Approve launch" ──┬──> Convener: "Schedule team meeting"
+Approver: "Approve launch" ──┬──> Integrator: "Schedule team meeting"
                              ├──> Documenter: "File compliance docs"
-                             └──> Steward: "Monitor rollout"
+                             └──> Maintainer: "Monitor rollout"
 ```
 
 ### Pattern 6: Emergent Discovery
@@ -588,17 +598,17 @@ Bad: "Review thing"
 
 The title should make it obvious what needs to be done.
 
-### Leverage Operator Types
+### Leverage Operator Stages
 
-The nine operator types help you think about coordination holistically:
+The nine operator stages help you think about coordination holistically:
 - Starting work (Starter)
 - Doing work (Doer, Compiler)
 - Quality gates (Reviewer, Approver)
 - Recording (Documenter)
-- Distribution (Convener, Steward)
-- Planning next (Coordinator)
+- Integration & continuity (Integrator, Maintainer)
+- Renewal & evolution (Evolver)
 
-If you're not sure where to put an activity, think about what kind of coordination work it is.
+If you're not sure where to put an activity, think about what kind of coordination work it is. Then check the flow's stage configuration to confirm the stage is active for that work.
 
 ### Create Roles That Match Your Team
 
@@ -668,7 +678,7 @@ Yes! You can claim activities in different flows. Each flow's dependency graph i
 The system doesn't prevent this, but it will create a situation where activities block each other. Use circular dependencies intentionally (like revision loops) and avoid accidental cycles.
 
 **Q: Can I export or print the dependency graph?**
-Not in the current version. The swimlane view shows you activities grouped by operator type, and each card shows its immediate dependencies.
+Not in the current version. The swimlane view shows you activities grouped by operator stage, and each card shows its immediate dependencies.
 
 **Q: How many activities can a flow have?**
 There's no hard limit, but flows with 20-30 activities start to feel complex. Consider breaking into multiple flows if coordination gets unwieldy.
