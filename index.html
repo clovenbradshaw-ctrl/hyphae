@@ -40,6 +40,35 @@
       supportsRevision: op.canRequestRevision
     }));
 
+    const OPERATOR_ORDER = OPERATORS.reduce((acc, operator, index) => {
+      acc[operator.id] = index;
+      return acc;
+    }, {});
+
+    const PULSE_STAGE_GROUPS = { genesis: [], evaluation: [], continuity: [] };
+    OPERATORS.forEach(operator => {
+      if (!PULSE_STAGE_GROUPS[operator.tier]) {
+        PULSE_STAGE_GROUPS[operator.tier] = [];
+      }
+      PULSE_STAGE_GROUPS[operator.tier].push({
+        id: operator.id,
+        name: operator.name,
+        desc: operator.desc
+      });
+    });
+
+    Object.keys(PULSE_STAGE_GROUPS).forEach(tier => {
+      PULSE_STAGE_GROUPS[tier] = PULSE_STAGE_GROUPS[tier].sort((a, b) => {
+        return (OPERATOR_ORDER[a.id] || 0) - (OPERATOR_ORDER[b.id] || 0);
+      });
+    });
+
+    const PULSE_TIER_META = {
+      genesis: { label: 'GENESIS', subtitle: 'Formation', color: 'text-blue-400' },
+      evaluation: { label: 'EVALUATION', subtitle: 'Refinement', color: 'text-purple-400' },
+      continuity: { label: 'CONTINUITY', subtitle: 'Recursion', color: 'text-green-400' }
+    };
+
     function createDefaultStageConfig() {
       return OPERATORS.map(op => ({
         stageKey: op.id,
@@ -656,6 +685,379 @@
       }
 
       return 'waiting';
+    }
+
+    function getStagePulseKey(stage) {
+      if (!stage) return null;
+      return stage.operatorKey || stage.key || getStageIdentity(stage);
+    }
+
+    function computeFlowPulse(flow) {
+      if (!flow) return [];
+      const orderedStages = getOrderedStages(flow);
+      const firstStage = getFirstActiveStage(orderedStages);
+      const fallbackStageId = firstStage ? getStageIdentity(firstStage) : null;
+      const stageById = {};
+      const stageKeyById = {};
+
+      orderedStages.forEach(stage => {
+        const identity = getStageIdentity(stage);
+        stageById[identity] = stage;
+        stageKeyById[identity] = getStagePulseKey(stage);
+      });
+
+      const stageTotals = {};
+      const activities = Array.isArray(flow.activities) ? flow.activities : [];
+      const edges = Array.isArray(flow.edges) ? flow.edges : [];
+
+      activities.forEach(activity => {
+        const stageIdSeed = activity.currentStageId || activity.stageId || fallbackStageId;
+        const timestamp = activity.createdAt || Date.now();
+        const { currentStageId, stageHistory } = ensureStageTracking(activity, stageIdSeed, timestamp);
+        const normalizedStageId = currentStageId || fallbackStageId;
+        if (!normalizedStageId) return;
+
+        const stage = stageById[normalizedStageId] || firstStage;
+        if (!stage) return;
+
+        const stageKey = stageKeyById[getStageIdentity(stage)] || getStagePulseKey(stage);
+        if (!stageKey) return;
+
+        const activityForState = {
+          ...activity,
+          currentStageId: normalizedStageId,
+          stageHistory
+        };
+
+        let state = computeActivityState(activityForState, stage, activities, edges);
+        const stageEntry = getLatestStageHistoryEntry(stageHistory, getStageIdentity(stage));
+
+        const inboundEdges = edges.filter(edge => edge.dstId === activity.id && (!edge.dstStage || edge.dstStage === normalizedStageId));
+        const dependenciesSatisfied = inboundEdges.length === 0 || inboundEdges.every(edge => {
+          const src = activities.find(a => a.id === edge.srcId);
+          if (!src) return false;
+          if (src.completedAt) return true;
+          const requiredStageId = edge.srcStage || getActivityDefaultStageId(src, orderedStages);
+          const status = getStageStatusFromHistory(src, requiredStageId);
+          if (status.completed || status.skipped) return true;
+          if (!edge.srcStage) {
+            const lastStage = Array.isArray(src.stageHistory) ? src.stageHistory[src.stageHistory.length - 1] : null;
+            return !!lastStage?.completedAt || !!lastStage?.skippedAt;
+          }
+          return false;
+        });
+
+        if (activity.completedAt || stageEntry?.completedAt) {
+          state = 'completed';
+        } else if (stageEntry?.skippedAt) {
+          state = 'waiting';
+        } else if (stageEntry?.claimedBy && !stageEntry?.completedAt) {
+          state = 'in_progress';
+        } else if (!dependenciesSatisfied && inboundEdges.length > 0) {
+          state = 'blocked';
+        } else if (!stageEntry || (!stageEntry.claimedBy && !stageEntry.completedAt && !stageEntry.skippedAt)) {
+          state = 'ready';
+        } else {
+          state = 'waiting';
+        }
+
+        if (!stageTotals[stageKey]) stageTotals[stageKey] = {};
+        stageTotals[stageKey][state] = (stageTotals[stageKey][state] || 0) + 1;
+      });
+
+      const aggregated = [];
+      Object.entries(stageTotals).forEach(([stage, states]) => {
+        Object.entries(states).forEach(([state, count]) => {
+          aggregated.push({ stage, state, count });
+        });
+      });
+
+      return aggregated;
+    }
+
+    function buildPulseFlows(projects = []) {
+      const flows = [];
+      projects.forEach(project => {
+        const projectFlows = Array.isArray(project?.flows) ? project.flows : [];
+        projectFlows.forEach(flow => {
+          flows.push({
+            id: flow.id,
+            name: flow.name,
+            projectName: project.name,
+            activities: computeFlowPulse(flow)
+          });
+        });
+      });
+      return flows;
+    }
+
+    function aggregatePulseActivities(flows = []) {
+      const aggregatedMap = {};
+      flows.forEach(flow => {
+        (flow.activities || []).forEach(activity => {
+          const key = `${activity.stage}::${activity.state}`;
+          aggregatedMap[key] = (aggregatedMap[key] || 0) + activity.count;
+        });
+      });
+      return Object.entries(aggregatedMap).map(([key, count]) => {
+        const [stage, state] = key.split('::');
+        return { stage, state, count };
+      });
+    }
+
+    function ActivityPulse({ count, state }) {
+      const getColor = () => {
+        switch (state) {
+          case 'ready':
+            return 'bg-green-500';
+          case 'in_progress':
+            return 'bg-blue-500';
+          case 'blocked':
+            return 'bg-red-500';
+          case 'waiting':
+            return 'bg-yellow-500';
+          case 'completed':
+            return 'bg-gray-600';
+          default:
+            return 'bg-gray-700';
+        }
+      };
+
+      const dots = Math.min(count, 5);
+
+      return (
+        <div className="flex items-center gap-1">
+          {Array.from({ length: dots }).map((_, index) => (
+            <div
+              key={index}
+              className={`w-2 h-2 rounded-full ${getColor()} animate-pulse`}
+              style={{ animationDelay: `${index * 200}ms` }}
+            />
+          ))}
+          {dots === 0 && <div className="w-2 h-2 rounded-full bg-gray-800" />}
+        </div>
+      );
+    }
+
+    function StageCell({ stage, activities = [], onClick, tier }) {
+      const totalActivities = activities.reduce((sum, activity) => sum + activity.count, 0);
+
+      const getFlowState = () => {
+        if (activities.some(activity => activity.state === 'blocked')) return 'blocked';
+        if (activities.some(activity => activity.state === 'in_progress')) return 'flowing';
+        if (activities.some(activity => activity.state === 'ready')) return 'ready';
+        if (totalActivities === 0) return 'empty';
+        return 'waiting';
+      };
+
+      const flowState = getFlowState();
+
+      const getBorderColor = () => {
+        switch (flowState) {
+          case 'flowing':
+            return 'border-blue-500/50';
+          case 'ready':
+            return 'border-green-500/50';
+          case 'blocked':
+            return 'border-red-500/50';
+          case 'waiting':
+            return 'border-yellow-500/50';
+          default:
+            return 'border-gray-700';
+        }
+      };
+
+      const handleClick = onClick || (() => {});
+
+      return (
+        <button
+          type="button"
+          onClick={handleClick}
+          className={`bg-gray-900 border-2 ${getBorderColor()} rounded-lg p-4 hover:bg-gray-800 transition-all hover:scale-105 text-left relative overflow-hidden group`}
+        >
+          <div
+            className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity ${
+              flowState === 'flowing'
+                ? 'bg-blue-500'
+                : flowState === 'ready'
+                  ? 'bg-green-500'
+                  : flowState === 'blocked'
+                    ? 'bg-red-500'
+                    : 'bg-gray-500'
+            }`}
+          />
+
+          <div className="relative z-10">
+            <div className="font-semibold text-gray-100 mb-1">{stage.name}</div>
+            <div className="text-xs text-gray-400 mb-3">{stage.desc}</div>
+
+            <div className="space-y-2">
+              {activities.length > 0 ? (
+                activities.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <ActivityPulse count={activity.count} state={activity.state} />
+                    <span className="text-xs text-gray-500">{activity.count}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-between">
+                  <ActivityPulse count={0} state="empty" />
+                  <span className="text-xs text-gray-500">0</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 text-xs text-gray-600">Total: {totalActivities}</div>
+          </div>
+        </button>
+      );
+    }
+
+    function TierBand({ tier, stages, aggregatedData, onStageClick }) {
+      const meta = PULSE_TIER_META[tier] || { label: tier, subtitle: '', color: 'text-gray-400' };
+
+      return (
+        <div className="space-y-3">
+          <div className={`text-xs font-bold tracking-widest ${meta.color} uppercase flex items-center gap-2`}>
+            <span>{meta.label}</span>
+            <div className="flex-1 h-px bg-gray-800" />
+            {meta.subtitle && <span className="text-[10px] text-gray-600">{meta.subtitle}</span>}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {stages.map(stage => {
+              const stageActivities = (aggregatedData || []).filter(activity => activity.stage === stage.id);
+              return (
+                <StageCell
+                  key={stage.id}
+                  stage={stage}
+                  activities={stageActivities}
+                  onClick={onStageClick ? () => onStageClick(stage) : undefined}
+                  tier={tier}
+                />
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function PulseOverview({ projects, className = '', title = 'The Pulse', subtitle = 'System metabolism across your flows' }) {
+      const pulseData = useMemo(() => {
+        const flows = buildPulseFlows(projects);
+        const aggregated = aggregatePulseActivities(flows);
+        return { flows, aggregated };
+      }, [projects]);
+
+      const totals = useMemo(() => {
+        const totalReady = pulseData.aggregated.filter(item => item.state === 'ready').reduce((sum, item) => sum + item.count, 0);
+        const totalInProgress = pulseData.aggregated
+          .filter(item => item.state === 'in_progress')
+          .reduce((sum, item) => sum + item.count, 0);
+        const totalBlocked = pulseData.aggregated
+          .filter(item => item.state === 'blocked')
+          .reduce((sum, item) => sum + item.count, 0);
+        return { totalReady, totalInProgress, totalBlocked };
+      }, [pulseData]);
+
+      const flowSummaries = useMemo(() => {
+        return pulseData.flows.map(flow => {
+          const summary = flow.activities.reduce(
+            (acc, activity) => {
+              acc.total += activity.count;
+              if (activity.state === 'ready') acc.ready += activity.count;
+              if (activity.state === 'in_progress') acc.inProgress += activity.count;
+              if (activity.state === 'blocked') acc.blocked += activity.count;
+              if (activity.state === 'waiting') acc.waiting += activity.count;
+              if (activity.state === 'completed') acc.completed += activity.count;
+              return acc;
+            },
+            { total: 0, ready: 0, inProgress: 0, blocked: 0, waiting: 0, completed: 0 }
+          );
+
+          const hasBlocked = summary.blocked > 0;
+          const hasInProgress = summary.inProgress > 0;
+          const healthStatus = hasBlocked ? '⊗ Blocked' : hasInProgress ? '✓ Flowing' : '○ Dormant';
+          const healthColor = hasBlocked ? 'text-red-400' : hasInProgress ? 'text-green-400' : 'text-gray-500';
+
+          return {
+            ...flow,
+            summary,
+            healthStatus,
+            healthColor
+          };
+        });
+      }, [pulseData.flows]);
+
+      return (
+        <div className={`bg-gray-900/60 border border-gray-800 rounded-2xl p-6 space-y-8 ${className}`}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-100">{title}</h2>
+              <p className="text-sm text-gray-400">{subtitle}</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-400">{totals.totalReady}</div>
+                <div className="text-xs text-gray-400">Ready</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-400">{totals.totalInProgress}</div>
+                <div className="text-xs text-gray-400">In Progress</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-red-400">{totals.totalBlocked}</div>
+                <div className="text-xs text-gray-400">Blocked</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <TierBand
+              tier="genesis"
+              stages={PULSE_STAGE_GROUPS.genesis}
+              aggregatedData={pulseData.aggregated}
+            />
+            <TierBand
+              tier="evaluation"
+              stages={PULSE_STAGE_GROUPS.evaluation}
+              aggregatedData={pulseData.aggregated}
+            />
+            <TierBand
+              tier="continuity"
+              stages={PULSE_STAGE_GROUPS.continuity}
+              aggregatedData={pulseData.aggregated}
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-200 uppercase tracking-wide">Active Flows</h3>
+              <span className="text-xs text-gray-500">{flowSummaries.length}</span>
+            </div>
+            {flowSummaries.length === 0 ? (
+              <div className="text-sm text-gray-500 bg-gray-900 border border-dashed border-gray-800 rounded-lg p-4">
+                Create a flow to see the system pulse come alive.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {flowSummaries.slice(0, 6).map(flow => (
+                  <div key={flow.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="text-xs text-gray-500">{flow.projectName}</div>
+                        <h4 className="font-medium text-gray-100">{flow.name}</h4>
+                      </div>
+                      <span className={`text-xs ${flow.healthColor}`}>{flow.healthStatus}</span>
+                    </div>
+                    <div className="text-xs text-gray-400">{flow.summary.total} active</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
     }
 
     function EventOperator() {
@@ -1419,7 +1821,7 @@
       let mainContent;
 
       if (view === 'welcome') {
-        mainContent = <WelcomeView onCreate={createProject} />;
+        mainContent = <WelcomeView onCreate={createProject} projects={projects} />;
       } else if (view === 'dashboard') {
         mainContent = <DashboardView projects={projects} currentUser={currentUser} roles={roles} onSelectFlow={(p, f) => { setSelectedProject(p); setSelectedFlow(f); setView('activities'); }} onCreateProject={() => setShowModal('createProject')} onManageUsers={(p) => { setSelectedProject(p); setShowModal('manageUsers'); }} onCreateFlow={(p) => { setSelectedProject(p); setShowModal('createFlow'); }} />;
       } else if (view === 'activities' && selectedProject && selectedFlow) {
@@ -1469,38 +1871,80 @@
       );
     }
 
-    function WelcomeView({ onCreate }) {
+    function WelcomeView({ onCreate, projects = [] }) {
       const [projectName, setProjectName] = useState('');
       const [team, setTeam] = useState('');
       const [userName, setUserName] = useState('');
 
+      const handleCreateProject = () => {
+        if (!projectName || !userName) return;
+        const members = team
+          .split(',')
+          .map(name => name.trim())
+          .filter(Boolean);
+        if (!members.includes(userName)) {
+          members.unshift(userName);
+        }
+        onCreate(projectName, members.length > 0 ? members : [userName], userName);
+      };
+
       return (
         <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full">
+          <div className="max-w-6xl w-full">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4">EO</h1>
               <p className="text-gray-300 text-lg">Emergent Organizing</p>
             </div>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
-              <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Project name</label>
-                  <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Marketing, Product Development" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start">
+              <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 shadow-lg">
+                <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Project name</label>
+                    <input
+                      type="text"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="e.g., EO Launch"
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
+                    <input
+                      type="text"
+                      value={team}
+                      onChange={(e) => setTeam(e.target.value)}
+                      placeholder="e.g., Maya, Alex, Priya"
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-2">Your name</label>
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="What should we call you?"
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
-                  <input type="text" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g., alex, pat, sam" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-200 mb-2">Your name</label>
-                  <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Your name" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
-                </div>
+                <button
+                  onClick={handleCreateProject}
+                  disabled={!projectName || !userName}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
+                >
+                  Create Project
+                </button>
               </div>
-              <button onClick={() => { if (projectName && userName) { const teamList = team ? team.split(',').map(s => s.trim()) : [userName]; onCreate(projectName, teamList, userName); } }} disabled={!projectName || !userName} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors">Create Project</button>
-            </div>
-            <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-6 mt-6">
-              <p className="text-sm text-gray-300 leading-relaxed">Activities advance stage by stage. Dependencies compute readiness at each step so everyone can see what’s blocking progress.</p>
+
+              <PulseOverview
+                projects={projects}
+                className="bg-gray-900 border border-gray-800/80"
+                subtitle="Live activity metabolism across your flows"
+              />
             </div>
           </div>
         </div>
@@ -1598,6 +2042,12 @@
                 <div className="text-sm text-gray-400">In Progress</div>
               </div>
             </div>
+
+            <PulseOverview
+              projects={projects}
+              className="mb-8"
+              subtitle="System metabolism across all projects"
+            />
 
             {myWork.length > 0 && (
               <div className="mb-8">
