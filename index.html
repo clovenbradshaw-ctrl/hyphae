@@ -164,17 +164,6 @@
       return orderedStages[0] || null;
     }
 
-    function normalizeRole(role) {
-      if (!role) return null;
-      const { operatorType: _deprecatedOperatorType, ...rest } = role;
-      return {
-        ...rest,
-        userIds: toUniqueIds(rest.userIds),
-        parentRoleId: rest.parentRoleId || null,
-        childRoleIds: toUniqueIds(rest.childRoleIds)
-      };
-    }
-
     function getStageIdentity(stage) {
       return stage?.id || stage?.key || stage?.name;
     }
@@ -368,7 +357,7 @@
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 1.657-1.79 3-4 3-.295 0-.582-.021-.859-.061-.284 1.193-1.355 2.06-2.641 2.06-.358 0-.703-.065-1.019-.184-.44.498-1.086.814-1.781.814-.732 0-1.392-.347-1.829-.888-.51.355-1.137.558-1.812.558-1.648 0-2.985-1.343-2.985-3 0-.333.054-.654.153-.954C3.1 12.715 2 11.477 2 10c0-1.657 1.79-3 4-3h11c2.21 0 4 1.343 4 3z" /></svg>;
     }
 
-    function ActivityDetailPanel({ activity, role, stage, nextStage, stageMap, dependencies, project, currentUser, onClose, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment }) {
+    function ActivityDetailPanel({ activity, role, stage, nextStage, stageMap, dependencies, project, flow, currentUser, canUserWorkOnStage, onClose, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment }) {
       const [commentText, setCommentText] = useState('');
       const [attachmentName, setAttachmentName] = useState('');
       const [attachmentUrl, setAttachmentUrl] = useState('');
@@ -384,7 +373,7 @@
       const claimedBy = activeEntry?.claimedBy || null;
       const priority = activeEntry?.priority || null;
       const isMine = claimedBy && claimedBy === currentUser;
-      const canClaim = stageState === 'ready' && !claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
+      const canClaim = stageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
       const canComplete = isMine && stageState === 'in_progress';
       const isCompleted = !!activity.completedAt;
       const canAdvanceStage = !isCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped';
@@ -1082,13 +1071,8 @@
       const [projects, setProjects] = useState([]);
       const [selectedProject, setSelectedProject] = useState(null);
       const [selectedFlow, setSelectedFlow] = useState(null);
-      const [roles, setRoles] = useState([]);
       const [showModal, setShowModal] = useState(null);
       const [modalData, setModalData] = useState({});
-
-      useEffect(() => {
-        setRoles(prev => prev.map(normalizeRole));
-      }, []);
 
       useEffect(() => {
         if (selectedProject && projects.length > 0) {
@@ -1102,6 +1086,11 @@
           const updated = selectedProject.flows.find(f => f.id === selectedFlow.id);
           if (updated) setSelectedFlow(updated);
         }
+      }, [selectedProject]);
+
+      const roles = useMemo(() => {
+        if (!selectedProject) return [];
+        return Array.isArray(selectedProject.teams) ? selectedProject.teams : [];
       }, [selectedProject]);
 
       useEffect(() => {
@@ -1203,12 +1192,12 @@
         const timestamp = Date.now();
         const activityId = options.id || `a-${timestamp}`;
         const explicitStageId = options.stageId || null;
-        const role = roles.find(r => r.id === roleId);
         const actor = currentUser || 'Someone';
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => {
             if (f.id !== flowId) return f;
+            const role = (p.teams || []).find(team => team.id === roleId);
             const orderedStages = getOrderedStages(f);
             const explicitStage = explicitStageId ? orderedStages.find(stage => getStageIdentity(stage) === explicitStageId) : null;
             const targetStage = explicitStage || findStageForRole(f, role) || getFirstActiveStage(orderedStages) || null;
@@ -1254,7 +1243,7 @@
               const { roleId: nextRoleId, ...restUpdates } = updates || {};
 
               if (nextRoleId) {
-                const nextRole = roles.find(r => r.id === nextRoleId);
+                const nextRole = (p.teams || []).find(team => team.id === nextRoleId);
                 const stage = findStageForRole(f, nextRole) || getFirstActiveStage(orderedStages) || null;
                 if (stage) currentStageId = getStageIdentity(stage);
               }
@@ -1324,67 +1313,96 @@
         } : p));
       };
 
-      const createRole = (name, userIds = [], parentRoleId = null) => {
+      const createTeam = (name, userIds = []) => {
+        if (!selectedProject) return null;
+
         const timestamp = Date.now();
-        const newRole = normalizeRole({
-          id: `r-${timestamp}`,
+        const newTeam = {
+          id: `team-${timestamp}`,
           name,
-          userIds: toUniqueIds(userIds),
-          parentRoleId: parentRoleId || null,
-          childRoleIds: []
-        });
-        setRoles(prev => {
-          const normalizedPrev = prev.map(normalizeRole).map(role => ({ ...role }));
-          let nextRoles = normalizedPrev;
-          if (newRole.parentRoleId) {
-            nextRoles = nextRoles.map(role => {
-              if (role.id !== newRole.parentRoleId) return role;
-              const childRoleIds = Array.from(new Set([...(role.childRoleIds || []), newRole.id]));
-              return { ...role, childRoleIds };
-            });
-          }
-          return [...nextRoles, newRole];
-        });
-        return newRole;
+          userIds: Array.from(new Set((userIds || []).filter(Boolean))),
+          color: ['blue', 'green', 'purple', 'orange'][Math.floor(Math.random() * 4)]
+        };
+
+        setProjects(prev => prev.map(project => project.id === selectedProject.id ? {
+          ...project,
+          teams: [...(project.teams || []), newTeam]
+        } : project));
+
+        return newTeam;
       };
 
-      const updateRole = (roleId, updates) => {
-        setRoles(prev => {
-          const normalizedPrev = prev.map(normalizeRole);
-          const targetRole = normalizedPrev.find(role => role.id === roleId);
-          if (!targetRole) return normalizedPrev;
-          const hasParentUpdate = Object.prototype.hasOwnProperty.call(updates, 'parentRoleId');
-          const nextParentId = hasParentUpdate ? (updates.parentRoleId || null) : targetRole.parentRoleId;
-          let updatedRoles = normalizedPrev.map(role => {
-            if (role.id !== roleId) return role;
-            const merged = {
-              ...role,
-              ...updates,
-              parentRoleId: nextParentId
-            };
-            if (Object.prototype.hasOwnProperty.call(updates, 'userIds')) {
-              merged.userIds = Array.isArray(updates.userIds) ? toUniqueIds(updates.userIds) : role.userIds;
-            }
-            return normalizeRole(merged);
-          });
+      const updateTeam = (teamId, updates) => {
+        if (!selectedProject) return;
 
-          if (targetRole.parentRoleId && targetRole.parentRoleId !== nextParentId) {
-            updatedRoles = updatedRoles.map(role => {
-              if (role.id !== targetRole.parentRoleId) return role;
-              return { ...role, childRoleIds: role.childRoleIds.filter(id => id !== roleId) };
-            });
-          }
+        setProjects(prev => prev.map(project => project.id === selectedProject.id ? {
+          ...project,
+          teams: (project.teams || []).map(team =>
+            team.id === teamId
+              ? {
+                  ...team,
+                  ...updates,
+                  userIds: Array.from(new Set((updates.userIds || team.userIds || []).filter(Boolean)))
+                }
+              : team
+          )
+        } : project));
+      };
 
-          if (nextParentId) {
-            updatedRoles = updatedRoles.map(role => {
-              if (role.id !== nextParentId) return role;
-              const childRoleIds = Array.from(new Set([...(role.childRoleIds || []), roleId]));
-              return { ...role, childRoleIds };
-            });
-          }
+      const deleteTeam = (teamId) => {
+        setProjects(prev => prev.map(project => ({
+          ...project,
+          teams: (project.teams || []).filter(team => team.id !== teamId),
+          flows: project.flows.map(flow => ({
+            ...flow,
+            stageConfig: (flow.stageConfig || []).map(config => ({
+              ...config,
+              assignedTeamIds: (config.assignedTeamIds || []).filter(id => id !== teamId)
+            }))
+          }))
+        })));
+      };
 
-          return updatedRoles.map(normalizeRole);
+      const getStageTeams = (flow, stageId) => {
+        if (!flow || !stageId) return [];
+
+        const stageConfig = getFlowStageConfig(flow);
+        const config = stageConfig.find(sc => sc.stageKey === stageId);
+        if (!config) return [];
+
+        const project = projects.find(p => p.flows.some(f => f.id === flow.id));
+        if (!project) return [];
+
+        const teams = (config.assignedTeamIds || [])
+          .map(teamId => (project.teams || []).find(team => team.id === teamId))
+          .filter(Boolean);
+
+        return teams;
+      };
+
+      const canUserWorkOnStage = (flow, stageId, userName) => {
+        if (!flow || !stageId || !userName) return false;
+
+        const project = projects.find(p => p.flows.some(f => f.id === flow.id));
+        if (!project) return false;
+
+        const teams = getStageTeams(flow, stageId);
+        const hasTeamAccess = teams.some(team =>
+          (team.userIds || []).some(userId => {
+            const user = project.users.find(u => u.id === userId);
+            return user?.name === userName;
+          })
+        );
+
+        if (hasTeamAccess) return true;
+
+        const config = getFlowStageConfig(flow).find(sc => sc.stageKey === stageId);
+        const hasDirectAccess = (config?.assignedUserIds || []).some(userId => {
+          const user = project.users.find(u => u.id === userId);
+          return user?.name === userName;
         });
+
+        return hasDirectAccess;
       };
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
@@ -1662,13 +1680,13 @@
       const spawnActivity = (projectId, flowId, sourceActivityId, title, roleId, deliverable = '') => {
         const timestamp = Date.now();
         const newActivityId = `a-${timestamp}`;
-        const role = roles.find(r => r.id === roleId);
         const actor = currentUser || 'Someone';
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => f.id === flowId ? {
             ...f,
             activities: [...f.activities, (() => {
+              const role = (p.teams || []).find(team => team.id === roleId);
               const orderedStages = getOrderedStages(f);
               const initialStage = findStageForRole(f, role) || getFirstActiveStage(orderedStages) || null;
               const stageId = initialStage ? getStageIdentity(initialStage) : null;
@@ -1850,6 +1868,7 @@
             project={selectedProject}
             flow={selectedFlow}
             roles={roles}
+            canUserWorkOnStage={canUserWorkOnStage}
             currentUser={currentUser}
             onBack={() => { setSelectedFlow(null); setSelectedProject(null); setView('dashboard'); }}
             onCreateActivity={(operatorId) => {
@@ -1881,12 +1900,12 @@
           {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, users) => { createProject(name, users, currentUser); setShowModal(null); }} />}
           {showModal === 'createFlow' && selectedProject && <CreateFlowModal onClose={() => setShowModal(null)} onCreate={(name, del, desc) => { createFlow(selectedProject.id, name, del, desc); setShowModal(null); }} />}
           {showModal === 'manageUsers' && selectedProject && <ManageUsersModal project={selectedProject} onClose={() => setShowModal(null)} onAddUser={(name) => addUserToProject(selectedProject.id, name)} onRemoveUser={(uid) => removeUserFromProject(selectedProject.id, uid)} />}
-          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal project={selectedProject} flow={selectedFlow} roles={roles} initialOperatorId={modalData.operatorId} onClose={() => { setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable) => { createActivity(selectedProject.id, selectedFlow.id, title, roleId, deliverable); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
-          {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal project={selectedProject} flow={selectedFlow} roles={roles} initialOperatorId={modalData.operatorId} onClose={() => { setShowModal(null); setModalData({}); }} onCreate={(title, roleId, deliverable) => { createActivity(selectedProject.id, selectedFlow.id, title, roleId, deliverable); setShowModal(null); setModalData({}); }} onCreateRole={createTeam} onUpdateRole={updateTeam} />}
+          {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} onCreateRole={createTeam} onUpdateRole={updateTeam} />}
           {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
           {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} roles={roles} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
           {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(options) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId, options); setShowModal(null); setModalData({}); }} />}
-          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={({ targetId, edgeType, srcStageId, dstStageId }) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }); setShowModal(null); setModalData({}); }} onCreate={({ title, roleId, deliverable, edgeType, srcStageId, dstStageId, initialStageId }) => { const timestamp = Date.now(); const newId = `a-${timestamp}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable, { id: newId, stageId: initialStageId }); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }), 50); setShowModal(null); setModalData({}); }} onCreateRole={createRole} onUpdateRole={updateRole} />}
+          {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} roles={roles} onClose={() => { setShowModal(null); setModalData({}); }} onWire={({ targetId, edgeType, srcStageId, dstStageId }) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }); setShowModal(null); setModalData({}); }} onCreate={({ title, roleId, deliverable, edgeType, srcStageId, dstStageId, initialStageId }) => { const timestamp = Date.now(); const newId = `a-${timestamp}`; createActivity(modalData.projectId, modalData.flowId, title, roleId, deliverable, { id: newId, stageId: initialStageId }); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }), 50); setShowModal(null); setModalData({}); }} onCreateRole={createTeam} onUpdateRole={updateTeam} />}
         </>
       );
     }
@@ -2200,7 +2219,7 @@
       );
     }
 
-    function ActivitiesView({ project, flow, roles, currentUser, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead, onAdvanceActivityStage, onSkipActivityStage, onConfigureStageConditions, onToggleStageSkip }) {
+    function ActivitiesView({ project, flow, roles, currentUser, canUserWorkOnStage, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead, onAdvanceActivityStage, onSkipActivityStage, onConfigureStageConditions, onToggleStageSkip }) {
       const stageData = useMemo(() => {
         const ordered = getOrderedStages(flow);
         const map = {};
@@ -2490,7 +2509,9 @@
                                       nextStage={nextStage}
                                       dependencies={deps}
                                       project={project}
+                                      flow={flow}
                                       currentUser={currentUser}
+                                      canUserWorkOnStage={canUserWorkOnStage}
                                       stageMap={stageData.map}
                                       isSelected={selectedActivityId === activity.id}
                                       onOpenDetails={openActivityDetails}
@@ -2525,6 +2546,8 @@
                 stageMap={stageData.map}
                 dependencies={selectedDependencies}
                 project={project}
+                flow={flow}
+                canUserWorkOnStage={canUserWorkOnStage}
                 currentUser={currentUser}
                 onClose={closeDetails}
                 onEdit={onEditActivity}
@@ -2546,14 +2569,14 @@
       );
     }
 
-    function ActivityCard({ activity, role, stage, nextStage, dependencies, project, currentUser, stageMap, isSelected, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision }) {
+    function ActivityCard({ activity, role, stage, nextStage, dependencies, project, flow, currentUser, canUserWorkOnStage, stageMap, isSelected, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision }) {
       const activeStage = stage;
       const stageState = activity.activeStageState || activity.state || 'waiting';
       const activeEntry = activity.activeStageEntry || null;
       const claimedBy = activeEntry?.claimedBy || null;
       const priority = activeEntry?.priority || null;
       const isMine = claimedBy && claimedBy === currentUser;
-      const canClaim = stageState === 'ready' && !claimedBy && role?.userIds.some(uid => project.users.find(u => u.id === uid)?.name === currentUser);
+      const canClaim = stageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
       const canCompleteStage = isMine && stageState === 'in_progress';
       const isActivityCompleted = !!activity.completedAt;
       const canAdvanceStage = !isActivityCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped';
