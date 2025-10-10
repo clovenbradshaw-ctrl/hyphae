@@ -33,6 +33,19 @@ const DEFAULT_STAGE_BLUEPRINT = OPERATORS.map((op, index) => ({
   supportsRevision: op.canRequestRevision
 }));
 
+// Gentle, lay-friendly defaults (flow rhythm)
+const DEFAULT_STAGE_TIMELINES = {
+  starter: 10,
+  doer: 14,
+  compiler: 7,
+  reviewer: 4,
+  approver: 3,
+  documenter: 7,
+  integrator: 10,
+  maintainer: 0,
+  evolver: 0
+};
+
 // Default EO-aligned, lay-friendly conditions
 const DEFAULT_CONDITIONS = {
   starter: "Goal, owner, and success criteria are clear.",
@@ -149,6 +162,7 @@ function createDefaultStages() {
     tier: stage.tier,
     roleId: null,
     supportsRevision: stage.supportsRevision,
+    expectedDurationDays: DEFAULT_STAGE_TIMELINES[stage.key] ?? 0,
     conditions: DEFAULT_CONDITIONS[stage.key] || '',
     skipped: false
   }));
@@ -166,6 +180,7 @@ function getOrderedStages(flow) {
         tier: stage.tier,
         roleId: null,
         supportsRevision: stage.supportsRevision,
+        expectedDurationDays: DEFAULT_STAGE_TIMELINES[stage.key] ?? 0,
         conditions: DEFAULT_CONDITIONS[stage.key] || '',
         skipped: false
       }));
