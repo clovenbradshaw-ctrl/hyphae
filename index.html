@@ -135,6 +135,10 @@
       return typeof value === 'string' ? value.trim() : '';
     }
 
+    function getFlowMode(flow) {
+      return flow?.mode === 'team' ? 'team' : 'solo';
+    }
+
     function createUserProfile(data = {}) {
       const now = new Date().toISOString();
       return {
@@ -818,11 +822,13 @@
       const claimedBy = activeEntry?.claimedBy || null;
       const priority = activeEntry?.priority || null;
       const isMine = claimedBy && claimedBy === currentUser;
-      const canClaim = stageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
-      const canComplete = isMine && stageState === 'in_progress';
+      const activeStageId = activity.currentStageId || activity.stageId || (stage ? getStageIdentity(stage) : null);
+      const canWorkStage = !!canUserWorkOnStage?.(flow, activeStageId, currentUser);
+      const canClaim = stageState === 'ready' && !claimedBy && canWorkStage;
+      const canComplete = isMine && stageState === 'in_progress' && canWorkStage;
       const isCompleted = !!activity.completedAt;
-      const canAdvanceStage = !isCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped';
-      const canSkipStage = !isCompleted && !!nextStage;
+      const canAdvanceStage = !isCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped' && canWorkStage;
+      const canSkipStage = !isCompleted && !!nextStage && canWorkStage;
       const stageSupportsRevision = stage?.supportsRevision;
       const assignedTeams = resolveStageTeams(project, flow, activity.currentStageId);
 
@@ -1906,6 +1912,7 @@
             name,
             deliverables,
             description,
+            mode: 'solo',
             stageConfig: createDefaultStageConfig(),
             stages: createDefaultStages(),
             activities: [],
@@ -2090,6 +2097,37 @@
         })));
       };
 
+      const userCanAccessStage = (project, flow, stageId, userName) => {
+        const mode = getFlowMode(flow);
+        if (mode !== 'team') return true;
+        if (!project || !stageId || !userName) return false;
+
+        const user = (project.users || []).find(u => u.name === userName);
+        if (!user) return false;
+
+        const teams = resolveStageTeams(project, flow, stageId);
+        const isOnAssignedTeam = teams.some(team => (team.userIds || []).includes(user.id));
+
+        const orderedStages = getOrderedStages(flow);
+        const stage = orderedStages.find(stageItem => {
+          const identity = getStageIdentity(stageItem);
+          return identity === stageId || stageItem.operatorKey === stageId || stageItem.key === stageId;
+        });
+        const stageKey = stage ? (stage.operatorKey || stage.key || getStageIdentity(stage)) : stageId;
+        const config = getFlowStageConfig(flow).find(sc => sc.stageKey === stageKey);
+        const assignedUserIds = config?.assignedUserIds || [];
+        const optedOutUserIds = config?.optedOutUserIds || [];
+
+        if (optedOutUserIds.includes(user.id)) {
+          return false;
+        }
+
+        if (isOnAssignedTeam) return true;
+        if (assignedUserIds.includes(user.id)) return true;
+
+        return false;
+      };
+
       const getStageTeams = (flow, stageId) => {
         if (!flow || !stageId) return [];
 
@@ -2100,37 +2138,34 @@
       };
 
       const canUserWorkOnStage = (flow, stageId, userName) => {
-        if (!flow || !stageId || !userName) return false;
+        if (!flow) return false;
 
         const project = projects.find(p => p.flows.some(f => f.id === flow.id));
-        if (!project) return false;
+        if (!project) return getFlowMode(flow) !== 'team';
 
-        const teams = getStageTeams(flow, stageId);
-        const hasTeamAccess = teams.some(team =>
-          (team.userIds || []).some(userId => {
-            const user = project.users.find(u => u.id === userId);
-            return user?.name === userName;
-          })
-        );
+        const normalizedStageId = stageId || (() => {
+          const ordered = getOrderedStages(flow);
+          const first = getFirstActiveStage(ordered);
+          return first ? getStageIdentity(first) : null;
+        })();
 
-        if (hasTeamAccess) return true;
+        if (!normalizedStageId) {
+          return getFlowMode(flow) !== 'team';
+        }
 
-        const orderedStages = getOrderedStages(flow);
-        const stage = orderedStages.find(stageItem => {
-          const identity = getStageIdentity(stageItem);
-          return identity === stageId || stageItem.operatorKey === stageId || stageItem.key === stageId;
-        });
-        const stageKey = stage ? (stage.operatorKey || stage.key || getStageIdentity(stage)) : stageId;
-        const config = getFlowStageConfig(flow).find(sc => sc.stageKey === stageKey);
-        const hasDirectAccess = (config?.assignedUserIds || []).some(userId => {
-          const user = project.users.find(u => u.id === userId);
-          return user?.name === userName;
-        });
-
-        return hasDirectAccess;
+        return userCanAccessStage(project, flow, normalizedStageId, userName);
       };
 
       const claimActivity = (projectId, flowId, activityId, priority) => {
+        const project = projects.find(p => p.id === projectId);
+        const flow = project?.flows.find(f => f.id === flowId);
+        const activity = flow?.activities.find(a => a.id === activityId);
+        if (!project || !flow || !activity) return;
+        const orderedStages = getOrderedStages(flow);
+        const stageIdSeed = activity.currentStageId || activity.stageId || getActivityDefaultStageId(activity, orderedStages);
+        if (getFlowMode(flow) === 'team' && !userCanAccessStage(project, flow, stageIdSeed, currentUser)) {
+          return;
+        }
         const timestamp = Date.now();
         const actor = currentUser || 'Someone';
         setProjects(prev => prev.map(p => p.id === projectId ? {
@@ -2231,6 +2266,15 @@
 
       const completeActivity = (projectId, flowId, activityId, options = {}) => {
         const { skipStage: skipStageFlag = false, note = null, taggedUserIds: taggedUserIdsOption = [] } = options || {};
+        const project = projects.find(p => p.id === projectId);
+        const flow = project?.flows.find(f => f.id === flowId);
+        const activity = flow?.activities.find(a => a.id === activityId);
+        if (!project || !flow || !activity) return;
+        const orderedStagesForAccess = getOrderedStages(flow);
+        const stageIdForAccess = activity.currentStageId || activity.stageId || getActivityDefaultStageId(activity, orderedStagesForAccess);
+        if (getFlowMode(flow) === 'team' && !userCanAccessStage(project, flow, stageIdForAccess, currentUser)) {
+          return;
+        }
         const timestamp = Date.now();
         const actor = currentUser || 'Someone';
         setProjects(prev => prev.map(p => p.id === projectId ? {
@@ -2260,7 +2304,19 @@
                     timestamp
                   }
                 : null;
-              const updatedHistory = updateLatestStageHistoryEntry(stageHistory, currentStageId, (entry) => ({
+              let workingHistory = [...stageHistory];
+              if (getFlowMode(f) === 'solo') {
+                workingHistory = updateLatestStageHistoryEntry(workingHistory, currentStageId, (entry) => {
+                  if (entry.claimedBy) return entry;
+                  return {
+                    ...entry,
+                    claimedBy: actor,
+                    claimedAt: entry.claimedAt || timestamp,
+                    log: [...(entry.log || []), { id: `log-${timestamp}-auto-claim`, text: `${actor} started this stage`, timestamp }]
+                  };
+                }, { createIfMissing: true, timestamp });
+              }
+              const updatedHistory = updateLatestStageHistoryEntry(workingHistory, currentStageId, (entry) => ({
                 ...entry,
                 exitedAt: timestamp,
                 completedAt: skipStageFlag ? entry.completedAt : timestamp,
@@ -2622,6 +2678,14 @@
         } : project));
       };
 
+      const updateFlowMode = (projectId, flowId, mode) => {
+        const nextMode = mode === 'team' ? 'team' : 'solo';
+        setProjects(prev => prev.map(project => project.id === projectId ? {
+          ...project,
+          flows: project.flows.map(flow => flow.id === flowId ? { ...flow, mode: nextMode } : flow)
+        } : project));
+      };
+
       const advanceStage = (projectId, flowId, activityId, options = {}) => {
         completeActivity(projectId, flowId, activityId, options);
       };
@@ -2663,7 +2727,17 @@
             }}
             onEditActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('editActivity'); }}
             onDeleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('deleteActivity'); }}
-            onClaimActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('claimActivity'); }}
+            onClaimActivity={(aid) => {
+              const activity = selectedFlow.activities.find(a => a.id === aid);
+              if (!activity) return;
+              const ordered = getOrderedStages(selectedFlow);
+              const stageId = activity.currentStageId || activity.stageId || getActivityDefaultStageId(activity, ordered);
+              if (getFlowMode(selectedFlow) === 'team' && !canUserWorkOnStage(selectedFlow, stageId, currentUser)) {
+                return;
+              }
+              setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid });
+              setShowModal('claimActivity');
+            }}
             onUnclaimActivity={(aid) => unclaimActivity(selectedProject.id, selectedFlow.id, aid)}
             onCompleteActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('completeActivity'); }}
             onWireActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('wireActivity'); }}
@@ -2681,6 +2755,7 @@
               setShowModal('assignStageTeams');
             }}
             onUpdateActivity={(aid, updates) => updateActivity(selectedProject.id, selectedFlow.id, aid, updates)}
+            onUpdateFlowMode={(mode) => updateFlowMode(selectedProject.id, selectedFlow.id, mode)}
           />
         );
       }
@@ -2721,7 +2796,19 @@
           {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal project={selectedProject} flow={selectedFlow} initialOperatorId={modalData.operatorId} onClose={() => { setShowModal(null); setModalData({}); }} onCreate={(title, deliverable, options = {}) => { createActivity(selectedProject.id, selectedFlow.id, title, deliverable, options); setShowModal(null); setModalData({}); }} />}
           {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} />}
           {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
-          {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'claimActivity' && selectedFlow && (
+            <ClaimActivityModal
+              activity={selectedFlow.activities.find(a => a.id === modalData.activityId)}
+              project={selectedProject}
+              mode={getFlowMode(selectedFlow)}
+              onClose={() => { setShowModal(null); setModalData({}); }}
+              onClaim={(priority) => {
+                claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority);
+                setShowModal(null);
+                setModalData({});
+              }}
+            />
+          )}
           {showModal === 'completeActivity' && selectedFlow && (
             <CompleteActivityModal
               activity={selectedFlow.activities.find(a => a.id === modalData.activityId)}
@@ -3169,7 +3256,9 @@
       );
     }
 
-    function ActivitiesView({ project, flow, currentUser, canUserWorkOnStage, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead, onAdvanceActivityStage, onSkipActivityStage, onConfigureStageConditions, onToggleStageSkip, onAssignStageTeams, onUpdateActivity }) {
+    function ActivitiesView({ project, flow, currentUser, canUserWorkOnStage, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead, onAdvanceActivityStage, onSkipActivityStage, onConfigureStageConditions, onToggleStageSkip, onAssignStageTeams, onUpdateActivity, onUpdateFlowMode }) {
+      const flowMode = getFlowMode(flow);
+      const isTeamMode = flowMode === 'team';
       const stageData = useMemo(() => {
         const ordered = getOrderedStages(flow);
         const map = {};
@@ -3321,6 +3410,11 @@
         setSelectedActivityId(null);
       };
 
+      const handleModeToggle = (mode) => {
+        if (!onUpdateFlowMode || mode === flowMode) return;
+        onUpdateFlowMode(mode);
+      };
+
       return (
         <div className="min-h-screen bg-[var(--bg)] text-[var(--text-strong)]">
           <div className="border-b border-[var(--border)] bg-[var(--surface)]/50">
@@ -3347,6 +3441,28 @@
                 <button onClick={() => onCreateActivity()} className="flex items-center gap-2 bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded-lg font-medium transition-colors">
                   <PlusIcon className="w-4 h-4" />New Activity
                 </button>
+              </div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Collaboration mode</div>
+                  <div className="text-sm text-[var(--text)] mt-1">
+                    {isTeamMode
+                      ? 'Team — stages are limited to assigned teams or individuals.'
+                      : 'Solo — any participant can work every stage without assignments.'}
+                  </div>
+                </div>
+                <div className="inline-flex rounded-lg border border-[var(--border)] overflow-hidden">
+                  {['solo', 'team'].map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => handleModeToggle(mode)}
+                      className={`px-3 py-1.5 text-sm transition-colors ${flowMode === mode ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--elevated)]'}`}
+                      type="button"
+                    >
+                      {mode === 'solo' ? 'Solo' : 'Team'}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <div className="text-sm text-[var(--text)] mb-2">Flow Deliverables:</div>
@@ -3408,12 +3524,15 @@
                                 <span className="text-xs bg-[var(--elevated)] px-2 py-1 rounded self-start">{stageActivities.length}</span>
                               </div>
                               {(() => {
-                                if (stageTeams.length === 0) {
+                                if (isTeamMode && stageTeams.length === 0) {
                                   return (
                                     <div className="text-xs text-[var(--warn)] bg-[var(--warn)]/20 border border-[var(--warn)]/30 rounded px-2 py-1 mt-2">
                                       ⚠️ No teams assigned - no one can work on activities in this stage
                                     </div>
                                   );
+                                }
+                                if (stageTeams.length === 0) {
+                                  return null;
                                 }
                                 return (
                                   <div className="flex flex-wrap gap-1 mt-2">
@@ -3553,11 +3672,13 @@
       const claimedBy = activeEntry?.claimedBy || null;
       const priority = activeEntry?.priority || null;
       const isMine = claimedBy && claimedBy === currentUser;
-      const canClaim = stageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
-      const canCompleteStage = isMine && stageState === 'in_progress';
+      const activeStageId = activity.currentStageId || activity.stageId || (activeStage ? getStageIdentity(activeStage) : null);
+      const canWorkStage = !!canUserWorkOnStage?.(flow, activeStageId, currentUser);
+      const canClaim = stageState === 'ready' && !claimedBy && canWorkStage;
+      const canCompleteStage = isMine && stageState === 'in_progress' && canWorkStage;
       const isActivityCompleted = !!activity.completedAt;
-      const canAdvanceStage = !isActivityCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped';
-      const canSkipStage = !isActivityCompleted && !!nextStage;
+      const canAdvanceStage = !isActivityCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped' && canWorkStage;
+      const canSkipStage = !isActivityCompleted && !!nextStage && canWorkStage;
       const stageSupportsRevision = activeStage?.supportsRevision;
       const showRevisionButton = stageSupportsRevision && dependencies.length > 0 && !isActivityCompleted;
       const showCompleteActivity = !nextStage && canCompleteStage;
@@ -4497,12 +4618,20 @@
       );
     }
 
-    function ClaimActivityModal({ activity, project, onClose, onClaim }) {
+    function ClaimActivityModal({ activity, project, mode, onClose, onClaim }) {
       const [priority, setPriority] = useState('medium');
+      const isSolo = mode !== 'team';
       return (
         <Modal onClose={onClose} title="Claim Activity">
           <div className="space-y-4">
-            <div className="bg-[var(--surface)] rounded-lg p-4"><h3 className="font-medium mb-2 text-[var(--text-strong)]">{activity?.title}</h3></div>
+            <div className="bg-[var(--surface)] rounded-lg p-4">
+              <h3 className="font-medium mb-2 text-[var(--text-strong)]">{activity?.title}</h3>
+              {isSolo && (
+                <p className="text-xs text-[var(--text-muted)]">
+                  Solo mode: claiming is optional—advancing will auto-claim for you.
+                </p>
+              )}
+            </div>
             <div><label className="block text-sm text-[var(--text)] mb-3">Priority</label><div className="space-y-2">{[{ value: 'high', label: 'High - Focus' }, { value: 'medium', label: 'Medium - Normal' }, { value: 'low', label: 'Low - When available' }].map(opt => <label key={opt.value} className="flex items-center gap-3 p-3 bg-[var(--elevated)] border border-[var(--border)] rounded cursor-pointer hover:border-[var(--border)]"><input type="radio" name="priority" value={opt.value} checked={priority === opt.value} onChange={(e) => setPriority(e.target.value)} /><span className="text-sm text-[var(--text-strong)]">{opt.label}</span></label>)}</div></div>
             <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => onClaim(priority)} className="flex-1 bg-[var(--accent)] hover:opacity-90 py-2 rounded transition-colors">Claim</button></div>
           </div>
