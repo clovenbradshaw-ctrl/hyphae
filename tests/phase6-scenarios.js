@@ -33,6 +33,19 @@ const DEFAULT_STAGE_BLUEPRINT = OPERATORS.map((op, index) => ({
   supportsRevision: op.canRequestRevision
 }));
 
+// Default EO-aligned, lay-friendly conditions
+const DEFAULT_CONDITIONS = {
+  starter: "Goal, owner, and success criteria are clear.",
+  doer: "Something tangible exists to review (a draft, prototype, or demo).",
+  compiler: "Pieces combined into a coherent package ready for feedback.",
+  reviewer: "At least one peer has reviewed and left feedback.",
+  approver: "Decision-maker has signed off or provided approval notes.",
+  documenter: "Final version and key notes recorded in one place.",
+  integrator: "Work merged into the wider system or process.",
+  maintainer: "Monitoring, updates, and issue tracking are active.",
+  evolver: "Lessons captured and next cycle defined or initiated."
+};
+
 function toUniqueIds(list = []) {
   return Array.from(new Set((Array.isArray(list) ? list : []).filter(Boolean)));
 }
@@ -136,7 +149,7 @@ function createDefaultStages() {
     tier: stage.tier,
     roleId: null,
     supportsRevision: stage.supportsRevision,
-    conditions: '',
+    conditions: DEFAULT_CONDITIONS[stage.key] || '',
     skipped: false
   }));
 }
@@ -153,7 +166,7 @@ function getOrderedStages(flow) {
         tier: stage.tier,
         roleId: null,
         supportsRevision: stage.supportsRevision,
-        conditions: '',
+        conditions: DEFAULT_CONDITIONS[stage.key] || '',
         skipped: false
       }));
 

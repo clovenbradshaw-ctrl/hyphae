@@ -153,6 +153,142 @@
       };
     }
 
+    function getDirectoryUserKey(user) {
+      if (!user) return null;
+      const email = trimString(user.email || '').toLowerCase();
+      if (email) return `email:${email}`;
+      const matrixId = trimString(user.matrixId || '').toLowerCase();
+      if (matrixId) return `matrix:${matrixId}`;
+      const phoneDigits = trimString(user.phone || '').replace(/\D+/g, '');
+      if (phoneDigits) return `phone:${phoneDigits}`;
+      const name = trimString(user.name || '');
+      if (!name) return null;
+      const relationship = trimString(user.relationship || '').toLowerCase();
+      const role = trimString(user.role || '').toLowerCase();
+      return `name:${name.toLowerCase()}|rel:${relationship}|role:${role}`;
+    }
+
+    function mergeDirectoryUser(existing, candidate) {
+      if (!existing) return candidate;
+      if (!candidate) return existing;
+      const merged = { ...existing };
+      const fields = ['email', 'phone', 'relationship', 'role', 'matrixId', 'avatar', 'notes'];
+      fields.forEach(field => {
+        if (!trimString(merged[field]) && trimString(candidate[field])) {
+          merged[field] = candidate[field];
+        }
+      });
+      if (candidate.metadata) {
+        merged.metadata = { ...(merged.metadata || {}), ...candidate.metadata };
+      }
+      return merged;
+    }
+
+    function buildProjectDirectory(projects = []) {
+      const userMap = new Map();
+      const roleMap = new Map();
+
+      const ensureDirectoryUser = (user) => {
+        if (!user) return null;
+        const key = getDirectoryUserKey(user);
+        if (!key) return null;
+        const candidate = { ...user, directoryKey: key };
+        if (!userMap.has(key)) {
+          userMap.set(key, candidate);
+          return candidate;
+        }
+        const existing = userMap.get(key);
+        const merged = mergeDirectoryUser(existing, candidate);
+        merged.directoryKey = key;
+        userMap.set(key, merged);
+        return merged;
+      };
+
+      projects.forEach(project => {
+        const projectUsers = Array.isArray(project?.users) ? project.users : [];
+        projectUsers.forEach(ensureDirectoryUser);
+        const userLookup = new Map(projectUsers.map(user => [user.id, user]));
+        const teams = Array.isArray(project?.teams) ? project.teams : [];
+        teams.forEach(team => {
+          const members = (Array.isArray(team?.userIds) ? team.userIds : [])
+            .map(id => userLookup.get(id))
+            .map(ensureDirectoryUser)
+            .filter(Boolean);
+          if (members.length === 0) return;
+          const memberKeys = members.map(member => member.directoryKey).filter(Boolean);
+          if (memberKeys.length === 0) return;
+          const roleId = `${project.id || 'project'}-${team.id || team.name || memberKeys.join('-')}`;
+          if (roleMap.has(roleId)) {
+            const existing = roleMap.get(roleId);
+            const combinedKeys = Array.from(new Set([...existing.memberKeys, ...memberKeys]));
+            roleMap.set(roleId, {
+              ...existing,
+              memberKeys: combinedKeys,
+              members: combinedKeys.map(key => userMap.get(key)).filter(Boolean)
+            });
+            return;
+          }
+          roleMap.set(roleId, {
+            id: roleId,
+            name: trimString(team.name) || 'Team',
+            projectName: trimString(project.name) || 'Project',
+            members: memberKeys.map(key => userMap.get(key)).filter(Boolean),
+            memberKeys
+          });
+        });
+      });
+
+      const users = Array.from(userMap.values()).sort((a, b) =>
+        trimString(a.name).localeCompare(trimString(b.name))
+      );
+      const roles = Array.from(roleMap.values()).sort((a, b) =>
+        trimString(a.name).localeCompare(trimString(b.name))
+      );
+
+      return { users, roles, userMap };
+    }
+
+    function normalizeProjectUserPayload({ selectedUsers = [], manualMembers = [], fallbackUsers = [] }) {
+      const seen = new Set();
+      const payload = [];
+
+      const pushEntry = (entry) => {
+        if (!entry) return;
+        if (typeof entry === 'string') {
+          const name = trimString(entry);
+          if (!name) return;
+          const key = name.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          payload.push({ name });
+          return;
+        }
+        if (typeof entry === 'object') {
+          const name = trimString(entry.name || '');
+          if (!name) return;
+          const key = name.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          const data = { ...entry };
+          delete data.id;
+          delete data.addedAt;
+          delete data.lastModified;
+          delete data.directoryKey;
+          if (data.metadata) {
+            data.metadata = { ...data.metadata };
+          }
+          data.name = name;
+          payload.push(data);
+        }
+      };
+
+      selectedUsers.forEach(pushEntry);
+      manualMembers.forEach(pushEntry);
+      fallbackUsers.forEach(pushEntry);
+
+      return payload;
+    }
+
     function getUserInitials(name) {
       if (!name) return '👤';
       const parts = trimString(name).split(/\s+/).filter(Boolean);
@@ -236,6 +372,19 @@
       tier: op.tier,
       supportsRevision: op.canRequestRevision
     }));
+
+    // Default EO-aligned, lay-friendly conditions
+    const DEFAULT_CONDITIONS = {
+      starter: "Goal, owner, and success criteria are clear.",
+      doer: "Something tangible exists to review (a draft, prototype, or demo).",
+      compiler: "Pieces combined into a coherent package ready for feedback.",
+      reviewer: "At least one peer has reviewed and left feedback.",
+      approver: "Decision-maker has signed off or provided approval notes.",
+      documenter: "Final version and key notes recorded in one place.",
+      integrator: "Work merged into the wider system or process.",
+      maintainer: "Monitoring, updates, and issue tracking are active.",
+      evolver: "Lessons captured and next cycle defined or initiated."
+    };
 
     const OPERATOR_ORDER = OPERATORS.reduce((acc, operator, index) => {
       acc[operator.id] = index;
@@ -372,7 +521,7 @@
         tier: stage.tier,
         roleId: null,
         supportsRevision: stage.supportsRevision,
-        conditions: '',
+        conditions: DEFAULT_CONDITIONS[stage.key] || '',
         skipped: false
       }));
     }
@@ -389,7 +538,7 @@
             tier: stage.tier,
             roleId: null,
             supportsRevision: stage.supportsRevision,
-            conditions: '',
+            conditions: DEFAULT_CONDITIONS[stage.key] || '',
             skipped: false
           }));
 
@@ -1477,19 +1626,45 @@
       }, []);
 
       const createProject = (name, users, currentUserName) => {
-        const normalizedUsers = Array.isArray(users)
-          ? users.map(value => trimString(value)).filter(Boolean)
-          : [];
-        const projectUsers = normalizedUsers.map(userName => createUserProfile({ name: userName }));
+        const normalizedName = trimString(name);
+        if (!normalizedName) return;
+
+        const normalizedUsers = Array.isArray(users) ? users : [];
+        const seen = new Set();
+        const projectUsers = [];
+
+        normalizedUsers.forEach(entry => {
+          if (!entry) return;
+          const nameValue = typeof entry === 'string' ? trimString(entry) : trimString(entry.name || '');
+          if (!nameValue) return;
+          const key = nameValue.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          const profile = createUserProfile({
+            ...entry,
+            id: null,
+            name: nameValue,
+            addedAt: null,
+            lastModified: null
+          });
+          profile.metadata = entry?.metadata ? { ...entry.metadata } : {};
+          projectUsers.push(profile);
+        });
+
+        const creatorName = trimString(currentUserName);
+        if (creatorName && !seen.has(creatorName.toLowerCase())) {
+          projectUsers.unshift(createUserProfile({ name: creatorName }));
+        }
+
         const project = {
           id: `p-${Date.now()}`,
-          name,
+          name: normalizedName,
           users: projectUsers,
           teams: [],
           flows: []
         };
         setProjects([...projects, project]);
-        setCurrentUser(currentUserName);
+        setCurrentUser(creatorName || currentUserName);
         setView('dashboard');
       };
 
@@ -2346,7 +2521,16 @@
       return (
         <>
           {mainContent}
-          {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, users) => { createProject(name, users, currentUser); setShowModal(null); }} />}
+          {showModal === 'createProject' && (
+            <CreateProjectModal
+              projects={projects}
+              onClose={() => setShowModal(null)}
+              onCreate={(name, users) => {
+                createProject(name, users, currentUser);
+                setShowModal(null);
+              }}
+            />
+          )}
           {showModal === 'createFlow' && selectedProject && <CreateFlowModal onClose={() => setShowModal(null)} onCreate={(name, del, desc) => { createFlow(selectedProject.id, name, del, desc); setShowModal(null); }} />}
           {showModal === 'manageUsers' && selectedProject && (
             <ManageUsersModal
@@ -2402,17 +2586,68 @@
       const [projectName, setProjectName] = useState('');
       const [team, setTeam] = useState('');
       const [userName, setUserName] = useState('');
+      const [selectedDirectoryUserKeys, setSelectedDirectoryUserKeys] = useState([]);
+
+      const directory = useMemo(() => buildProjectDirectory(projects), [projects]);
+      const manualMembers = useMemo(() => team.split(',').map(name => trimString(name)).filter(Boolean), [team]);
+      const selectedDirectoryUsers = useMemo(
+        () => selectedDirectoryUserKeys.map(key => directory.userMap.get(key)).filter(Boolean),
+        [selectedDirectoryUserKeys, directory]
+      );
+      const combinedMembers = useMemo(() => {
+        const names = new Set();
+        selectedDirectoryUsers.forEach(user => {
+          const name = trimString(user?.name || '');
+          if (name) names.add(name);
+        });
+        manualMembers.forEach(name => {
+          if (name) names.add(name);
+        });
+        const creatorName = trimString(userName);
+        if (creatorName) names.add(creatorName);
+        return Array.from(names);
+      }, [selectedDirectoryUsers, manualMembers, userName]);
+
+      const toggleDirectoryUserKey = (key) => {
+        if (!key) return;
+        setSelectedDirectoryUserKeys(prev => {
+          const set = new Set(prev);
+          if (set.has(key)) {
+            set.delete(key);
+          } else {
+            set.add(key);
+          }
+          return Array.from(set);
+        });
+      };
+
+      const handleAddRoleMembers = (role) => {
+        if (!role) return;
+        setSelectedDirectoryUserKeys(prev => {
+          const set = new Set(prev);
+          (role.memberKeys || []).forEach(key => {
+            if (key) set.add(key);
+          });
+          return Array.from(set);
+        });
+      };
 
       const handleCreateProject = () => {
-        if (!projectName || !userName) return;
-        const members = team
-          .split(',')
-          .map(name => name.trim())
-          .filter(Boolean);
-        if (!members.includes(userName)) {
-          members.unshift(userName);
-        }
-        onCreate(projectName, members.length > 0 ? members : [userName], userName);
+        const nameValue = trimString(projectName);
+        const creatorName = trimString(userName);
+        if (!nameValue || !creatorName) return;
+
+        const payloadUsers = normalizeProjectUserPayload({
+          selectedUsers: selectedDirectoryUsers,
+          manualMembers,
+          fallbackUsers: [{ name: creatorName }]
+        });
+
+        onCreate(nameValue, payloadUsers, creatorName);
+        setProjectName('');
+        setTeam('');
+        setUserName('');
+        setSelectedDirectoryUserKeys([]);
       };
 
       return (
@@ -2446,7 +2681,29 @@
                       placeholder="e.g., Maya, Alex, Priya"
                       className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
                     />
+                    <p className="text-xs text-gray-500 mt-2">You can also select people or roles below to add them automatically.</p>
                   </div>
+                  <DirectoryQuickAdd
+                    directory={directory}
+                    selectedKeys={selectedDirectoryUserKeys}
+                    onToggleUserKey={toggleDirectoryUserKey}
+                    onAddRoleMembers={handleAddRoleMembers}
+                  />
+                  {combinedMembers.length > 0 && (
+                    <div>
+                      <label className="block text-sm text-gray-200 mb-2">Team preview</label>
+                      <div className="flex flex-wrap gap-2">
+                        {combinedMembers.map(name => (
+                          <span
+                            key={name}
+                            className="text-xs px-3 py-1 rounded-full bg-gray-800 border border-gray-700 text-gray-100"
+                          >
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm text-[var(--text)] mb-2">Your name</label>
                     <input
@@ -3734,9 +3991,155 @@
       );
     }
 
-    function CreateProjectModal({ onClose, onCreate }) {
+    function DirectoryQuickAdd({ directory, selectedKeys, onToggleUserKey, onAddRoleMembers }) {
+      const users = Array.isArray(directory?.users) ? directory.users : [];
+      const roles = Array.isArray(directory?.roles) ? directory.roles : [];
+      if (users.length === 0 && roles.length === 0) return null;
+
+      const selectedSet = new Set(Array.isArray(selectedKeys) ? selectedKeys : []);
+
+      return (
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-100">Quick add from your directory</h3>
+            <p className="text-xs text-gray-500 mt-1">Reuse collaborators and roles from existing projects.</p>
+          </div>
+          {users.length > 0 && (
+            <div>
+              <h4 className="text-xs uppercase tracking-wide text-gray-500 mb-2">People</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {users.map(user => {
+                  const infoParts = [];
+                  const relationship = trimString(user.relationship);
+                  const role = trimString(user.role);
+                  const email = trimString(user.email);
+                  const phone = trimString(user.phone);
+                  if (relationship) infoParts.push(relationship);
+                  if (role && role !== relationship) infoParts.push(role);
+                  if (email) infoParts.push(email);
+                  if (phone) infoParts.push(phone);
+                  return (
+                    <label
+                      key={user.directoryKey}
+                      className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSet.has(user.directoryKey)}
+                        onChange={() => onToggleUserKey && onToggleUserKey(user.directoryKey)}
+                      />
+                      <div>
+                        <div className="text-sm text-gray-100">{user.name || 'Unnamed User'}</div>
+                        {infoParts.length > 0 && (
+                          <div className="text-[11px] text-gray-400">{infoParts.join(' • ')}</div>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {roles.length > 0 && (
+            <div>
+              <h4 className="text-xs uppercase tracking-wide text-gray-500 mb-2">Roles &amp; Teams</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {roles.map(role => {
+                  const memberNames = role.members
+                    .map(member => trimString(member?.name || ''))
+                    .filter(Boolean)
+                    .join(', ');
+                  const allSelected = (role.memberKeys || []).every(key => selectedSet.has(key));
+                  return (
+                    <div key={role.id} className="border border-gray-800 rounded-lg p-3 bg-gray-800/60 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm text-gray-100">{role.name}</div>
+                          {trimString(role.projectName) && (
+                            <div className="text-[11px] text-gray-500">from {role.projectName}</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => onAddRoleMembers && onAddRoleMembers(role)}
+                          disabled={allSelected}
+                          className={`text-xs px-3 py-1 rounded ${allSelected ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                        >
+                          {allSelected ? 'Added' : 'Add'}
+                        </button>
+                      </div>
+                      {memberNames && (
+                        <div className="text-[11px] text-gray-400">{memberNames}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function CreateProjectModal({ onClose, onCreate, projects = [] }) {
       const [name, setName] = useState('');
       const [team, setTeam] = useState('');
+      const [selectedDirectoryUserKeys, setSelectedDirectoryUserKeys] = useState([]);
+
+      const directory = useMemo(() => buildProjectDirectory(projects), [projects]);
+      const manualMembers = useMemo(() => team.split(',').map(value => trimString(value)).filter(Boolean), [team]);
+      const selectedDirectoryUsers = useMemo(
+        () => selectedDirectoryUserKeys.map(key => directory.userMap.get(key)).filter(Boolean),
+        [selectedDirectoryUserKeys, directory]
+      );
+      const combinedMembers = useMemo(() => {
+        const names = new Set();
+        selectedDirectoryUsers.forEach(user => {
+          const nameValue = trimString(user?.name || '');
+          if (nameValue) names.add(nameValue);
+        });
+        manualMembers.forEach(nameValue => {
+          if (nameValue) names.add(nameValue);
+        });
+        return Array.from(names);
+      }, [selectedDirectoryUsers, manualMembers]);
+
+      const toggleDirectoryUserKey = (key) => {
+        if (!key) return;
+        setSelectedDirectoryUserKeys(prev => {
+          const set = new Set(prev);
+          if (set.has(key)) {
+            set.delete(key);
+          } else {
+            set.add(key);
+          }
+          return Array.from(set);
+        });
+      };
+
+      const handleAddRoleMembers = (role) => {
+        if (!role) return;
+        setSelectedDirectoryUserKeys(prev => {
+          const set = new Set(prev);
+          (role.memberKeys || []).forEach(key => {
+            if (key) set.add(key);
+          });
+          return Array.from(set);
+        });
+      };
+
+      const handleCreate = () => {
+        const projectName = trimString(name);
+        if (!projectName) return;
+        const payloadUsers = normalizeProjectUserPayload({
+          selectedUsers: selectedDirectoryUsers,
+          manualMembers
+        });
+        onCreate(projectName, payloadUsers);
+        setName('');
+        setTeam('');
+        setSelectedDirectoryUserKeys([]);
+      };
+
       return (
         <Modal onClose={onClose} title="Create Project">
           <div className="space-y-4">
