@@ -34,7 +34,7 @@ The key insight: **Activities spawn new activities, dependencies compute states,
 Every activity in Event Operator is assigned to one of nine operator stages. These represent different kinds of coordination work:
 
 1. **Starter** - Conceives and designs work
-2. **Doer** - Builds and produces artifacts
+2. **Builder** - Builds and produces artifacts
 3. **Compiler** - Packages work into coherent form
 4. **Reviewer** - Tests and evaluates quality
 5. **Approver** - Authorizes and validates
@@ -211,7 +211,7 @@ Every activity needs a role. Ask yourself:
 2. **Does the flow's stage configuration already cover them?** → Assign the role to the right stages if needed
 
 **Examples:**
-- Writing content → "Content Team" (assigned to Doer stage in flow config)
+- Writing content → "Content Team" (assigned to Builder stage in flow config)
 - Checking quality → "Editorial Review" (assigned to Reviewer stage)
 - Final sign-off → "Leadership" (assigned to Approver stage)
 - Organizing meeting → "Logistics" (assigned to Integrator stage)
@@ -449,7 +449,7 @@ Only activities currently in the **Reviewer** or **Approver** stages can request
 Here's what a typical revision cycle looks like:
 
 ```
-1. Doer completes "Write draft"
+1. Builder completes "Write draft"
 2. Reviewer becomes ready, claims it
 3. Reviewer clicks "Revise" instead of "Complete"
 4. New activity appears: "Write draft (revision)"
@@ -490,7 +490,7 @@ The loop ends when the Reviewer/Approver completes normally instead of requestin
 **Example:**
 ```
 Starter: "Plan article topics" →
-Doer: "Write article" →
+Builder: "Write article" →
 Reviewer: "Review article" →
 Approver: "Approve for publishing" →
 Documenter: "Archive to content library"
@@ -508,9 +508,9 @@ Documenter: "Archive to content library"
 
 **Example:**
 ```
-Approver: "Approve design" ──┬──> Doer: "Build landing page"
-                             ├──> Doer: "Create social graphics"
-                             └──> Doer: "Write copy"
+Approver: "Approve design" ──┬──> Builder: "Build landing page"
+                             ├──> Builder: "Create social graphics"
+                             └──> Builder: "Write copy"
 ```
 
 ### Pattern 3: Converging Branches (AND Gate)
@@ -525,9 +525,9 @@ Approver: "Approve design" ──┬──> Doer: "Build landing page"
 
 **Example:**
 ```
-Doer: "Write section 1" ──┐
-Doer: "Write section 2" ──┼──> Compiler: "Integrate all sections"
-Doer: "Write section 3" ──┘
+Builder: "Write section 1" ──┐
+Builder: "Write section 2" ──┼──> Compiler: "Integrate all sections"
+Builder: "Write section 3" ──┘
 ```
 
 ### Pattern 4: Review Loop
@@ -535,15 +535,15 @@ Doer: "Write section 3" ──┘
 **Use when:** Work needs quality gates with potential rework
 
 **How to build:**
-1. Doer activity → Wire enables → Reviewer activity
-2. Claim and complete Doer
+1. Builder activity → Wire enables → Reviewer activity
+2. Claim and complete Builder
 3. Claim Reviewer
 4. If issues found: Click "Revise" (automatic loop creation)
 5. If acceptable: Click "Complete" (moves forward)
 
 **Example:**
 ```
-Doer: "Write article" → Reviewer: "Review article"
+Builder: "Write article" → Reviewer: "Review article"
                         ↓ (if revision needed)
               "Write article (revision)" ← loops back
 ```
@@ -602,7 +602,7 @@ The title should make it obvious what needs to be done.
 
 The nine operator stages help you think about coordination holistically:
 - Starting work (Starter)
-- Doing work (Doer, Compiler)
+- Doing work (Builder, Compiler)
 - Quality gates (Reviewer, Approver)
 - Recording (Documenter)
 - Integration & continuity (Integrator, Maintainer)
