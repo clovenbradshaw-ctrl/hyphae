@@ -47,7 +47,7 @@ project: {
 ```javascript
 stageConfig: [
   {
-    stageKey: 'doer',
+    stageKey: 'builder',
     active: true,
     assignedRoleIds: [],  // Currently unused or wrong concept
     assignedUserIds: [],
@@ -60,7 +60,7 @@ stageConfig: [
 ```javascript
 stageConfig: [
   {
-    stageKey: 'doer',
+    stageKey: 'builder',
     active: true,
     assignedTeamIds: ['team-1', 'team-2'],  // Teams responsible for this stage
     assignedUserIds: [],  // Optional: individual users (for small teams)

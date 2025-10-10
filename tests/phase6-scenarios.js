@@ -14,7 +14,7 @@ function pickColor() {
 
 const OPERATORS = [
   { id: 'starter', name: 'Starter', desc: 'Conceives and designs work', seq: 1, tier: 'genesis', canRequestRevision: false },
-  { id: 'doer', name: 'Doer', desc: 'Builds and produces artifacts', seq: 2, tier: 'genesis', canRequestRevision: false },
+  { id: 'builder', name: 'Builder', desc: 'Builds and produces artifacts', seq: 2, tier: 'genesis', canRequestRevision: false },
   { id: 'compiler', name: 'Compiler', desc: 'Packages work into coherent form', seq: 3, tier: 'genesis', canRequestRevision: false },
   { id: 'reviewer', name: 'Reviewer', desc: 'Tests and evaluates quality', seq: 4, tier: 'evaluation', canRequestRevision: true },
   { id: 'approver', name: 'Approver', desc: 'Authorizes and validates', seq: 5, tier: 'evaluation', canRequestRevision: true },
@@ -36,7 +36,7 @@ const DEFAULT_STAGE_BLUEPRINT = OPERATORS.map((op, index) => ({
 // Gentle, lay-friendly defaults (flow rhythm)
 const DEFAULT_STAGE_TIMELINES = {
   starter: 10,
-  doer: 14,
+  builder: 14,
   compiler: 7,
   reviewer: 4,
   approver: 3,
@@ -49,7 +49,7 @@ const DEFAULT_STAGE_TIMELINES = {
 // Default EO-aligned, lay-friendly conditions
 const DEFAULT_CONDITIONS = {
   starter: "Goal, owner, and success criteria are clear.",
-  doer: "Something tangible exists to review (a draft, prototype, or demo).",
+  builder: "Something tangible exists to review (a draft, prototype, or demo).",
   compiler: "Pieces combined into a coherent package ready for feedback.",
   reviewer: "At least one peer has reviewed and left feedback.",
   approver: "Decision-maker has signed off or provided approval notes.",
@@ -781,7 +781,7 @@ function main() {
   step('Dan claims after unclaim', danClaimed ? 'claimed' : 'blocked');
 
   section('Scenario 5 · Stage Advancement');
-  assignTeamsToStage(state, project.id, flow.id, 'doer', { assignedTeamIds: [teamBravo.id] });
+  assignTeamsToStage(state, project.id, flow.id, 'builder', { assignedTeamIds: [teamBravo.id] });
   const nextStageId = completeActivity(state, project.id, flow.id, kickoff.id, { skipStage: false }, 'Dan');
   step('Advance from Starter', nextStageId || 'completed');
   const alexAccess = canUserWorkOnStage(state, flow, kickoff.currentStageId, 'Alex');
@@ -818,7 +818,7 @@ function main() {
             name: 'Legacy Flow',
             stageConfig: [
               { stageKey: 'starter', assignedRoleIds: ['role-research'] },
-              { stageKey: 'doer', assignedRoleIds: ['role-build'] }
+              { stageKey: 'builder', assignedRoleIds: ['role-build'] }
             ],
             activities: [
               { id: 'legacy-a1', title: 'Old Task', roleId: 'role-research', stageHistory: [], stageReadBy: {}, skippedStages: [], createdAt: now() }

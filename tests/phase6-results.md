@@ -15,7 +15,7 @@ We executed `node tests/phase6-scenarios.js` to simulate each checklist scenario
 - Confirmed permission gating: Alpha’s Alex and Bravo’s Dan can claim, Erin (no team) cannot. Alex successfully claimed, Erin was blocked while it was held, and Dan claimed after Alex unclaimed.【ec4648†L30-L38】
 
 ## Scenario 5 – Stage Advancement
-- Advanced the activity from Starter to the Doer stage, restricting access to Bravo Ops while Alpha lost eligibility, showing team-based transitions work.【ec4648†L40-L44】
+- Advanced the activity from Starter to the Builder stage, restricting access to Bravo Ops while Alpha lost eligibility, showing team-based transitions work.【ec4648†L40-L44】
 
 ## Scenario 6 – Wiring
 - Wired a new "Assemble assets" activity directly into the Compiler stage using its stage ID and confirmed that stage inherits the Alpha Squad assignment.【ec4648†L46-L48】
