@@ -2748,7 +2748,14 @@
             onMarkRead={markActivityRead}
             onAdvanceActivityStage={(aid, options) => advanceActivityStage(selectedProject.id, selectedFlow.id, aid, options)}
             onSkipActivityStage={(aid) => skipActivityStage(selectedProject.id, selectedFlow.id, aid)}
-            onConfigureStageConditions={(stageId, conditions) => configureStageConditions(selectedProject.id, selectedFlow.id, stageId, conditions)}
+            onShowStageConditions={(details) => {
+              setModalData({
+                projectId: selectedProject.id,
+                flowId: selectedFlow.id,
+                ...details
+              });
+              setShowModal('configureStageConditions');
+            }}
             onToggleStageSkip={(stageId) => toggleStageSkip(selectedProject.id, selectedFlow.id, stageId)}
             onAssignStageTeams={(stageId) => {
               setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, stageId });
@@ -2823,6 +2830,20 @@
             />
           )}
           {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} onClose={() => { setShowModal(null); setModalData({}); }} onWire={({ targetId, edgeType, srcStageId, dstStageId }) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }); setShowModal(null); setModalData({}); }} onCreate={({ title, deliverable = '', edgeType, srcStageId, dstStageId, initialStageId }) => { const timestamp = Date.now(); const newId = `a-${timestamp}`; createActivity(modalData.projectId, modalData.flowId, title, deliverable, { id: newId, stageId: initialStageId }); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }), 50); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'configureStageConditions' && selectedProject && selectedFlow && (
+            <StageConditionsModal
+              stageName={modalData.stageName}
+              stageKey={modalData.stageKey}
+              initialConditions={modalData.existingConditions}
+              defaultConditions={modalData.defaultConditions}
+              onClose={() => { setShowModal(null); setModalData({}); }}
+              onSave={(conditions) => {
+                configureStageConditions(modalData.projectId, modalData.flowId, modalData.stageId, conditions);
+                setShowModal(null);
+                setModalData({});
+              }}
+            />
+          )}
           {showModal === 'assignStageTeams' && selectedProject && selectedFlow && (
             <AssignStageTeamsModal
               project={selectedProject}
@@ -3256,7 +3277,7 @@
       );
     }
 
-    function ActivitiesView({ project, flow, currentUser, canUserWorkOnStage, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead, onAdvanceActivityStage, onSkipActivityStage, onConfigureStageConditions, onToggleStageSkip, onAssignStageTeams, onUpdateActivity, onUpdateFlowMode }) {
+    function ActivitiesView({ project, flow, currentUser, canUserWorkOnStage, onBack, onCreateActivity, onEditActivity, onDeleteActivity, onClaimActivity, onUnclaimActivity, onCompleteActivity, onWireActivity, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onMarkRead, onAdvanceActivityStage, onSkipActivityStage, onShowStageConditions, onToggleStageSkip, onAssignStageTeams, onUpdateActivity, onUpdateFlowMode }) {
       const flowMode = getFlowMode(flow);
       const isTeamMode = flowMode === 'team';
       const stageData = useMemo(() => {
@@ -3570,12 +3591,14 @@
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (!onConfigureStageConditions) return;
-                                    const existing = stage.conditions || '';
-                                    const input = window.prompt(`Set entry conditions for ${stage.name}`, existing);
-                                    if (input !== null) {
-                                      onConfigureStageConditions(identity, input.trim());
-                                    }
+                                    if (!onShowStageConditions) return;
+                                    onShowStageConditions({
+                                      stageId: identity,
+                                      stageKey: stage.operatorKey || stage.key || identity,
+                                      stageName: stage.name,
+                                      existingConditions: stage.conditions || '',
+                                      defaultConditions: DEFAULT_CONDITIONS[stage.operatorKey || stage.key] || ''
+                                    });
                                   }}
                                   className="text-xs px-2 py-1 rounded bg-[var(--elevated)] hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] transition-colors"
                                 >
@@ -4881,6 +4904,80 @@
                 <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (canCreateNew) onCreate({ title: newTitle, deliverable: newDeliverable, edgeType, srcStageId, dstStageId, initialStageId: newInitialStageId }); }} disabled={!canCreateNew} className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors">Create & Wire</button></div>
               </>
             )}
+          </div>
+        </Modal>
+      );
+    }
+
+    function StageConditionsModal({ stageName, stageKey, initialConditions, defaultConditions, onClose, onSave }) {
+      const [conditions, setConditions] = useState(initialConditions || '');
+
+      useEffect(() => {
+        setConditions(initialConditions || '');
+      }, [initialConditions]);
+
+      const hasDefault = !!(defaultConditions && defaultConditions.trim());
+      const normalizedStageName = stageName || stageKey || 'Stage';
+
+      const handleUseDefault = () => {
+        if (hasDefault) {
+          setConditions(defaultConditions.trim());
+        }
+      };
+
+      const handleClear = () => {
+        setConditions('');
+      };
+
+      const handleSave = () => {
+        const trimmed = conditions.trim();
+        onSave(trimmed);
+      };
+
+      return (
+        <Modal onClose={onClose} title={`Stage Conditions: ${normalizedStageName}`} size="large">
+          <div className="space-y-5">
+            <div className="bg-[var(--info)]/20 border border-[var(--info)]/40 rounded p-4">
+              <p className="text-sm text-[var(--text-strong)]">
+                Capture what must be true before work can enter this stage. Clear entry conditions keep the flow moving smoothly.
+              </p>
+            </div>
+
+            {hasDefault && (
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="md:max-w-xl">
+                  <div className="text-xs uppercase tracking-wide text-[var(--text-muted)] mb-1">Suggested baseline</div>
+                  <p className="text-sm text-[var(--text)] leading-relaxed">{defaultConditions}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleUseDefault}
+                  className="self-start text-xs px-3 py-1.5 rounded bg-[var(--elevated)] hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] transition-colors"
+                >
+                  Use suggestion
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-sm text-[var(--text)]">Entry conditions</label>
+              <textarea
+                value={conditions}
+                onChange={(e) => setConditions(e.target.value)}
+                placeholder="Describe the minimum state of the work before this stage begins."
+                rows={4}
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-3 text-sm text-[var(--text-strong)]"
+              />
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                <span>{conditions.trim() ? `${conditions.trim().length} characters` : 'Leave blank to clear the conditions.'}</span>
+                <button type="button" onClick={handleClear} className="text-[var(--danger)] hover:opacity-80">Clear</button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-[var(--border)]">
+              <button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button>
+              <button onClick={handleSave} className="flex-1 bg-[var(--accent)] hover:opacity-90 py-2 rounded transition-colors">Save Conditions</button>
+            </div>
           </div>
         </Modal>
       );
