@@ -43,6 +43,103 @@
       return Array.from(new Set((Array.isArray(list) ? list : []).filter(Boolean)));
     }
 
+    function trimString(value) {
+      return typeof value === 'string' ? value.trim() : '';
+    }
+
+    function createUserProfile(data = {}) {
+      const now = new Date().toISOString();
+      return {
+        id: data.id || `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: trimString(data.name),
+        email: trimString(data.email),
+        phone: trimString(data.phone),
+        relationship: trimString(data.relationship),
+        role: data.role || 'viewer',
+        matrixId: trimString(data.matrixId),
+        avatar: data.avatar || '',
+        notes: trimString(data.notes),
+        addedAt: data.addedAt || now,
+        lastModified: data.lastModified || now,
+        metadata: data.metadata || {}
+      };
+    }
+
+    function getUserInitials(name) {
+      if (!name) return '👤';
+      const parts = trimString(name).split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return '👤';
+      if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function sanitizeTaggedUserIds(taggedUserIds, project) {
+      if (!project) return [];
+      const allowed = new Set((project.users || []).map(user => user.id));
+      return Array.from(
+        new Set(
+          (Array.isArray(taggedUserIds) ? taggedUserIds : []).filter(id => allowed.has(id))
+        )
+      );
+    }
+
+    function formatTaggedUserNames(taggedUserIds, project) {
+      if (!project) return [];
+      const userMap = new Map((project.users || []).map(user => [user.id, user.name]));
+      return (Array.isArray(taggedUserIds) ? taggedUserIds : [])
+        .map(id => trimString(userMap.get(id) || ''))
+        .filter(Boolean);
+    }
+
+    function pruneActivityUserTags(activity, userId) {
+      if (!activity) return activity;
+
+      const filterTagged = (tagged) => {
+        if (!Array.isArray(tagged)) return tagged;
+        const filtered = tagged.filter(id => id !== userId);
+        return filtered;
+      };
+
+      const updateLogs = (logs) => {
+        if (!Array.isArray(logs)) return logs;
+        return logs.map(log => {
+          if (!Array.isArray(log?.taggedUserIds)) return log;
+          const filtered = filterTagged(log.taggedUserIds);
+          return filtered.length === log.taggedUserIds.length ? log : { ...log, taggedUserIds: filtered };
+        });
+      };
+
+      const stageHistory = Array.isArray(activity.stageHistory)
+        ? activity.stageHistory.map(entry => {
+            const updatedLogs = updateLogs(entry.log);
+            return updatedLogs === entry.log ? entry : { ...entry, log: updatedLogs };
+          })
+        : activity.stageHistory;
+
+      const comments = Array.isArray(activity.comments)
+        ? activity.comments.map(comment => {
+            if (!Array.isArray(comment.taggedUserIds)) return comment;
+            const filtered = filterTagged(comment.taggedUserIds);
+            return filtered.length === comment.taggedUserIds.length ? comment : { ...comment, taggedUserIds: filtered };
+          })
+        : activity.comments;
+
+      const history = Array.isArray(activity.history)
+        ? activity.history.map(entry => {
+            if (!Array.isArray(entry.taggedUserIds)) return entry;
+            const filtered = filterTagged(entry.taggedUserIds);
+            return filtered.length === entry.taggedUserIds.length ? entry : { ...entry, taggedUserIds: filtered };
+          })
+        : activity.history;
+
+      return {
+        ...activity,
+        stageHistory,
+        comments,
+        history
+      };
+    }
+
     const DEFAULT_STAGE_BLUEPRINT = OPERATORS.map((op, index) => ({
       key: op.id,
       name: op.name,
@@ -588,6 +685,7 @@
                           <span>{formatRelativeTime(comment.createdAt)}</span>
                         </div>
                         <div className="leading-relaxed">{renderCommentContent(comment.content)}</div>
+                        {renderTaggedUsers(comment.taggedUserIds)}
                       </div>
                     ))
                   )}
@@ -618,7 +716,10 @@
                           {(entry.log || []).length > 0 && (
                             <ul className="mt-1 space-y-0.5">
                               {entry.log.slice().reverse().map(logEntry => (
-                                <li key={logEntry.id} className="text-gray-400">{logEntry.text}</li>
+                                <li key={logEntry.id} className="text-gray-400">
+                                  <div>{logEntry.text}</div>
+                                  {renderTaggedUsers(logEntry.taggedUserIds, 'mt-1')}
+                                </li>
                               ))}
                             </ul>
                           )}
@@ -632,7 +733,10 @@
                     history.map(entry => (
                       <div key={entry.id} className="flex items-start gap-2">
                         <div className="text-xs text-gray-500 w-28 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</div>
-                        <div className="flex-1">{entry.text}</div>
+                        <div className="flex-1">
+                          {entry.text}
+                          {renderTaggedUsers(entry.taggedUserIds, 'mt-1')}
+                        </div>
                       </div>
                     ))
                   )}
@@ -1219,10 +1323,14 @@
       }, []);
 
       const createProject = (name, users, currentUserName) => {
+        const normalizedUsers = Array.isArray(users)
+          ? users.map(value => trimString(value)).filter(Boolean)
+          : [];
+        const projectUsers = normalizedUsers.map(userName => createUserProfile({ name: userName }));
         const project = {
           id: `p-${Date.now()}`,
           name,
-          users: users.map(u => ({ id: `u-${Date.now()}-${Math.random()}`, name: u })),
+          users: projectUsers,
           teams: [],
           flows: []
         };
@@ -1231,18 +1339,74 @@
         setView('dashboard');
       };
 
-      const addUserToProject = (projectId, userName) => {
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          users: [...p.users, { id: `u-${Date.now()}`, name: userName }]
-        } : p));
+      const saveProjectUser = (projectId, userData) => {
+        setProjects(prev => prev.map(project => {
+          if (project.id !== projectId) return project;
+          const now = new Date().toISOString();
+          const existingUsers = Array.isArray(project.users) ? project.users : [];
+
+          if (userData && userData.id) {
+            const updatedUsers = existingUsers.map(user => {
+              if (user.id !== userData.id) return user;
+              return {
+                ...user,
+                name: trimString(userData.name || user.name),
+                email: trimString(userData.email ?? user.email),
+                phone: trimString(userData.phone ?? user.phone),
+                relationship: trimString(userData.relationship ?? user.relationship),
+                role: userData.role || user.role || 'viewer',
+                matrixId: trimString(userData.matrixId ?? user.matrixId),
+                avatar: userData.avatar !== undefined ? trimString(userData.avatar) : trimString(user.avatar),
+                notes: trimString(userData.notes ?? user.notes),
+                metadata: userData.metadata || user.metadata || {},
+                lastModified: now
+              };
+            });
+            return { ...project, users: updatedUsers };
+          }
+
+          const newUser = createUserProfile({
+            ...userData,
+            name: trimString(userData?.name || ''),
+            email: trimString(userData?.email || ''),
+            phone: trimString(userData?.phone || ''),
+            relationship: trimString(userData?.relationship || ''),
+            role: userData?.role || 'viewer',
+            matrixId: trimString(userData?.matrixId || ''),
+            avatar: trimString(userData?.avatar || ''),
+            notes: trimString(userData?.notes || ''),
+            metadata: userData?.metadata || {}
+          });
+          newUser.lastModified = now;
+          const nextUsers = [...existingUsers, newUser];
+          return { ...project, users: nextUsers };
+        }));
       };
 
       const removeUserFromProject = (projectId, userId) => {
-        setProjects(prev => prev.map(p => p.id === projectId ? {
-          ...p,
-          users: p.users.filter(u => u.id !== userId)
-        } : p));
+        setProjects(prev => prev.map(project => {
+          if (project.id !== projectId) return project;
+          const remainingUsers = (project.users || []).filter(user => user.id !== userId);
+          const updatedTeams = (project.teams || []).map(team => ({
+            ...team,
+            userIds: (team.userIds || []).filter(id => id !== userId)
+          }));
+          const updatedFlows = project.flows.map(flow => ({
+            ...flow,
+            stageConfig: (flow.stageConfig || []).map(entry => ({
+              ...entry,
+              assignedUserIds: (entry.assignedUserIds || []).filter(id => id !== userId),
+              optedOutUserIds: (entry.optedOutUserIds || []).filter(id => id !== userId)
+            })),
+            activities: flow.activities.map(activity => pruneActivityUserTags(activity, userId))
+          }));
+          return {
+            ...project,
+            users: remainingUsers,
+            teams: updatedTeams,
+            flows: updatedFlows
+          };
+        }));
       };
 
       const createFlow = (projectId, name, deliverables, description) => {
@@ -1571,7 +1735,7 @@
       };
 
       const completeActivity = (projectId, flowId, activityId, options = {}) => {
-        const { skipStage: skipStageFlag = false, note = null } = options || {};
+        const { skipStage: skipStageFlag = false, note = null, taggedUserIds: taggedUserIdsOption = [] } = options || {};
         const timestamp = Date.now();
         const actor = currentUser || 'Someone';
         setProjects(prev => prev.map(p => p.id === projectId ? {
@@ -1588,6 +1752,19 @@
               const stageName = stageMeta?.name || 'stage';
               const message = skipStageFlag ? `${actor} skipped ${stageName}` : `${actor} completed ${stageName}`;
               const trimmedNote = note ? note.trim() : '';
+              const sanitizedTaggedUserIds = sanitizeTaggedUserIds(taggedUserIdsOption, p);
+              const taggedNames = formatTaggedUserNames(sanitizedTaggedUserIds, p);
+              const noteLogEntry = (trimmedNote || sanitizedTaggedUserIds.length > 0)
+                ? {
+                    id: `log-${timestamp}-note`,
+                    text: trimmedNote
+                      ? `Note: ${trimmedNote}${taggedNames.length > 0 ? ` (Tagged: ${taggedNames.join(', ')})` : ''}`
+                      : `Tagged users: ${taggedNames.join(', ')}`,
+                    note: trimmedNote || null,
+                    taggedUserIds: sanitizedTaggedUserIds,
+                    timestamp
+                  }
+                : null;
               const updatedHistory = updateLatestStageHistoryEntry(stageHistory, currentStageId, (entry) => ({
                 ...entry,
                 exitedAt: timestamp,
@@ -1596,7 +1773,7 @@
                 log: [
                   ...(entry.log || []),
                   { id: `log-${timestamp}`, text: message, timestamp },
-                  ...(trimmedNote ? [{ id: `log-${timestamp}-note`, text: `Note: ${trimmedNote}`, timestamp }] : [])
+                  ...(noteLogEntry ? [noteLogEntry] : [])
                 ]
               }), { createIfMissing: true, timestamp });
               const newSkippedStages = skipStageFlag ? Array.from(new Set([...(a.skippedStages || []), currentStageId])) : (a.skippedStages || []);
@@ -1624,8 +1801,17 @@
               } else {
                 historyEntries.push({ id: `h-${timestamp}-finish`, text: `${actor} completed the activity`, timestamp });
               }
-              if (trimmedNote) {
-                historyEntries.push({ id: `h-${timestamp}-note`, text: `${actor} noted: ${trimmedNote}`, timestamp });
+              if (trimmedNote || sanitizedTaggedUserIds.length > 0) {
+                const historyText = trimmedNote
+                  ? `${actor} noted: ${trimmedNote}${taggedNames.length > 0 ? ` (Tagged: ${taggedNames.join(', ')})` : ''}`
+                  : `${actor} tagged: ${taggedNames.join(', ')}`;
+                historyEntries.push({
+                  id: `h-${timestamp}-note`,
+                  text: historyText,
+                  timestamp,
+                  taggedUserIds: sanitizedTaggedUserIds,
+                  note: trimmedNote || null
+                });
               }
               const comments = [
                 ...(a.comments || []),
@@ -1637,14 +1823,22 @@
                   mentions: [],
                   system: true
                 },
-                ...(trimmedNote ? [{
-                  id: `c-${timestamp}-note`,
-                  author: actor,
-                  content: `Note on ${stageName}: ${trimmedNote}`,
-                  createdAt: timestamp,
-                  mentions: [],
-                  system: true
-                }] : [])
+                ...(() => {
+                  if (!trimmedNote && sanitizedTaggedUserIds.length === 0) return [];
+                  const taggedSummary = taggedNames.length > 0 ? ` (Tagged: ${taggedNames.join(', ')})` : '';
+                  const content = trimmedNote
+                    ? `Note on ${stageName}: ${trimmedNote}${taggedSummary}`
+                    : `Tagged on ${stageName}: ${taggedNames.join(', ')}`;
+                  return [{
+                    id: `c-${timestamp}-note`,
+                    author: actor,
+                    content,
+                    createdAt: timestamp,
+                    mentions: [],
+                    system: true,
+                    taggedUserIds: sanitizedTaggedUserIds
+                  }];
+                })()
               ];
               return {
                 ...a,
@@ -1937,16 +2131,21 @@
         completeActivity(projectId, flowId, activityId, options);
       };
 
-      const skipStage = (projectId, flowId, activityId, note = null) => {
-        completeActivity(projectId, flowId, activityId, { skipStage: true, note });
+      const skipStage = (projectId, flowId, activityId, noteOrOptions = null) => {
+        if (noteOrOptions && typeof noteOrOptions === 'object' && !Array.isArray(noteOrOptions)) {
+          const { note: skipNote = null, taggedUserIds = [] } = noteOrOptions;
+          completeActivity(projectId, flowId, activityId, { skipStage: true, note: skipNote, taggedUserIds });
+        } else {
+          completeActivity(projectId, flowId, activityId, { skipStage: true, note: noteOrOptions });
+        }
       };
 
-      const advanceActivityStage = (projectId, flowId, activityId, { skip = false, note = null } = {}) => {
-        advanceStage(projectId, flowId, activityId, { skipStage: skip, note });
+      const advanceActivityStage = (projectId, flowId, activityId, { skip = false, note = null, taggedUserIds = [] } = {}) => {
+        advanceStage(projectId, flowId, activityId, { skipStage: skip, note, taggedUserIds });
       };
 
-      const skipActivityStage = (projectId, flowId, activityId, note = null) => {
-        skipStage(projectId, flowId, activityId, note);
+      const skipActivityStage = (projectId, flowId, activityId, noteOrOptions = null) => {
+        skipStage(projectId, flowId, activityId, noteOrOptions);
       };
 
       let mainContent;
@@ -1995,7 +2194,14 @@
           {mainContent}
           {showModal === 'createProject' && <CreateProjectModal onClose={() => setShowModal(null)} onCreate={(name, users) => { createProject(name, users, currentUser); setShowModal(null); }} />}
           {showModal === 'createFlow' && selectedProject && <CreateFlowModal onClose={() => setShowModal(null)} onCreate={(name, del, desc) => { createFlow(selectedProject.id, name, del, desc); setShowModal(null); }} />}
-          {showModal === 'manageUsers' && selectedProject && <ManageUsersModal project={selectedProject} onClose={() => setShowModal(null)} onAddUser={(name) => addUserToProject(selectedProject.id, name)} onRemoveUser={(uid) => removeUserFromProject(selectedProject.id, uid)} />}
+          {showModal === 'manageUsers' && selectedProject && (
+            <ManageUsersModal
+              project={selectedProject}
+              onClose={() => setShowModal(null)}
+              onSaveUser={(user) => saveProjectUser(selectedProject.id, user)}
+              onRemoveUser={(uid) => removeUserFromProject(selectedProject.id, uid)}
+            />
+          )}
           {showModal === 'manageTeams' && selectedProject && (
             <ManageTeamsModal
               project={selectedProject}
@@ -2011,7 +2217,19 @@
           {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} />}
           {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
           {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
-          {showModal === 'completeActivity' && selectedFlow && <CompleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} onClose={() => { setShowModal(null); setModalData({}); }} onComplete={(options) => { completeActivity(modalData.projectId, modalData.flowId, modalData.activityId, options); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'completeActivity' && selectedFlow && (
+            <CompleteActivityModal
+              activity={selectedFlow.activities.find(a => a.id === modalData.activityId)}
+              flow={selectedFlow}
+              project={selectedProject}
+              onClose={() => { setShowModal(null); setModalData({}); }}
+              onComplete={(options) => {
+                completeActivity(modalData.projectId, modalData.flowId, modalData.activityId, options);
+                setShowModal(null);
+                setModalData({});
+              }}
+            />
+          )}
           {showModal === 'wireActivity' && selectedFlow && <WireActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} flow={selectedFlow} onClose={() => { setShowModal(null); setModalData({}); }} onWire={({ targetId, edgeType, srcStageId, dstStageId }) => { createEdge(modalData.projectId, modalData.flowId, modalData.activityId, targetId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }); setShowModal(null); setModalData({}); }} onCreate={({ title, deliverable = '', edgeType, srcStageId, dstStageId, initialStageId }) => { const timestamp = Date.now(); const newId = `a-${timestamp}`; createActivity(modalData.projectId, modalData.flowId, title, deliverable, { id: newId, stageId: initialStageId }); setTimeout(() => createEdge(modalData.projectId, modalData.flowId, modalData.activityId, newId, edgeType, { srcStage: srcStageId, dstStage: dstStageId }), 50); setShowModal(null); setModalData({}); }} />}
           {showModal === 'assignStageTeams' && selectedProject && selectedFlow && (
             <AssignStageTeamsModal
@@ -2745,6 +2963,26 @@
       const stageBadgeClass = stageState === 'completed' ? 'bg-emerald-900/60 text-emerald-200' : activeStage?.skipped ? 'bg-yellow-900/60 text-yellow-200' : 'bg-gray-700 text-gray-200';
       const stageHistoryLog = (activeEntry?.log || []).slice(-2).reverse();
       const stageStates = activity.stageStates || [];
+      const projectUsers = project?.users || [];
+
+      const renderTaggedUsers = (taggedIds, className = 'mt-2') => {
+        const ids = Array.isArray(taggedIds) ? taggedIds.filter(Boolean) : [];
+        if (ids.length === 0) return null;
+        return (
+          <div className={`${className} flex flex-wrap gap-1 text-[11px] text-blue-300`}>
+            {ids.map(id => {
+              const user = projectUsers.find(u => u.id === id);
+              const label = user?.name || 'Unknown user';
+              return (
+                <span key={id} className="inline-flex items-center gap-1 bg-blue-900/30 border border-blue-800/40 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-semibold">{getUserInitials(user?.name || '')}</span>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        );
+      };
 
       return (
         <div
@@ -2871,35 +3109,306 @@
       );
     }
 
-    function ManageUsersModal({ project, onClose, onAddUser, onRemoveUser }) {
-      const [newUserName, setNewUserName] = useState('');
+    function ManageUsersModal({ project, onClose, onSaveUser, onRemoveUser }) {
+      const createEmptyForm = () => ({
+        id: null,
+        name: '',
+        email: '',
+        phone: '',
+        relationship: '',
+        role: 'viewer',
+        matrixId: '',
+        avatar: '',
+        notes: '',
+        metadata: {}
+      });
+
+      const [formData, setFormData] = useState(createEmptyForm());
+      const [isEditing, setIsEditing] = useState(false);
+      const [showForm, setShowForm] = useState((project.users || []).length === 0);
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        setFormData(createEmptyForm());
+        setIsEditing(false);
+        setShowForm((project.users || []).length === 0);
+        setError('');
+      }, [project.id]);
+
+      const users = project.users || [];
+
+      const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      };
+
+      const startAdd = () => {
+        setFormData(createEmptyForm());
+        setIsEditing(false);
+        setShowForm(true);
+        setError('');
+      };
+
+      const startEdit = (user) => {
+        setFormData({
+          ...createEmptyForm(),
+          ...user,
+          metadata: user.metadata || {}
+        });
+        setIsEditing(true);
+        setShowForm(true);
+        setError('');
+      };
+
+      const handleSubmit = () => {
+        if (!formData.name || !formData.name.trim()) {
+          setError('Please enter a name for this user.');
+          return;
+        }
+
+        const payload = { ...formData };
+        if (!isEditing) {
+          delete payload.id;
+        }
+        onSaveUser(payload);
+        setFormData(createEmptyForm());
+        setIsEditing(false);
+        setShowForm(false);
+        setError('');
+      };
+
+      const handleCancel = () => {
+        setFormData(createEmptyForm());
+        setIsEditing(false);
+        setShowForm(false);
+        setError('');
+      };
+
+      const handleRemove = (userId) => {
+        if (window.confirm('Remove this user? They will be removed from teams and untagged from any notes.')) {
+          onRemoveUser(userId);
+        }
+      };
+
+      const formatDateDisplay = (value) => {
+        if (!value) return null;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+        return date.toLocaleDateString();
+      };
 
       return (
-        <Modal onClose={onClose} title="Manage Team Members">
-          <div className="space-y-4">
+        <Modal onClose={onClose} title="Users & Care Team">
+          <div className="space-y-6">
             <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
-              <p className="text-sm text-gray-100">Add or remove team members. Users can join teams and be assigned to stages.</p>
+              <p className="text-sm text-gray-100 font-semibold">Manage your care team and collaborators.</p>
+              <p className="text-xs text-blue-100 mt-2">
+                Add doctors, family members, or stakeholders. Tag them in activity notes to keep everyone aligned.
+              </p>
+              <p className="text-[11px] text-blue-200 mt-2">
+                Future feature: share specific activity updates via Matrix using the Matrix ID field.
+              </p>
             </div>
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Current Team</label>
-              <div className="space-y-2">
-                {project.users.map(user => (
-                  <div key={user.id} className="flex items-center justify-between bg-gray-800 rounded px-4 py-2">
-                    <span className="text-gray-100">{user.name}</span>
-                    <button onClick={() => onRemoveUser(user.id)} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-gray-100">Care Team</h3>
+              <button
+                onClick={startAdd}
+                className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm transition-colors"
+              >
+                + Add User
+              </button>
+            </div>
+
+            {users.length === 0 ? (
+              <div className="text-sm text-gray-400 bg-gray-900/60 border border-gray-800 rounded-lg p-6 text-center">
+                No users added yet. Start by adding your care team or collaborators.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {users.map(user => {
+                  const added = formatDateDisplay(user.addedAt);
+                  const updated = formatDateDisplay(user.lastModified);
+                  return (
+                    <div key={user.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+                      <div className="flex flex-col md:flex-row md:items-start md:gap-4">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center font-semibold text-lg overflow-hidden flex-shrink-0">
+                          {user.avatar ? (
+                            <img src={user.avatar} alt={user.name || 'User avatar'} className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{getUserInitials(user.name)}</span>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                            <div>
+                              <div className="text-base font-semibold text-gray-100">{user.name || 'Unnamed User'}</div>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {user.relationship && (
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-900/40 text-sky-200 border border-sky-800/40">
+                                    {user.relationship}
+                                  </span>
+                                )}
+                                {user.role && (
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-200 border border-amber-800/40">
+                                    {user.role}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => startEdit(user)}
+                                className="bg-gray-700 hover:bg-gray-600 text-sm px-3 py-1.5 rounded transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleRemove(user.id)}
+                                className="bg-red-900/70 hover:bg-red-800 text-sm px-3 py-1.5 rounded text-red-200 transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                            {user.email && <span>✉️ {user.email}</span>}
+                            {user.phone && <span>📞 {user.phone}</span>}
+                            {user.matrixId && <span>🔗 {user.matrixId}</span>}
+                          </div>
+                          {user.notes && (
+                            <div className="text-xs text-gray-300 bg-gray-900/50 border border-gray-800 rounded p-3 leading-relaxed">
+                              {user.notes}
+                            </div>
+                          )}
+                          {(added || updated) && (
+                            <div className="text-[10px] text-gray-500">
+                              {added && <span>Added {added}</span>}
+                              {added && updated && <span className="mx-1">•</span>}
+                              {updated && <span>Updated {updated}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {showForm && (
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-100">{isEditing ? 'Edit User' : 'Add User'}</h3>
+                  <span className="text-xs text-gray-500">Fields marked with * are required.</span>
+                </div>
+                {error && <div className="text-xs text-red-400 bg-red-900/30 border border-red-800/50 rounded px-3 py-2">{error}</div>}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Name *</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      placeholder="Full name"
+                    />
                   </div>
-                ))}
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      placeholder="(555) 000-0000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Relationship / Title</label>
+                    <input
+                      type="text"
+                      value={formData.relationship}
+                      onChange={(e) => handleInputChange('relationship', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      placeholder="e.g., Primary Care Doctor"
+                    />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Role</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => handleInputChange('role', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                    >
+                      <option value="viewer">Viewer</option>
+                      <option value="contributor">Contributor</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Matrix ID</label>
+                    <input
+                      type="text"
+                      value={formData.matrixId}
+                      onChange={(e) => handleInputChange('matrixId', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      placeholder="@username:matrix.org"
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1">Saved for future Matrix integrations.</p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-200 mb-1">Avatar URL</label>
+                    <input
+                      type="text"
+                      value={formData.avatar}
+                      onChange={(e) => handleInputChange('avatar', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      placeholder="Link to image (optional)"
+                    />
+                  </div>
+                  <div className="hidden md:block"></div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-200 mb-1">Notes</label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    rows={3}
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                    placeholder="Additional information about this person"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button onClick={handleCancel} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm transition-colors">
+                    Save User
+                  </button>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Add New User</label>
-              <div className="flex gap-2">
-                <input type="text" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} placeholder="User name" className="flex-1 bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
-                <button onClick={() => { if (newUserName.trim()) { onAddUser(newUserName.trim()); setNewUserName(''); } }} disabled={!newUserName.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 px-4 py-2 rounded transition-colors">Add</button>
-              </div>
-            </div>
-            <div className="flex gap-3 pt-4">
-              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Done</button>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button onClick={onClose} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors">
+                Done
+              </button>
             </div>
           </div>
         </Modal>
@@ -3232,8 +3741,9 @@
       );
     }
 
-    function CompleteActivityModal({ activity, flow, onClose, onComplete }) {
+    function CompleteActivityModal({ activity, flow, project, onClose, onComplete }) {
       const [note, setNote] = useState('');
+      const [taggedUserIds, setTaggedUserIds] = useState([]);
       const orderedStages = useMemo(() => getOrderedStages(flow), [flow]);
       const currentStage = useMemo(() => {
         if (!activity) return null;
@@ -3245,9 +3755,41 @@
       const nextStage = nextStageId ? orderedStages.find(stage => getStageIdentity(stage) === nextStageId) || null : null;
       const currentEntry = stageId ? getLatestStageHistoryEntry(activity?.stageHistory, stageId) : null;
       const stageLog = currentEntry?.log || [];
+      const projectUsers = project?.users || [];
+
+      useEffect(() => {
+        setNote('');
+        setTaggedUserIds([]);
+      }, [activity?.id]);
+
+      const toggleTaggedUser = (userId) => {
+        setTaggedUserIds(prev => prev.includes(userId)
+          ? prev.filter(id => id !== userId)
+          : [...prev, userId]);
+      };
+
+      const renderTaggedHistoryUsers = (ids) => {
+        const values = Array.isArray(ids) ? ids.filter(Boolean) : [];
+        if (values.length === 0) return null;
+        return (
+          <div className="flex flex-wrap gap-1 text-[10px] text-blue-300 mt-1">
+            {values.map(id => {
+              const user = projectUsers.find(u => u.id === id);
+              const label = user?.name || 'Unknown user';
+              return (
+                <span key={id} className="inline-flex items-center gap-1 bg-blue-900/40 border border-blue-800/50 px-2 py-0.5 rounded">
+                  <span className="font-semibold">{getUserInitials(user?.name || '')}</span>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        );
+      };
 
       const handleSubmit = (skipStage = false) => {
-        onComplete({ skipStage, note: note.trim() || null });
+        const trimmed = note.trim();
+        onComplete({ skipStage, note: trimmed || null, taggedUserIds });
       };
 
       return (
@@ -3276,9 +3818,12 @@
                     <div className="uppercase tracking-wide text-gray-500 mb-2">Recent stage history</div>
                     <ul className="space-y-1">
                       {stageLog.slice(-5).reverse().map(entry => (
-                        <li key={entry.id} className="flex items-center justify-between gap-3">
-                          <span>{entry.text}</span>
-                          <span className="text-[10px] text-gray-500">{formatRelativeTime(entry.timestamp)}</span>
+                        <li key={entry.id} className="space-y-0.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{entry.text}</span>
+                            <span className="text-[10px] text-gray-500">{formatRelativeTime(entry.timestamp)}</span>
+                          </div>
+                          {renderTaggedHistoryUsers(entry.taggedUserIds)}
                         </li>
                       ))}
                     </ul>
@@ -3289,6 +3834,53 @@
             <div>
               <label className="block text-sm text-gray-200 mb-2">Notes (optional)</label>
               <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Add any context about this stage completion" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-500" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Tag Users (optional)</label>
+              {projectUsers.length === 0 ? (
+                <div className="text-xs text-gray-500 bg-gray-900/50 border border-gray-800 rounded px-3 py-2">
+                  Add users in the dashboard to enable tagging.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {projectUsers.map(user => {
+                    const selected = taggedUserIds.includes(user.id);
+                    return (
+                      <label
+                        key={user.id}
+                        className={`flex items-center gap-3 p-2 rounded border transition-colors cursor-pointer ${selected ? 'border-blue-500 bg-blue-900/30' : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleTaggedUser(user.id)}
+                          className="accent-blue-500"
+                        />
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs font-semibold flex items-center justify-center overflow-hidden">
+                          {user.avatar ? (
+                            <img src={user.avatar} alt={user.name || 'User avatar'} className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{getUserInitials(user.name)}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm text-gray-100">{user.name || 'Unnamed User'}</div>
+                          {(user.relationship || user.role) && (
+                            <div className="text-[11px] text-gray-400">
+                              {[user.relationship, user.role].filter(Boolean).join(' • ')}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {taggedUserIds.length > 0 && (
+                <div className="text-xs text-blue-200 mt-2">
+                  Tagging {taggedUserIds.length} {taggedUserIds.length === 1 ? 'user' : 'users'}.
+                </div>
+              )}
             </div>
             <div className="grid md:grid-cols-3 gap-3 pt-2">
               <button onClick={onClose} className="bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
