@@ -575,6 +575,70 @@
         .filter(Boolean);
     }
 
+    function normalizeDateInput(value) {
+      if (!value) return null;
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+      }
+      if (value instanceof Date) {
+        const timestamp = value.getTime();
+        return Number.isFinite(timestamp) ? timestamp : null;
+      }
+      const parsed = Date.parse(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function calculateActivityProgressValue(activity) {
+      if (!activity) return 0;
+      if (activity.completedAt) return 1;
+      const stageStates = Array.isArray(activity.stageStates) ? activity.stageStates : [];
+      if (stageStates.length === 0) return 0;
+      const total = stageStates.length;
+      let completedCount = 0;
+      let partialCredit = 0;
+      stageStates.forEach(({ state }) => {
+        if (state === 'completed' || state === 'skipped') {
+          completedCount += 1;
+        } else if (state === 'in_progress') {
+          partialCredit = Math.max(partialCredit, 0.5);
+        }
+      });
+      const raw = (completedCount + partialCredit) / total;
+      if (!Number.isFinite(raw)) return 0;
+      if (raw < 0) return 0;
+      if (raw > 1) return 1;
+      return raw;
+    }
+
+    function deriveHolonicState(activity, childMetrics = []) {
+      const baseState = activity?.activeStageState || activity?.state || 'waiting';
+      if (!Array.isArray(childMetrics) || childMetrics.length === 0) return baseState;
+      const childStates = childMetrics.map(metric => metric.holonicState || metric.state).filter(Boolean);
+      if (childStates.length === 0) return baseState;
+      if (childStates.every(state => state === 'completed')) return 'completed';
+      if (childStates.some(state => state === 'in_progress')) return 'in_progress';
+      if (childStates.some(state => state === 'ready')) return 'ready';
+      if (childStates.some(state => state === 'waiting')) return 'waiting';
+      return baseState;
+    }
+
+    function calculateAggregatedExpectedEndDate(activity, childMetrics = []) {
+      const timestamps = [];
+      const own = normalizeDateInput(activity?.expectedEndDate);
+      if (own) timestamps.push(own);
+      (childMetrics || []).forEach(metric => {
+        const childAggregated = normalizeDateInput(metric.aggregatedExpectedEndDate);
+        const childOwn = normalizeDateInput(metric.expectedEndDate);
+        if (childAggregated) {
+          timestamps.push(childAggregated);
+        } else if (childOwn) {
+          timestamps.push(childOwn);
+        }
+      });
+      if (timestamps.length === 0) return null;
+      return Math.max(...timestamps);
+    }
+
     function getStageStatusFromHistory(activity, stageId) {
       if (!activity || !stageId) return { completed: false, skipped: false, entry: null };
       const entry = getLatestStageHistoryEntry(activity.stageHistory, stageId);
@@ -621,7 +685,7 @@
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 1.657-1.79 3-4 3-.295 0-.582-.021-.859-.061-.284 1.193-1.355 2.06-2.641 2.06-.358 0-.703-.065-1.019-.184-.44.498-1.086.814-1.781.814-.732 0-1.392-.347-1.829-.888-.51.355-1.137.558-1.812.558-1.648 0-2.985-1.343-2.985-3 0-.333.054-.654.153-.954C3.1 12.715 2 11.477 2 10c0-1.657 1.79-3 4-3h11c2.21 0 4 1.343 4 3z" /></svg>;
     }
 
-    function ActivityDetailPanel({ activity, stage, nextStage, stageMap, dependencies, project, flow, currentUser, canUserWorkOnStage, onClose, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment }) {
+    function ActivityDetailPanel({ activity, stage, nextStage, stageMap, dependencies, project, flow, currentUser, canUserWorkOnStage, onClose, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onCreateChild, onOpenActivity }) {
       const [commentText, setCommentText] = useState('');
       const [attachmentName, setAttachmentName] = useState('');
       const [attachmentUrl, setAttachmentUrl] = useState('');
@@ -632,17 +696,23 @@
         setAttachmentUrl('');
       }, [activity?.id]);
 
-      const stageState = activity.activeStageState || activity.state || 'waiting';
+      const baseStageState = activity.activeStageState || activity.state || 'waiting';
+      const holonicState = activity.holonicState || baseStageState;
       const activeEntry = activity.activeStageEntry || null;
       const claimedBy = activeEntry?.claimedBy || null;
       const priority = activeEntry?.priority || null;
       const isMine = claimedBy && claimedBy === currentUser;
-      const canClaim = stageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
-      const canComplete = isMine && stageState === 'in_progress';
-      const isCompleted = !!activity.completedAt;
-      const canAdvanceStage = !isCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped';
-      const canSkipStage = !isCompleted && !!nextStage;
+      const hasChildren = Array.isArray(activity.childActivities) && activity.childActivities.length > 0;
+      const childActivities = Array.isArray(activity.childActivities) ? activity.childActivities : [];
+      const canClaim = baseStageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
+      const canComplete = isMine && baseStageState === 'in_progress';
+      const isCompleted = !!activity.completedAt || !!activity.isHolonComplete;
+      const canAdvanceStage = !isCompleted && !!nextStage && holonicState !== 'completed' && holonicState !== 'skipped';
+      const canSkipStage = !isCompleted && !!nextStage && !hasChildren;
       const stageSupportsRevision = stage?.supportsRevision;
+      const aggregatedExpected = activity.aggregatedExpectedEndDate || activity.expectedEndDate || null;
+      const progressPercent = Math.round(((activity.holonicProgress ?? activity.progressValue ?? 0) * 100));
+      const boundedProgress = Math.max(0, Math.min(100, Number.isFinite(progressPercent) ? progressPercent : 0));
       const assignedTeams = resolveStageTeams(project, flow, activity.currentStageId);
 
       const comments = [...(activity.comments || [])].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -650,7 +720,8 @@
       const stageHistory = [...(activity.stageHistory || [])];
       const stageStates = activity.stageStates || [];
 
-      const stageStateLabel = stageState.replace('_', ' ');
+      const stageStateLabel = holonicState.replace('_', ' ');
+      const parentSummary = activity.parentActivitySummary;
 
       const handleAddComment = () => {
         if (!currentUser || !commentText.trim()) return;
@@ -680,10 +751,10 @@
       const actionButtons = (
         <div className="flex flex-wrap gap-2">
           {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm">Claim</button>}
-          {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
+          {isMine && !isCompleted && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
           {canAdvanceStage && <button onClick={() => onAdvanceStage(activity.id, { skip: false })} className="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded text-sm">Advance</button>}
           {canSkipStage && <button onClick={() => onSkipStage(activity.id)} className="bg-yellow-700 hover:bg-yellow-600 px-3 py-1.5 rounded text-sm text-yellow-100">Skip Stage</button>}
-          {stageSupportsRevision && dependencies.length > 0 && !activity.completedAt && (
+          {stageSupportsRevision && dependencies.length > 0 && !isCompleted && (
             <button onClick={() => {
               const lastDep = dependencies[dependencies.length - 1];
               if (lastDep) {
@@ -692,10 +763,10 @@
               }
             }} className="bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded text-sm">Request revision</button>
           )}
-          {canComplete && !nextStage && <button onClick={() => onComplete(activity.id)} className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded text-sm">Complete Activity</button>}
-          {!activity.completedAt && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
-          {!activity.completedAt && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
-          {!activity.completedAt && <button onClick={() => onDelete(activity.id)} className="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded text-sm">Delete</button>}
+          {canComplete && !nextStage && !hasChildren && <button onClick={() => onComplete(activity.id)} className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded text-sm">Complete Activity</button>}
+          {!isCompleted && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
+          {!isCompleted && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
+          {!isCompleted && <button onClick={() => onDelete(activity.id)} className="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded text-sm">Delete</button>}
         </div>
       );
 
@@ -739,6 +810,38 @@
                       <div className="text-xs text-gray-500">Final stage</div>
                     )}
                     {activity.deliverable && <div><span className="text-gray-400">Deliverable:</span> {activity.deliverable}</div>}
+                    {parentSummary && (
+                      <div className="text-xs text-gray-400">
+                        Part of{' '}
+                        {onOpenActivity ? (
+                          <button
+                            onClick={() => onOpenActivity(parentSummary.id)}
+                            className="text-blue-300 hover:text-blue-200"
+                          >
+                            {parentSummary.title}
+                          </button>
+                        ) : (
+                          <span className="text-gray-200">{parentSummary.title}</span>
+                        )}
+                      </div>
+                    )}
+                    {aggregatedExpected && (
+                      <div className="text-xs text-gray-300">
+                        Expected delivery: <span className="text-gray-100">{formatDateFromTimestamp(aggregatedExpected)}</span>
+                      </div>
+                    )}
+                    {hasChildren && (
+                      <div className="text-xs text-gray-200 space-y-1">
+                        <div className="text-gray-400">Holonic progress</div>
+                        <div className="h-2 bg-gray-700 rounded">
+                          <div className="h-full bg-blue-500 rounded" style={{ width: `${boundedProgress}%` }}></div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-gray-400">
+                          <span>{activity.completedChildCount || 0} / {activity.totalChildCount} sub-activities</span>
+                          <span>{boundedProgress}%</span>
+                        </div>
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500">Created {formatTimestamp(activity.createdAt)}</div>
                   </div>
                 </div>
@@ -787,6 +890,65 @@
                         );
                       })}
                     </ul>
+                  </div>
+                )}
+                {hasChildren && (
+                  <div className="text-sm text-gray-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-gray-400">Sub-activities</div>
+                      {onCreateChild && (
+                        <button
+                          onClick={() => onCreateChild(activity.id)}
+                          className="text-xs px-2 py-1 rounded bg-blue-700 hover:bg-blue-600 text-blue-100"
+                        >
+                          + Sub-activity
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {childActivities.map(child => {
+                        const childState = child.holonicState || child.activeStageState || child.state || 'waiting';
+                        const childLabel = childState.replace('_', ' ');
+                        const childProgress = Math.round(((child.holonicProgress ?? child.progressValue ?? 0) * 100));
+                        const childBounded = Math.max(0, Math.min(100, Number.isFinite(childProgress) ? childProgress : 0));
+                        const childExpected = child.aggregatedExpectedEndDate || child.expectedEndDate || null;
+                        const childStageName = child.activeStage?.name || stageMap?.[child.currentStageId]?.name || 'Unassigned stage';
+                        const badgeClass = childState === 'completed'
+                          ? 'bg-emerald-900/60 text-emerald-200'
+                          : childState === 'in_progress'
+                            ? 'bg-blue-900/60 text-blue-200'
+                            : childState === 'ready'
+                              ? 'bg-green-900/60 text-green-200'
+                              : childState === 'waiting'
+                                ? 'bg-yellow-900/40 text-yellow-200'
+                                : 'bg-gray-800 text-gray-200';
+                        const borderClass = childState === 'in_progress' ? 'border-blue-500' : childState === 'completed' ? 'border-emerald-700' : 'border-gray-700';
+                        return (
+                          <div key={child.id} className={`bg-gray-900/50 border ${borderClass} rounded-lg p-3`}>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                {onOpenActivity ? (
+                                  <button
+                                    className="text-left text-sm text-gray-100 hover:text-blue-200"
+                                    onClick={() => onOpenActivity(child.id)}
+                                  >
+                                    {child.title}
+                                  </button>
+                                ) : (
+                                  <div className="text-sm text-gray-100">{child.title}</div>
+                                )}
+                                <div className="text-[11px] text-gray-400">{childStageName}</div>
+                              </div>
+                              <span className={`text-[10px] px-2 py-0.5 rounded ${badgeClass}`}>{childLabel}</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+                              <span>{childBounded}%</span>
+                              {childExpected && <span>Expected {formatDateFromTimestamp(childExpected)}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
                 {actionButtons}
@@ -913,6 +1075,22 @@
       if (hours < 24) return `${hours}h ago`;
       const days = Math.floor(hours / 24);
       return `${days}d ago`;
+    }
+
+    function formatDateFromTimestamp(value) {
+      const normalized = normalizeDateInput(value);
+      if (!normalized) return null;
+      const date = new Date(normalized);
+      if (Number.isNaN(date.getTime())) return null;
+      return date.toLocaleDateString();
+    }
+
+    function formatDateInputValue(value) {
+      const normalized = normalizeDateInput(value);
+      if (!normalized) return '';
+      const date = new Date(normalized);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toISOString().slice(0, 10);
     }
 
     function extractMentions(content) {
@@ -1614,6 +1792,8 @@
         const activityId = options.id || `a-${timestamp}`;
         const explicitStageId = options.stageId || null;
         const actor = currentUser || 'Someone';
+        const parentActivityId = options.parentActivityId || null;
+        const expectedEndDate = normalizeDateInput(options.expectedEndDate);
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
           flows: p.flows.map(f => {
@@ -1627,22 +1807,36 @@
             if (entry) {
               entry.log = [{ id: `log-${timestamp}`, text: `${actor} created this activity`, timestamp }];
             }
+            const baseActivities = [...f.activities, {
+              id: activityId,
+              title,
+              deliverable,
+              currentStageId: stageId,
+              skippedStages: [],
+              stageHistory: entry ? [entry] : [],
+              stageReadBy: stageId ? { [stageId]: {} } : {},
+              createdAt: timestamp,
+              completedAt: null,
+              comments: [],
+              attachments: [],
+              history: [{ id: `h-${timestamp}`, text: `${actor} created this activity`, timestamp }],
+              parentActivityId,
+              subActivityIds: [],
+              expectedEndDate
+            }];
+            const activitiesWithParent = parentActivityId
+              ? baseActivities.map(activity => {
+                  if (activity.id !== parentActivityId) return activity;
+                  const existing = Array.isArray(activity.subActivityIds) ? activity.subActivityIds : [];
+                  return {
+                    ...activity,
+                    subActivityIds: toUniqueIds([...existing, activityId])
+                  };
+                })
+              : baseActivities;
             return {
               ...f,
-              activities: [...f.activities, {
-                id: activityId,
-                title,
-                deliverable,
-                currentStageId: stageId,
-                skippedStages: [],
-                stageHistory: entry ? [entry] : [],
-                stageReadBy: stageId ? { [stageId]: {} } : {},
-                createdAt: timestamp,
-                completedAt: null,
-                comments: [],
-                attachments: [],
-                history: [{ id: `h-${timestamp}`, text: `${actor} created this activity`, timestamp }]
-              }]
+              activities: activitiesWithParent
             };
           })
         } : p));
@@ -1652,9 +1846,10 @@
         const timestamp = Date.now();
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.map(a => {
+          flows: p.flows.map(f => {
+            if (f.id !== flowId) return f;
+            const parentChanges = [];
+            const updatedActivities = f.activities.map(a => {
               if (a.id !== activityId) return a;
               const orderedStages = getOrderedStages(f);
               const baseTracking = ensureStageTracking(a, a.currentStageId || a.stageId, timestamp);
@@ -1663,14 +1858,27 @@
               const stageReadBy = { ...baseTracking.stageReadBy };
               const restUpdates = { ...(updates || {}) };
               if ('roleId' in restUpdates) delete restUpdates.roleId;
+              if ('subActivityIds' in restUpdates) delete restUpdates.subActivityIds;
               if (restUpdates.stageId) currentStageId = restUpdates.stageId;
               if (restUpdates.currentStageId) currentStageId = restUpdates.currentStageId;
+              if (restUpdates.hasOwnProperty('expectedEndDate')) {
+                restUpdates.expectedEndDate = normalizeDateInput(restUpdates.expectedEndDate);
+              }
+              const previousParentId = a.parentActivityId || null;
+              const nextParentId = restUpdates.hasOwnProperty('parentActivityId')
+                ? (restUpdates.parentActivityId || null)
+                : previousParentId;
+              restUpdates.parentActivityId = nextParentId;
 
               if (currentStageId && !getLatestStageHistoryEntry(stageHistory, currentStageId)) {
                 stageHistory = [...stageHistory, createStageHistoryEntry(currentStageId, timestamp)];
               }
               if (currentStageId && !stageReadBy[currentStageId]) {
                 stageReadBy[currentStageId] = {};
+              }
+
+              if (previousParentId !== nextParentId) {
+                parentChanges.push({ previousParentId, nextParentId, activityId: a.id });
               }
 
               const merged = {
@@ -1681,21 +1889,73 @@
                 stageReadBy,
                 stageId: currentStageId
               };
+              merged.subActivityIds = toUniqueIds(merged.subActivityIds || []);
               if (!merged.skippedStages) merged.skippedStages = a.skippedStages || [];
               return merged;
-            })
-          } : f)
+            });
+
+            const reconciledActivities = parentChanges.reduce((acc, change) => {
+              return acc.map(activity => {
+                if (change.previousParentId && activity.id === change.previousParentId) {
+                  const filtered = (activity.subActivityIds || []).filter(id => id !== change.activityId);
+                  return { ...activity, subActivityIds: filtered };
+                }
+                if (change.nextParentId && activity.id === change.nextParentId) {
+                  const existing = Array.isArray(activity.subActivityIds) ? activity.subActivityIds : [];
+                  return { ...activity, subActivityIds: toUniqueIds([...existing, change.activityId]) };
+                }
+                return activity;
+              });
+            }, updatedActivities);
+
+            return {
+              ...f,
+              activities: reconciledActivities
+            };
+          })
         } : p));
       };
 
       const deleteActivity = (projectId, flowId, activityId) => {
         setProjects(prev => prev.map(p => p.id === projectId ? {
           ...p,
-          flows: p.flows.map(f => f.id === flowId ? {
-            ...f,
-            activities: f.activities.filter(a => a.id !== activityId),
-            edges: f.edges.filter(e => e.srcId !== activityId && e.dstId !== activityId)
-          } : f)
+          flows: p.flows.map(f => {
+            if (f.id !== flowId) return f;
+            const target = f.activities.find(a => a.id === activityId) || null;
+            const parentId = target?.parentActivityId || null;
+            const childIds = Array.isArray(target?.subActivityIds) ? target.subActivityIds : [];
+            const remainingActivities = f.activities
+              .filter(a => a.id !== activityId)
+              .map(activity => {
+                const sanitizedSubIds = toUniqueIds(activity.subActivityIds || []);
+                let newSubIds = sanitizedSubIds;
+                if (sanitizedSubIds.includes(activityId)) {
+                  newSubIds = sanitizedSubIds.filter(id => id !== activityId);
+                }
+                if (parentId && activity.id === parentId) {
+                  newSubIds = newSubIds.filter(id => id !== activityId);
+                }
+                newSubIds = toUniqueIds(newSubIds);
+                const currentParentId = activity.parentActivityId || null;
+                const shouldDetach = childIds.includes(activity.id);
+                const nextParentId = shouldDetach ? null : currentParentId;
+                let updated = activity;
+                if (nextParentId !== currentParentId) {
+                  updated = { ...updated, parentActivityId: nextParentId };
+                }
+                if (newSubIds.length !== sanitizedSubIds.length) {
+                  updated = updated === activity ? { ...updated, subActivityIds: newSubIds } : { ...updated, subActivityIds: newSubIds };
+                } else if (updated !== activity && newSubIds !== sanitizedSubIds) {
+                  updated = { ...updated, subActivityIds: newSubIds };
+                }
+                return updated;
+              });
+            return {
+              ...f,
+              activities: remainingActivities,
+              edges: f.edges.filter(e => e.srcId !== activityId && e.dstId !== activityId)
+            };
+          })
         } : p));
       };
 
@@ -2346,8 +2606,14 @@
             canUserWorkOnStage={canUserWorkOnStage}
             currentUser={currentUser}
             onBack={() => { setSelectedFlow(null); setSelectedProject(null); setView('dashboard'); }}
-            onCreateActivity={(operatorId) => {
-              setModalData(operatorId ? { operatorId } : {});
+            onCreateActivity={(config) => {
+              if (config && typeof config === 'object') {
+                setModalData(config);
+              } else if (config) {
+                setModalData({ operatorId: config });
+              } else {
+                setModalData({});
+              }
               setShowModal('createActivity');
             }}
             onEditActivity={(aid) => { setModalData({ projectId: selectedProject.id, flowId: selectedFlow.id, activityId: aid }); setShowModal('editActivity'); }}
@@ -2406,7 +2672,7 @@
               onDeleteTeam={deleteTeam}
             />
           )}
-          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal project={selectedProject} flow={selectedFlow} initialOperatorId={modalData.operatorId} onClose={() => { setShowModal(null); setModalData({}); }} onCreate={(title, deliverable, options = {}) => { createActivity(selectedProject.id, selectedFlow.id, title, deliverable, options); setShowModal(null); setModalData({}); }} />}
+          {showModal === 'createActivity' && selectedProject && selectedFlow && <CreateActivityModal project={selectedProject} flow={selectedFlow} initialOperatorId={modalData.operatorId} parentActivity={modalData.parentActivityId ? selectedFlow.activities.find(a => a.id === modalData.parentActivityId) || null : null} onClose={() => { setShowModal(null); setModalData({}); }} onCreate={(title, deliverable, options = {}) => { createActivity(selectedProject.id, selectedFlow.id, title, deliverable, options); setShowModal(null); setModalData({}); }} />}
           {showModal === 'editActivity' && selectedFlow && <EditActivityModal project={selectedProject} activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onUpdate={(updates) => { updateActivity(modalData.projectId, modalData.flowId, modalData.activityId, updates); setShowModal(null); setModalData({}); }} />}
           {showModal === 'deleteActivity' && selectedFlow && <DeleteActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} onClose={() => { setShowModal(null); setModalData({}); }} onDelete={() => { deleteActivity(modalData.projectId, modalData.flowId, modalData.activityId); setShowModal(null); setModalData({}); }} />}
           {showModal === 'claimActivity' && selectedFlow && <ClaimActivityModal activity={selectedFlow.activities.find(a => a.id === modalData.activityId)} project={selectedProject} onClose={() => { setShowModal(null); setModalData({}); }} onClaim={(priority) => { claimActivity(modalData.projectId, modalData.flowId, modalData.activityId, priority); setShowModal(null); setModalData({}); }} />}
@@ -2882,7 +3148,7 @@
 
       const activitiesWithState = useMemo(() => {
         const fallbackId = stageData.fallback ? getStageIdentity(stageData.fallback) : null;
-        return flow.activities.map(activity => {
+        const baseActivities = flow.activities.map(activity => {
           const stageIdSeed = activity.currentStageId || activity.stageId || fallbackId;
           const { currentStageId, stageHistory, stageReadBy } = ensureStageTracking(activity, stageIdSeed, activity.createdAt || Date.now());
           const normalizedStageId = currentStageId || fallbackId;
@@ -2918,9 +3184,105 @@
             claimedBy,
             priority,
             stageReadBy,
-            state: activeStageState
+            state: activeStageState,
+            expectedEndDate: normalizeDateInput(activity.expectedEndDate)
           };
         });
+
+        const activityMap = new Map(baseActivities.map(activity => [activity.id, activity]));
+        const metricsMemo = new Map();
+
+        const buildMetrics = (activity, stack = new Set()) => {
+          if (!activity || !activity.id) {
+            return {
+              progressValue: 0,
+              holonicProgress: 0,
+              aggregatedExpectedEndDate: null,
+              expectedEndDate: null,
+              holonicState: 'waiting',
+              totalChildCount: 0,
+              completedChildCount: 0,
+              childActivities: [],
+              isComplete: false
+            };
+          }
+          if (metricsMemo.has(activity.id)) return metricsMemo.get(activity.id);
+          if (stack.has(activity.id)) {
+            const progressValue = calculateActivityProgressValue(activity);
+            const expectedEndDate = normalizeDateInput(activity.expectedEndDate);
+            const holonicState = activity.activeStageState || activity.state || 'waiting';
+            const metrics = {
+              progressValue,
+              holonicProgress: progressValue,
+              aggregatedExpectedEndDate: expectedEndDate,
+              expectedEndDate,
+              holonicState,
+              totalChildCount: 0,
+              completedChildCount: 0,
+              childActivities: [],
+              isComplete: !!activity.completedAt || holonicState === 'completed'
+            };
+            metricsMemo.set(activity.id, metrics);
+            return metrics;
+          }
+          const nextStack = new Set(stack);
+          nextStack.add(activity.id);
+          const childActivities = toUniqueIds(activity.subActivityIds || [])
+            .map(id => activityMap.get(id))
+            .filter(Boolean);
+          const childMetrics = childActivities.map(child => buildMetrics(child, nextStack));
+          const progressValue = calculateActivityProgressValue(activity);
+          const holonicProgress = childMetrics.length > 0
+            ? childMetrics.reduce((sum, metric) => sum + (metric.holonicProgress ?? metric.progressValue ?? 0), 0) / childMetrics.length
+            : progressValue;
+          const aggregatedExpectedEndDate = calculateAggregatedExpectedEndDate(activity, childMetrics);
+          const holonicState = deriveHolonicState(activity, childMetrics);
+          const completedChildCount = childMetrics.filter(metric => metric.isComplete).length;
+          const metrics = {
+            progressValue,
+            holonicProgress: Number.isFinite(holonicProgress) ? holonicProgress : 0,
+            aggregatedExpectedEndDate,
+            expectedEndDate: normalizeDateInput(activity.expectedEndDate),
+            holonicState,
+            totalChildCount: childMetrics.length,
+            completedChildCount,
+            childActivities,
+            isComplete: childMetrics.length > 0 ? completedChildCount === childMetrics.length : (!!activity.completedAt || holonicState === 'completed')
+          };
+          metricsMemo.set(activity.id, metrics);
+          return metrics;
+        };
+
+        baseActivities.forEach(activity => {
+          const metrics = buildMetrics(activity);
+          activity.progressValue = metrics.progressValue;
+          activity.holonicProgress = metrics.holonicProgress;
+          activity.aggregatedExpectedEndDate = metrics.aggregatedExpectedEndDate;
+          activity.expectedEndDate = metrics.expectedEndDate;
+          activity.totalChildCount = metrics.totalChildCount;
+          activity.completedChildCount = metrics.completedChildCount;
+          activity.childActivities = metrics.childActivities;
+          activity.holonicState = metrics.holonicState;
+          activity.isHolonComplete = metrics.isComplete;
+          activity.subActivityIds = toUniqueIds(activity.subActivityIds || []).filter(id => activityMap.has(id));
+        });
+
+        baseActivities.forEach(activity => {
+          const parentId = activity.parentActivityId || null;
+          if (parentId) {
+            const parent = activityMap.get(parentId);
+            activity.parentActivitySummary = parent ? {
+              id: parent.id,
+              title: parent.title,
+              state: parent.holonicState || parent.activeStageState || parent.state || 'waiting',
+              progress: parent.holonicProgress ?? parent.progressValue ?? 0
+            } : null;
+          } else {
+            activity.parentActivitySummary = null;
+          }
+        });
+
+        return baseActivities;
       }, [flow.activities, flow.edges, stageData]);
 
       const [selectedActivityId, setSelectedActivityId] = useState(null);
@@ -2933,6 +3295,7 @@
         });
         const fallbackId = stageData.fallback ? getStageIdentity(stageData.fallback) : null;
         activitiesWithState.forEach(activity => {
+          if (activity.parentActivityId) return;
           const identity = stageData.map[activity.currentStageId] ? getStageIdentity(stageData.map[activity.currentStageId]) : fallbackId;
           if (identity) {
             if (!grouped[identity]) grouped[identity] = [];
@@ -3176,6 +3539,7 @@
                                       canUserWorkOnStage={canUserWorkOnStage}
                                       stageMap={stageData.map}
                                       isSelected={selectedActivityId === activity.id}
+                                      selectedActivityId={selectedActivityId}
                                       onOpenDetails={openActivityDetails}
                                       onEdit={onEditActivity}
                                       onDelete={onDeleteActivity}
@@ -3186,6 +3550,7 @@
                                       onComplete={onCompleteActivity}
                                       onWire={onWireActivity}
                                       onRequestRevision={onRequestRevision}
+                                      onCreateChild={(parentId) => onCreateActivity({ parentActivityId: parentId })}
                                     />
                                   );
                                 })
@@ -3223,6 +3588,8 @@
                 onAddComment={(text) => currentUser && onAddComment(project.id, flow.id, selectedActivity.id, currentUser, text)}
                 onAddAttachment={(attachment) => onAddAttachment(project.id, flow.id, selectedActivity.id, attachment)}
                 onRemoveAttachment={(attachmentId) => onRemoveAttachment(project.id, flow.id, selectedActivity.id, attachmentId)}
+                onCreateChild={(parentId) => onCreateActivity({ parentActivityId: parentId })}
+                onOpenActivity={openActivityDetails}
               />
             )}
           </div>
@@ -3230,21 +3597,37 @@
       );
     }
 
-    function ActivityCard({ activity, stage, nextStage, dependencies, project, flow, currentUser, canUserWorkOnStage, stageMap, isSelected, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision }) {
+    function ActivityCard({ activity, stage, nextStage, dependencies, project, flow, currentUser, canUserWorkOnStage, stageMap, isSelected, selectedActivityId, onOpenDetails, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision, onCreateChild }) {
       const activeStage = stage;
-      const stageState = activity.activeStageState || activity.state || 'waiting';
+      const baseStageState = activity.activeStageState || activity.state || 'waiting';
+      const holonicState = activity.holonicState || baseStageState;
+      const stageState = activity.totalChildCount > 0 ? holonicState : baseStageState;
       const activeEntry = activity.activeStageEntry || null;
       const claimedBy = activeEntry?.claimedBy || null;
       const priority = activeEntry?.priority || null;
       const isMine = claimedBy && claimedBy === currentUser;
-      const canClaim = stageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
-      const canCompleteStage = isMine && stageState === 'in_progress';
-      const isActivityCompleted = !!activity.completedAt;
+      const canClaim = baseStageState === 'ready' && !claimedBy && canUserWorkOnStage?.(flow, activity.currentStageId, currentUser);
+      const canCompleteStage = isMine && baseStageState === 'in_progress';
+      const hasChildren = (activity.childActivities || []).length > 0;
+      const isActivityCompleted = !!activity.completedAt || !!activity.isHolonComplete;
       const canAdvanceStage = !isActivityCompleted && !!nextStage && stageState !== 'completed' && stageState !== 'skipped';
-      const canSkipStage = !isActivityCompleted && !!nextStage;
+      const canSkipStage = !isActivityCompleted && !!nextStage && !hasChildren;
       const stageSupportsRevision = activeStage?.supportsRevision;
       const showRevisionButton = stageSupportsRevision && dependencies.length > 0 && !isActivityCompleted;
-      const showCompleteActivity = !nextStage && canCompleteStage;
+      const showCompleteActivity = !nextStage && canCompleteStage && !hasChildren;
+      const progressPercent = Math.round(((activity.holonicProgress ?? activity.progressValue ?? 0) * 100));
+      const boundedProgress = Math.max(0, Math.min(100, Number.isFinite(progressPercent) ? progressPercent : 0));
+      const aggregatedExpected = activity.aggregatedExpectedEndDate || activity.expectedEndDate || null;
+      const parentSummary = activity.parentActivitySummary;
+      const childActivities = Array.isArray(activity.childActivities) ? activity.childActivities : [];
+
+      const [showChildren, setShowChildren] = useState(false);
+
+      useEffect(() => {
+        if (childActivities.some(child => child.id === selectedActivityId)) {
+          setShowChildren(true);
+        }
+      }, [childActivities, selectedActivityId]);
 
       const stateConfig = {
         ready: { label: 'Ready', color: 'bg-green-900 text-green-300' },
@@ -3304,6 +3687,11 @@
               </div>
               <h4 className="font-medium text-sm">{activity.title}</h4>
               {claimedBy && <div className="text-[11px] text-gray-400">Claimed by {claimedBy}</div>}
+              {parentSummary && (
+                <div className="text-[11px] text-gray-400 mt-1">
+                  Part of <span className="text-gray-200">{parentSummary.title}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 ml-2">
               <span className={`text-xs px-2 py-0.5 rounded ${config.color}`}>{config.label}</span>
@@ -3326,6 +3714,22 @@
             );
           })()}
           {activity.deliverable && <div className="text-xs text-gray-200 mb-2"><span className="text-gray-400">Delivers:</span> {activity.deliverable}</div>}
+          {aggregatedExpected && (
+            <div className="text-[11px] text-gray-400 mb-2">
+              Expected delivery: <span className="text-gray-200">{formatDateFromTimestamp(aggregatedExpected)}</span>
+            </div>
+          )}
+          {hasChildren && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                <span>{activity.completedChildCount || 0} / {activity.totalChildCount} sub-activities</span>
+                <span>{boundedProgress}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-700 rounded">
+                <div className="h-full bg-blue-500 rounded transition-all" style={{ width: `${boundedProgress}%` }}></div>
+              </div>
+            </div>
+          )}
           {stageStates.length > 0 && (
             <div className="flex flex-wrap gap-1 text-[10px] text-gray-400 mb-2">
               {stageStates.map(({ stage: stageInfo, state }) => {
@@ -3370,8 +3774,60 @@
                     </li>
                   );
                 })}
-                {dependencies.length > 2 && <li className="text-gray-400">+{dependencies.length - 2} more</li>}
+              {dependencies.length > 2 && <li className="text-gray-400">+{dependencies.length - 2} more</li>}
               </ul>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {hasChildren && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowChildren(prev => !prev); }}
+                className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 transition-colors"
+              >
+                {showChildren ? 'Hide sub-activities' : `Show sub-activities (${activity.totalChildCount})`}
+              </button>
+            )}
+            {onCreateChild && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onCreateChild(activity.id); }}
+                className="text-xs px-2 py-1 rounded bg-blue-700 hover:bg-blue-600 text-blue-100 transition-colors"
+              >
+                + Sub-activity
+              </button>
+            )}
+          </div>
+          {hasChildren && showChildren && (
+            <div className="mt-3 space-y-2">
+              {childActivities.map(child => {
+                const childState = child.holonicState || child.activeStageState || child.state || 'waiting';
+                const childConfig = stateConfig[childState] || stateConfig.ready;
+                const childProgress = Math.round(((child.holonicProgress ?? child.progressValue ?? 0) * 100));
+                const childBounded = Math.max(0, Math.min(100, Number.isFinite(childProgress) ? childProgress : 0));
+                const childExpected = child.aggregatedExpectedEndDate || child.expectedEndDate || null;
+                const childStageName = child.activeStage?.name || stageMap?.[child.currentStageId]?.name || 'Unassigned stage';
+                const childSelected = selectedActivityId === child.id;
+                return (
+                  <div
+                    key={child.id}
+                    className={`border rounded-lg p-2 text-xs ${childSelected ? 'border-blue-500 bg-blue-900/30' : 'border-gray-700 bg-gray-900/60'}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        className="text-left flex-1 text-gray-100 hover:text-blue-200"
+                        onClick={(e) => { e.stopPropagation(); onOpenDetails(child.id); }}
+                      >
+                        <div className="font-semibold">{child.title}</div>
+                        <div className="text-[10px] text-gray-400">{childStageName}</div>
+                      </button>
+                      <span className={`text-[10px] px-2 py-0.5 rounded ${childConfig.color}`}>{childConfig.label}</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
+                      <span>{childBounded}%</span>
+                      {childExpected && <span>Expected {formatDateFromTimestamp(childExpected)}</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div className="flex items-center gap-3 text-xs text-gray-400 mt-3">
@@ -3384,14 +3840,14 @@
             {activity.createdAt && <div className="ml-auto text-gray-500">{formatRelativeTime(activity.createdAt)}</div>}
           </div>
           <div className="flex gap-1 mt-3 flex-wrap">
-            {!activity.completedAt && (
+            {!isActivityCompleted && (
               <>
                 <button onClick={(e) => { e.stopPropagation(); onEdit(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
                 <button onClick={(e) => { e.stopPropagation(); onDelete(activity.id); }} className="bg-red-900 hover:bg-red-800 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
               </>
             )}
             {canClaim && <button onClick={(e) => { e.stopPropagation(); onClaim(activity.id); }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
-            {isMine && !activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
+            {isMine && !isActivityCompleted && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
             {canAdvanceStage && (
               <button onClick={(e) => { e.stopPropagation(); onAdvanceStage(activity.id, { skip: false }); }} className="bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Advance</button>
             )}
@@ -3404,7 +3860,7 @@
             {showCompleteActivity && (
               <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-xs py-1 px-2 rounded transition-colors">Complete Activity</button>
             )}
-            {!activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
+            {!isActivityCompleted && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
           </div>
         </div>
       );
@@ -4064,25 +4520,36 @@
       );
     }
 
-    function CreateActivityModal({ project, flow, onClose, onCreate, initialOperatorId }) {
+    function CreateActivityModal({ project, flow, onClose, onCreate, initialOperatorId, parentActivity }) {
       const [title, setTitle] = useState('');
       const [deliverable, setDeliverable] = useState('');
       const [startingStageId, setStartingStageId] = useState('');
+      const [expectedEndDate, setExpectedEndDate] = useState('');
 
       const orderedStages = useMemo(() => getOrderedStages(flow), [flow]);
 
       useEffect(() => {
         if (initialOperatorId) {
           setStartingStageId(initialOperatorId);
+        } else if (parentActivity?.currentStageId) {
+          setStartingStageId(parentActivity.currentStageId);
         } else {
           const firstStage = getFirstActiveStage(orderedStages);
           setStartingStageId(firstStage ? getStageIdentity(firstStage) : '');
         }
-      }, [initialOperatorId, orderedStages]);
+      }, [initialOperatorId, orderedStages, parentActivity?.currentStageId]);
 
       const selectedTeams = useMemo(() => {
         return resolveStageTeams(project, flow, startingStageId);
       }, [project, flow, startingStageId]);
+
+      const parentStageName = useMemo(() => {
+        if (!parentActivity) return null;
+        const stageId = parentActivity.currentStageId || parentActivity.stageId;
+        if (!stageId) return null;
+        const match = orderedStages.find(stage => getStageIdentity(stage) === stageId);
+        return match ? match.name : null;
+      }, [parentActivity, orderedStages]);
 
       return (
         <Modal onClose={onClose} title="Create Activity">
@@ -4092,6 +4559,16 @@
                 Activities start in a stage. The teams assigned to that stage can work on it.
               </p>
             </div>
+
+            {parentActivity && (
+              <div className="bg-purple-900/20 border border-purple-700/40 rounded p-4 text-sm text-purple-100 space-y-1">
+                <div className="font-semibold text-purple-200">Sub-activity of {parentActivity.title}</div>
+                {parentStageName && <div className="text-xs">Current stage: {parentStageName}</div>}
+                {parentActivity.deliverable && (
+                  <div className="text-xs">Parent deliverable: {parentActivity.deliverable}</div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm text-gray-200 mb-2">Activity name</label>
@@ -4134,13 +4611,40 @@
               />
             </div>
 
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Expected delivery (optional)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={expectedEndDate}
+                  onChange={(e) => setExpectedEndDate(e.target.value)}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
+                />
+                {expectedEndDate && (
+                  <button
+                    type="button"
+                    onClick={() => setExpectedEndDate('')}
+                    className="text-xs px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
                 Cancel
               </button>
               <button
                 onClick={() => {
-                  if (title) onCreate(title, deliverable, { stageId: startingStageId });
+                  if (!title) return;
+                  const normalizedExpected = expectedEndDate ? normalizeDateInput(expectedEndDate) : null;
+                  onCreate(title, deliverable, {
+                    stageId: startingStageId,
+                    expectedEndDate: normalizedExpected,
+                    parentActivityId: parentActivity?.id || null
+                  });
                 }}
                 disabled={!title}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
@@ -4156,11 +4660,13 @@
     function EditActivityModal({ project, activity, onClose, onUpdate }) {
       const [title, setTitle] = useState(activity?.title || '');
       const [deliverable, setDeliverable] = useState(activity?.deliverable || '');
+      const [expectedEndDate, setExpectedEndDate] = useState(formatDateInputValue(activity?.expectedEndDate));
 
       useEffect(() => {
         if (activity) {
           setTitle(activity.title);
           setDeliverable(activity.deliverable || '');
+          setExpectedEndDate(formatDateInputValue(activity.expectedEndDate));
         }
       }, [activity]);
 
@@ -4190,13 +4696,39 @@
               />
             </div>
 
+            <div>
+              <label className="block text-sm text-gray-200 mb-2">Expected delivery (optional)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={expectedEndDate}
+                  onChange={(e) => setExpectedEndDate(e.target.value)}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
+                />
+                {expectedEndDate && (
+                  <button
+                    type="button"
+                    onClick={() => setExpectedEndDate('')}
+                    className="text-xs px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
                 Cancel
               </button>
               <button
                 onClick={() => {
-                  if (title) onUpdate({ title, deliverable });
+                  if (!title) return;
+                  onUpdate({
+                    title,
+                    deliverable,
+                    expectedEndDate: expectedEndDate ? normalizeDateInput(expectedEndDate) : null
+                  });
                 }}
                 disabled={!title}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
