@@ -8,9 +8,97 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    };
+  </script>
+  <style>
+    :root {
+      --bg: #F9FAFB;
+      --surface: #FFFFFF;
+      --elevated: #F3F4F6;
+      --border: #E5E7EB;
+      --text-strong: #111827;
+      --text: #1F2937;
+      --text-muted: #6B7280;
+
+      --accent: #2563EB;
+      --ok: #15803D;
+      --info: #1D4ED8;
+      --warn: #B45309;
+      --danger: #B91C1C;
+
+      --focus: #3B82F6;
+    }
+
+    .dark {
+      --bg: #0B0F17;
+      --surface: #0F172A;
+      --elevated: #111827;
+      --border: #1F2937;
+      --text-strong: #F9FAFB;
+      --text: #E5E7EB;
+      --text-muted: #9CA3AF;
+
+      --accent: #60A5FA;
+      --ok: #34D399;
+      --info: #93C5FD;
+      --warn: #F59E0B;
+      --danger: #F87171;
+
+      --focus: #60A5FA;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not(.force-light):not(.force-dark) {
+        color-scheme: dark;
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>
+
+  <script>
+    (function initTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark =
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const root = document.documentElement;
+      if (saved === 'dark') {
+        root.classList.add('dark', 'force-dark');
+        root.classList.remove('force-light');
+        root.style.colorScheme = 'dark';
+      } else if (saved === 'light') {
+        root.classList.remove('dark');
+        root.classList.add('force-light');
+        root.classList.remove('force-dark');
+        root.style.colorScheme = 'light';
+      } else {
+        root.classList.toggle('dark', prefersDark);
+        root.classList.remove('force-light', 'force-dark');
+        root.style.colorScheme = prefersDark ? 'dark' : 'light';
+      }
+    })();
+  </script>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
@@ -322,9 +410,16 @@
     });
 
     const PULSE_TIER_META = {
-      genesis: { label: 'GENESIS', subtitle: 'Formation', color: 'text-blue-400' },
-      evaluation: { label: 'EVALUATION', subtitle: 'Refinement', color: 'text-purple-400' },
-      continuity: { label: 'CONTINUITY', subtitle: 'Recursion', color: 'text-green-400' }
+      genesis: { label: 'GENESIS', subtitle: 'Formation', color: 'text-[var(--info)]' },
+      evaluation: { label: 'EVALUATION', subtitle: 'Refinement', color: 'text-[var(--accent)]' },
+      continuity: { label: 'CONTINUITY', subtitle: 'Recursion', color: 'text-[var(--ok)]' }
+    };
+
+    const TEAM_COLOR_MAP = {
+      blue: 'var(--info)',
+      green: 'var(--ok)',
+      purple: 'var(--accent)',
+      orange: 'var(--warn)'
     };
 
     function createDefaultStageConfig() {
@@ -671,7 +766,7 @@
           if (part.startsWith && part.startsWith('@')) {
             const name = part.slice(1);
             const isMe = currentUser && name.toLowerCase() === currentUser.toLowerCase();
-            return <span key={idx} className={isMe ? 'text-blue-300 font-semibold' : 'text-blue-400'}>{part}</span>;
+            return <span key={idx} className={isMe ? 'text-[var(--info)] font-semibold' : 'text-[var(--info)]'}>{part}</span>;
           }
           return <span key={idx}>{part}</span>;
         });
@@ -679,10 +774,10 @@
 
       const actionButtons = (
         <div className="flex flex-wrap gap-2">
-          {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm">Claim</button>}
-          {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm">Unclaim</button>}
-          {canAdvanceStage && <button onClick={() => onAdvanceStage(activity.id, { skip: false })} className="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded text-sm">Advance</button>}
-          {canSkipStage && <button onClick={() => onSkipStage(activity.id)} className="bg-yellow-700 hover:bg-yellow-600 px-3 py-1.5 rounded text-sm text-yellow-100">Skip Stage</button>}
+          {canClaim && <button onClick={() => onClaim(activity.id)} className="bg-[var(--accent)] hover:opacity-90 px-3 py-1.5 rounded text-sm">Claim</button>}
+          {isMine && !activity.completedAt && <button onClick={() => onUnclaim(activity.id)} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] px-3 py-1.5 rounded text-sm">Unclaim</button>}
+          {canAdvanceStage && <button onClick={() => onAdvanceStage(activity.id, { skip: false })} className="bg-[var(--ok)] hover:opacity-90 px-3 py-1.5 rounded text-sm">Advance</button>}
+          {canSkipStage && <button onClick={() => onSkipStage(activity.id)} className="bg-[var(--warn)] hover:opacity-90 px-3 py-1.5 rounded text-sm text-white">Skip Stage</button>}
           {stageSupportsRevision && dependencies.length > 0 && !activity.completedAt && (
             <button onClick={() => {
               const lastDep = dependencies[dependencies.length - 1];
@@ -690,74 +785,77 @@
                 const reason = window.prompt('Reason for revision? (optional)', '') || '';
                 onRequestRevision(activity.id, lastDep.requiredStageId || activity.currentStageId, reason);
               }
-            }} className="bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded text-sm">Request revision</button>
+            }} className="bg-[var(--warn)] hover:opacity-90 px-3 py-1.5 rounded text-sm">Request revision</button>
           )}
-          {canComplete && !nextStage && <button onClick={() => onComplete(activity.id)} className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded text-sm">Complete Activity</button>}
-          {!activity.completedAt && <button onClick={() => onWire(activity.id)} className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded text-sm">Wire</button>}
-          {!activity.completedAt && <button onClick={() => onEdit(activity.id)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm">Edit</button>}
-          {!activity.completedAt && <button onClick={() => onDelete(activity.id)} className="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded text-sm">Delete</button>}
+          {canComplete && !nextStage && <button onClick={() => onComplete(activity.id)} className="bg-[var(--ok)] hover:opacity-90 px-3 py-1.5 rounded text-sm">Complete Activity</button>}
+          {!activity.completedAt && <button onClick={() => onWire(activity.id)} className="bg-[var(--accent)] hover:opacity-90 px-3 py-1.5 rounded text-sm">Wire</button>}
+          {!activity.completedAt && <button onClick={() => onEdit(activity.id)} className="bg-[var(--elevated)] hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] px-3 py-1.5 rounded text-sm">Edit</button>}
+          {!activity.completedAt && <button onClick={() => onDelete(activity.id)} className="bg-[var(--danger)] hover:opacity-90 px-3 py-1.5 rounded text-sm">Delete</button>}
         </div>
       );
 
       return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-end z-40" aria-modal="true" role="dialog">
-          <div className="w-full max-w-md bg-gray-900 border-l border-gray-800 h-full overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="w-full max-w-md bg-[var(--surface)] border-l border-[var(--border)] h-full overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
               <div>
-                <h2 className="text-lg font-semibold text-gray-100">{activity.title}</h2>
-                <div className="text-xs text-gray-400 mt-1">Stage status: {stageStateLabel}</div>
+                <h2 className="text-lg font-semibold text-[var(--text-strong)]">{activity.title}</h2>
+                <div className="text-xs text-[var(--text-muted)] mt-1">Stage status: {stageStateLabel}</div>
               </div>
-              <button onClick={onClose} className="p-2 rounded hover:bg-gray-800"><XIcon className="w-4 h-4" /></button>
+              <button onClick={onClose} className="p-2 rounded hover:bg-[var(--elevated)]"><XIcon className="w-4 h-4" /></button>
             </div>
 
             <div className="px-6 py-4 space-y-6">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-3">
+              <div className="bg-[var(--elevated)]/50 border border-[var(--border)] rounded-lg p-4 space-y-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2 text-sm text-gray-200">
+                  <div className="space-y-2 text-sm text-[var(--text)]">
                     {assignedTeams.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 text-xs text-gray-200">
-                        <span className="text-gray-400 mr-1">Teams:</span>
+                      <div className="flex flex-wrap gap-1 text-xs text-[var(--text)]">
+                        <span className="text-[var(--text-muted)] mr-1">Teams:</span>
                         {assignedTeams.map(team => (
-                          <span key={team.id} className="inline-flex items-center gap-1 bg-gray-800/60 px-2 py-0.5 rounded">
-                            <span className={`w-2 h-2 rounded-full bg-${team.color}-500`}></span>
+                          <span key={team.id} className="inline-flex items-center gap-1 bg-[var(--elevated)]/60 px-2 py-0.5 rounded">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: TEAM_COLOR_MAP[team.color] || 'var(--accent)' }}
+                            ></span>
                             {team.name}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs text-yellow-400">No teams assigned to current stage</div>
+                      <div className="text-xs text-[var(--warn)]">No teams assigned to current stage</div>
                     )}
-                    {stage && <div><span className="text-gray-400">Stage:</span> {stage.name}</div>}
-                    {stage?.conditions && <div className="text-xs text-blue-200 bg-blue-900/20 border border-blue-800/30 rounded px-2 py-1">Conditions: {stage.conditions}</div>}
+                    {stage && <div><span className="text-[var(--text-muted)]">Stage:</span> {stage.name}</div>}
+                    {stage?.conditions && <div className="text-xs text-[var(--info)] bg-[var(--info)]/20 border border-[var(--info)]/30 rounded px-2 py-1">Conditions: {stage.conditions}</div>}
                     {activity.skippedStages?.length > 0 && (
-                      <div className="text-xs text-yellow-300">Skipped: {activity.skippedStages.map(id => stageMap?.[id]?.name || id).join(', ')}</div>
+                      <div className="text-xs text-[var(--warn)]">Skipped: {activity.skippedStages.map(id => stageMap?.[id]?.name || id).join(', ')}</div>
                     )}
-                    {claimedBy && <div><span className="text-gray-400">Claimed by:</span> {claimedBy}{priority && <span className="text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 ml-2 rounded">{priority}</span>}</div>}
+                    {claimedBy && <div><span className="text-[var(--text-muted)]">Claimed by:</span> {claimedBy}{priority && <span className="text-xs bg-[var(--info)]/60 text-[var(--info)] px-2 py-0.5 ml-2 rounded">{priority}</span>}</div>}
                     {nextStage ? (
-                      <div className="text-xs text-gray-400">Next stage: {nextStage.name}</div>
+                      <div className="text-xs text-[var(--text-muted)]">Next stage: {nextStage.name}</div>
                     ) : (
-                      <div className="text-xs text-gray-500">Final stage</div>
+                      <div className="text-xs text-[var(--text-muted)]">Final stage</div>
                     )}
-                    {activity.deliverable && <div><span className="text-gray-400">Deliverable:</span> {activity.deliverable}</div>}
-                    <div className="text-xs text-gray-500">Created {formatTimestamp(activity.createdAt)}</div>
+                    {activity.deliverable && <div><span className="text-[var(--text-muted)]">Deliverable:</span> {activity.deliverable}</div>}
+                    <div className="text-xs text-[var(--text-muted)]">Created {formatTimestamp(activity.createdAt)}</div>
                   </div>
                 </div>
                 {stageStates.length > 0 && (
-                  <div className="text-xs text-gray-200">
-                    <div className="text-gray-400 mb-2">Stage overview</div>
+                  <div className="text-xs text-[var(--text)]">
+                    <div className="text-[var(--text-muted)] mb-2">Stage overview</div>
                     <ul className="space-y-1">
                       {stageStates.map(({ stage: stageInfo, state, entry }) => (
-                        <li key={getStageIdentity(stageInfo)} className="flex items-center justify-between bg-gray-900/40 px-2 py-1 rounded">
+                        <li key={getStageIdentity(stageInfo)} className="flex items-center justify-between bg-[var(--surface)]/40 px-2 py-1 rounded">
                           <span>{stageInfo.name}</span>
-                          <span className="text-gray-400 text-[11px]">{state.replace('_', ' ')}{entry?.claimedBy ? ` · ${entry.claimedBy}` : ''}</span>
+                          <span className="text-[var(--text-muted)] text-[11px]">{state.replace('_', ' ')}{entry?.claimedBy ? ` · ${entry.claimedBy}` : ''}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
                 {dependencies.length > 0 && (
-                  <div className="text-sm text-gray-200">
-                    <div className="text-gray-400 mb-2">Waiting on</div>
+                  <div className="text-sm text-[var(--text)]">
+                    <div className="text-[var(--text-muted)] mb-2">Waiting on</div>
                     <ul className="space-y-2 ml-2">
                       {dependencies.map((dep, idx) => {
                         const sourceName = dep.requiredStageName || 'Source stage';
@@ -765,22 +863,22 @@
                         const activityTitle = dep.activity ? dep.activity.title : 'Missing activity';
                         const isCleared = dep.satisfied;
                         const statusLabel = isCleared ? 'Cleared' : 'Blocking';
-                        const statusClass = isCleared ? 'text-emerald-300' : 'text-yellow-300';
+                        const statusClass = isCleared ? 'text-[var(--ok)]' : 'text-[var(--warn)]';
                         return (
                           <li key={idx} className="flex items-start gap-2">
-                            <ChevronRightIcon className="w-3 h-3 text-gray-500 mt-1" />
+                            <ChevronRightIcon className="w-3 h-3 text-[var(--text-muted)] mt-1" />
                             <div className="flex-1 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-300">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-800/80">{sourceName}</span>
-                                <span className="text-gray-600">→</span>
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-800/60 text-gray-200">{targetName}</span>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text)]">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--elevated)]/80">{sourceName}</span>
+                                <span className="text-[var(--text-muted)]">→</span>
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--elevated)]/60 text-[var(--text)]">{targetName}</span>
                                 <span className={statusClass}>{statusLabel}</span>
-                                {dep.edgeType === 'loops' && <span className="text-xs text-orange-400">(revision)</span>}
-                                {(dep.needsMigration || dep.stageInferred) && <span className="text-xs text-yellow-400">Stage mapping inferred — confirm wiring</span>}
+                                {dep.edgeType === 'loops' && <span className="text-xs text-[var(--warn)]">(revision)</span>}
+                                {(dep.needsMigration || dep.stageInferred) && <span className="text-xs text-[var(--warn)]">Stage mapping inferred — confirm wiring</span>}
                               </div>
-                              <div className={`${isCleared ? 'text-gray-500 line-through' : 'text-gray-200'} text-sm`}>
+                              <div className={`${isCleared ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text)]'} text-sm`}>
                                 {activityTitle}
-                                {dep.missingSource && <span className="ml-2 text-xs text-red-300">Source missing</span>}
+                                {dep.missingSource && <span className="ml-2 text-xs text-[var(--danger)]">Source missing</span>}
                               </div>
                             </div>
                           </li>
@@ -794,42 +892,42 @@
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-100">Attachments</h3>
+                  <h3 className="text-sm font-semibold text-[var(--text-strong)]">Attachments</h3>
                 </div>
                 <div className="space-y-2">
                   {(activity.attachments || []).length === 0 ? (
-                    <div className="text-xs text-gray-500">No attachments yet.</div>
+                    <div className="text-xs text-[var(--text-muted)]">No attachments yet.</div>
                   ) : (
                     (activity.attachments || []).map(att => (
-                      <div key={att.id} className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+                      <div key={att.id} className="flex items-center justify-between bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)]">
                         <div className="flex flex-col">
                           <span>{att.name}</span>
-                          {att.url && <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300">{att.url}</a>}
-                          <span className="text-xs text-gray-500">Added {att.addedBy || 'someone'} · {formatRelativeTime(att.addedAt)}</span>
+                          {att.url && <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--info)] hover:text-[var(--info)]">{att.url}</a>}
+                          <span className="text-xs text-[var(--text-muted)]">Added {att.addedBy || 'someone'} · {formatRelativeTime(att.addedAt)}</span>
                         </div>
-                        <button onClick={() => onRemoveAttachment(att.id)} className="text-xs text-gray-400 hover:text-gray-200">Remove</button>
+                        <button onClick={() => onRemoveAttachment(att.id)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)]">Remove</button>
                       </div>
                     ))
                   )}
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
-                    <input type="text" value={attachmentName} onChange={(e) => setAttachmentName(e.target.value)} placeholder="File name" className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm" />
-                    <input type="text" value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)} placeholder="Link (optional)" className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm" />
-                    <button onClick={handleAddAttachment} disabled={!currentUser || !attachmentName.trim()} className="w-full bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 text-sm py-2 rounded">Add attachment</button>
+                  <div className="bg-[var(--elevated)] border border-[var(--border)] rounded-lg p-3 space-y-2">
+                    <input type="text" value={attachmentName} onChange={(e) => setAttachmentName(e.target.value)} placeholder="File name" className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-sm" />
+                    <input type="text" value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)} placeholder="Link (optional)" className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-sm" />
+                    <button onClick={handleAddAttachment} disabled={!currentUser || !attachmentName.trim()} className="w-full bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] disabled:bg-[var(--elevated)] disabled:text-[var(--text-muted)] text-sm py-2 rounded">Add attachment</button>
                   </div>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-100">Comments ({comments.length})</h3>
+                  <h3 className="text-sm font-semibold text-[var(--text-strong)]">Comments ({comments.length})</h3>
                 </div>
                 <div className="space-y-3">
                   {comments.length === 0 ? (
-                    <div className="text-xs text-gray-500">No comments yet.</div>
+                    <div className="text-xs text-[var(--text-muted)]">No comments yet.</div>
                   ) : (
                     comments.map(comment => (
-                      <div key={comment.id} className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-100">
-                        <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                      <div key={comment.id} className="bg-[var(--elevated)] border border-[var(--border)] rounded-lg p-3 text-sm text-[var(--text-strong)]">
+                        <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-2">
                           <span>{comment.author}{comment.system && ' · system'}</span>
                           <span>{formatRelativeTime(comment.createdAt)}</span>
                         </div>
@@ -838,26 +936,26 @@
                       </div>
                     ))
                   )}
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
-                    <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={currentUser ? 'Add a comment with @mentions' : 'Set your name in the dashboard to comment'} className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm" rows={3} disabled={!currentUser} />
+                  <div className="bg-[var(--elevated)] border border-[var(--border)] rounded-lg p-3 space-y-2">
+                    <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={currentUser ? 'Add a comment with @mentions' : 'Set your name in the dashboard to comment'} className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-sm" rows={3} disabled={!currentUser} />
                     <div className="flex justify-end">
-                      <button onClick={handleAddComment} disabled={!currentUser || !commentText.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 px-3 py-1.5 rounded text-sm">Comment</button>
+                      <button onClick={handleAddComment} disabled={!currentUser || !commentText.trim()} className="bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] disabled:text-[var(--text-muted)] px-3 py-1.5 rounded text-sm">Comment</button>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-gray-100 mb-3">History</h3>
-                <div className="space-y-2 text-sm text-gray-200">
+                <h3 className="text-sm font-semibold text-[var(--text-strong)] mb-3">History</h3>
+                <div className="space-y-2 text-sm text-[var(--text)]">
                   {stageHistory.length > 0 && (
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-wide text-gray-500">Stage history</div>
+                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Stage history</div>
                       {stageHistory.map(entry => (
-                        <div key={entry.id} className="bg-gray-900/40 border border-gray-800 rounded p-2 text-xs text-gray-300">
+                        <div key={entry.id} className="bg-[var(--surface)]/40 border border-[var(--border)] rounded p-2 text-xs text-[var(--text)]">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-gray-100">{stageMap?.[entry.stageId]?.name || entry.stageId}</span>
-                            <span className="text-gray-500">{entry.enteredAt ? formatRelativeTime(entry.enteredAt) : ''}</span>
+                            <span className="text-[var(--text-strong)]">{stageMap?.[entry.stageId]?.name || entry.stageId}</span>
+                            <span className="text-[var(--text-muted)]">{entry.enteredAt ? formatRelativeTime(entry.enteredAt) : ''}</span>
                           </div>
                           {entry.claimedBy && <div>Claimed by {entry.claimedBy}{entry.priority && ` (${entry.priority})`}</div>}
                           {entry.completedAt && <div>Completed {formatRelativeTime(entry.completedAt)}</div>}
@@ -865,7 +963,7 @@
                           {(entry.log || []).length > 0 && (
                             <ul className="mt-1 space-y-0.5">
                               {entry.log.slice().reverse().map(logEntry => (
-                                <li key={logEntry.id} className="text-gray-400">
+                                <li key={logEntry.id} className="text-[var(--text-muted)]">
                                   <div>{logEntry.text}</div>
                                   {renderTaggedUsers(logEntry.taggedUserIds, 'mt-1')}
                                 </li>
@@ -877,11 +975,11 @@
                     </div>
                   )}
                   {history.length === 0 ? (
-                    <div className="text-xs text-gray-500">No history yet.</div>
+                    <div className="text-xs text-[var(--text-muted)]">No history yet.</div>
                   ) : (
                     history.map(entry => (
                       <div key={entry.id} className="flex items-start gap-2">
-                        <div className="text-xs text-gray-500 w-28 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</div>
+                        <div className="text-xs text-[var(--text-muted)] w-28 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</div>
                         <div className="flex-1">
                           {entry.text}
                           {renderTaggedUsers(entry.taggedUserIds, 'mt-1')}
@@ -1095,36 +1193,76 @@
     }
 
     function ActivityPulse({ count, state }) {
-      const getColor = () => {
-        switch (state) {
-          case 'ready':
-            return 'bg-green-500';
-          case 'in_progress':
-            return 'bg-blue-500';
-          case 'blocked':
-            return 'bg-red-500';
-          case 'waiting':
-            return 'bg-yellow-500';
-          case 'completed':
-            return 'bg-gray-600';
-          default:
-            return 'bg-gray-700';
-        }
-      };
-
       const dots = Math.min(count, 5);
+      const stateColor = {
+        ready: 'bg-[var(--ok)]',
+        in_progress: 'bg-[var(--info)]',
+        blocked: 'bg-[var(--danger)]',
+        waiting: 'bg-[var(--warn)]',
+        completed: 'bg-[var(--text-muted)]'
+      }[state] || 'bg-[var(--text-muted)]';
+      const shapeCue = state === 'blocked' ? '■' : state === 'ready' ? '●' : '○';
 
       return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" aria-label={`State ${state}, ${count} items`}>
           {Array.from({ length: dots }).map((_, index) => (
             <div
               key={index}
-              className={`w-2 h-2 rounded-full ${getColor()} animate-pulse`}
+              className={`w-2 h-2 rounded-full ${stateColor} animate-pulse`}
               style={{ animationDelay: `${index * 200}ms` }}
             />
           ))}
-          {dots === 0 && <div className="w-2 h-2 rounded-full bg-gray-800" />}
+          {dots === 0 && <div className={`w-2 h-2 rounded-full ${stateColor}`} aria-hidden />}
+          <span className="sr-only">{state}</span>
+          <div aria-hidden className="text-[10px] ml-1 leading-none">
+            {shapeCue}
+          </div>
         </div>
+      );
+    }
+
+    function ThemeToggle() {
+      const [isDark, setIsDark] = React.useState(() =>
+        document.documentElement.classList.contains('dark')
+      );
+
+      React.useEffect(() => {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = (event) => {
+          if (localStorage.getItem('theme')) return;
+          document.documentElement.classList.toggle('dark', event.matches);
+          document.documentElement.classList.remove('force-light', 'force-dark');
+          document.documentElement.style.colorScheme = event.matches ? 'dark' : 'light';
+          setIsDark(event.matches);
+        };
+        mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange);
+        return () => {
+          mq.removeEventListener ? mq.removeEventListener('change', onChange) : mq.removeListener(onChange);
+        };
+      }, []);
+
+      const toggle = () => {
+        const root = document.documentElement;
+        const next = !isDark;
+        root.classList.toggle('dark', next);
+        localStorage.setItem('theme', next ? 'dark' : 'light');
+        root.classList.remove('force-light', 'force-dark');
+        root.classList.add(next ? 'force-dark' : 'force-light');
+        root.style.colorScheme = next ? 'dark' : 'light';
+        setIsDark(next);
+      };
+
+      return (
+        <button
+          onClick={toggle}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus)] transition"
+          role="switch"
+          aria-checked={isDark}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span aria-hidden="true">{isDark ? '🌙' : '☀️'}</span>
+          <span className="text-sm">{isDark ? 'Dark' : 'Light'}</span>
+        </button>
       );
     }
 
@@ -1144,15 +1282,15 @@
       const getBorderColor = () => {
         switch (flowState) {
           case 'flowing':
-            return 'border-blue-500/50';
+            return 'border-[var(--info)]/60';
           case 'ready':
-            return 'border-green-500/50';
+            return 'border-[var(--ok)]/60';
           case 'blocked':
-            return 'border-red-500/50';
+            return 'border-[var(--danger)]/60';
           case 'waiting':
-            return 'border-yellow-500/50';
+            return 'border-[var(--warn)]/60';
           default:
-            return 'border-gray-700';
+            return 'border-[var(--border)]';
         }
       };
 
@@ -1162,55 +1300,55 @@
         <button
           type="button"
           onClick={handleClick}
-          className={`bg-gray-900 border-2 ${getBorderColor()} rounded-lg p-4 hover:bg-gray-800 transition-all hover:scale-105 text-left relative overflow-hidden group`}
+          className={`bg-[var(--surface)] border-2 ${getBorderColor()} rounded-lg p-4 hover:bg-[var(--elevated)] transition-all hover:scale-105 text-left relative overflow-hidden group`}
         >
           <div
             className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity ${
               flowState === 'flowing'
-                ? 'bg-blue-500'
+                ? 'bg-[var(--info)]'
                 : flowState === 'ready'
-                  ? 'bg-green-500'
+                  ? 'bg-[var(--ok)]'
                   : flowState === 'blocked'
-                    ? 'bg-red-500'
-                    : 'bg-gray-500'
+                    ? 'bg-[var(--danger)]'
+                    : 'bg-[var(--text-muted)]'
             }`}
           />
 
           <div className="relative z-10">
-            <div className="font-semibold text-gray-100 mb-1">{stage.name}</div>
-            <div className="text-xs text-gray-400 mb-3">{stage.desc}</div>
+            <div className="font-semibold text-[var(--text-strong)] mb-1">{stage.name}</div>
+            <div className="text-xs text-[var(--text-muted)] mb-3">{stage.desc}</div>
 
             <div className="space-y-2">
               {activities.length > 0 ? (
                 activities.map((activity, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <ActivityPulse count={activity.count} state={activity.state} />
-                    <span className="text-xs text-gray-500">{activity.count}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{activity.count}</span>
                   </div>
                 ))
               ) : (
                 <div className="flex items-center justify-between">
                   <ActivityPulse count={0} state="empty" />
-                  <span className="text-xs text-gray-500">0</span>
+                  <span className="text-xs text-[var(--text-muted)]">0</span>
                 </div>
               )}
             </div>
 
-            <div className="mt-3 text-xs text-gray-600">Total: {totalActivities}</div>
+            <div className="mt-3 text-xs text-[var(--text-muted)]">Total: {totalActivities}</div>
           </div>
         </button>
       );
     }
 
     function TierBand({ tier, stages, aggregatedData, onStageClick }) {
-      const meta = PULSE_TIER_META[tier] || { label: tier, subtitle: '', color: 'text-gray-400' };
+      const meta = PULSE_TIER_META[tier] || { label: tier, subtitle: '', color: 'text-[var(--text-muted)]' };
 
       return (
         <div className="space-y-3">
           <div className={`text-xs font-bold tracking-widest ${meta.color} uppercase flex items-center gap-2`}>
             <span>{meta.label}</span>
-            <div className="flex-1 h-px bg-gray-800" />
-            {meta.subtitle && <span className="text-[10px] text-gray-600">{meta.subtitle}</span>}
+            <div className="flex-1 h-px bg-[var(--border)]" />
+            {meta.subtitle && <span className="text-[10px] text-[var(--text-muted)]">{meta.subtitle}</span>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1273,7 +1411,11 @@
           const hasBlocked = summary.blocked > 0;
           const hasInProgress = summary.inProgress > 0;
           const healthStatus = hasBlocked ? '⊗ Blocked' : hasInProgress ? '✓ Flowing' : '○ Dormant';
-          const healthColor = hasBlocked ? 'text-red-400' : hasInProgress ? 'text-green-400' : 'text-gray-500';
+          const healthColor = hasBlocked
+            ? 'text-[var(--danger)]'
+            : hasInProgress
+              ? 'text-[var(--ok)]'
+              : 'text-[var(--text-muted)]';
 
           return {
             ...flow,
@@ -1285,26 +1427,29 @@
       }, [pulseData.flows]);
 
       return (
-        <div className={`bg-gray-900/60 border border-gray-800 rounded-2xl p-6 space-y-8 ${className}`}>
+        <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 space-y-8 ${className}`}>
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="flex-1">
-              <h2 className="text-lg font-semibold text-gray-100">{title}</h2>
-              <p className="text-sm text-gray-400">{subtitle}</p>
+              <h2 className="text-lg font-semibold text-[var(--text-strong)]">{title}</h2>
+              <p className="text-sm text-[var(--text-muted)]">{subtitle}</p>
             </div>
             <div className="flex flex-col gap-3 items-stretch md:items-end">
-              {actions && <div className="flex justify-end">{actions}</div>}
-              <div className="flex gap-4">
+              <div className="flex items-center gap-2 justify-end">
+                {actions && <div className="flex justify-end">{actions}</div>}
+                <ThemeToggle />
+              </div>
+              <div className="flex gap-4 text-[var(--text)]">
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-green-400">{totals.totalReady}</div>
-                  <div className="text-xs text-gray-400">Ready</div>
+                  <div className="text-2xl font-bold text-[var(--ok)]">{totals.totalReady}</div>
+                  <div className="text-xs text-[var(--text-muted)]">Ready</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-400">{totals.totalInProgress}</div>
-                  <div className="text-xs text-gray-400">In Progress</div>
+                  <div className="text-2xl font-bold text-[var(--info)]">{totals.totalInProgress}</div>
+                  <div className="text-xs text-[var(--text-muted)]">In Progress</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-red-400">{totals.totalBlocked}</div>
-                  <div className="text-xs text-gray-400">Blocked</div>
+                  <div className="text-2xl font-bold text-[var(--danger)]">{totals.totalBlocked}</div>
+                  <div className="text-xs text-[var(--text-muted)]">Blocked</div>
                 </div>
               </div>
             </div>
@@ -1330,25 +1475,25 @@
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-200 uppercase tracking-wide">Active Flows</h3>
-              <span className="text-xs text-gray-500">{flowSummaries.length}</span>
+              <h3 className="text-sm font-semibold text-[var(--text)] uppercase tracking-wide">Active Flows</h3>
+              <span className="text-xs text-[var(--text-muted)]">{flowSummaries.length}</span>
             </div>
             {flowSummaries.length === 0 ? (
-              <div className="text-sm text-gray-500 bg-gray-900 border border-dashed border-gray-800 rounded-lg p-4">
+              <div className="text-sm text-[var(--text-muted)] bg-[var(--elevated)] border border-dashed border-[var(--border)] rounded-lg p-4">
                 Create a flow to see the system pulse come alive.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {flowSummaries.slice(0, 6).map(flow => (
-                  <div key={flow.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                  <div key={flow.id} className="bg-[var(--elevated)] border border-[var(--border)] rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <div className="text-xs text-gray-500">{flow.projectName}</div>
-                        <h4 className="font-medium text-gray-100">{flow.name}</h4>
+                        <div className="text-xs text-[var(--text-muted)]">{flow.projectName}</div>
+                        <h4 className="font-medium text-[var(--text-strong)]">{flow.name}</h4>
                       </div>
                       <span className={`text-xs ${flow.healthColor}`}>{flow.healthStatus}</span>
                     </div>
-                    <div className="text-xs text-gray-400">{flow.summary.total} active</div>
+                    <div className="text-xs text-[var(--text-muted)]">{flow.summary.total} active</div>
                   </div>
                 ))}
               </div>
@@ -2506,35 +2651,35 @@
       };
 
       return (
-        <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[var(--bg)] text-[var(--text-strong)] flex items-center justify-center p-6">
           <div className="max-w-6xl w-full">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4">EO</h1>
-              <p className="text-gray-300 text-lg">Emergent Organizing</p>
+              <p className="text-[var(--text)] text-lg">Emergent Organizing</p>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start">
-              <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 shadow-lg">
+              <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-8 shadow-lg">
                 <h2 className="text-xl font-semibold mb-6">Create Your First Project</h2>
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="block text-sm text-gray-200 mb-2">Project name</label>
+                    <label className="block text-sm text-[var(--text)] mb-2">Project name</label>
                     <input
                       type="text"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                       placeholder="e.g., EO Launch"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
+                    <label className="block text-sm text-[var(--text)] mb-2">Team members (comma separated)</label>
                     <input
                       type="text"
                       value={team}
                       onChange={(e) => setTeam(e.target.value)}
                       placeholder="e.g., Maya, Alex, Priya"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
                     />
                     <p className="text-xs text-gray-500 mt-2">You can also select people or roles below to add them automatically.</p>
                   </div>
@@ -2560,20 +2705,20 @@
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm text-gray-200 mb-2">Your name</label>
+                    <label className="block text-sm text-[var(--text)] mb-2">Your name</label>
                     <input
                       type="text"
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                       placeholder="What should we call you?"
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
                     />
                   </div>
                 </div>
                 <button
                   onClick={handleCreateProject}
-                  disabled={!trimString(projectName) || !trimString(userName)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium px-4 py-3 rounded text-sm transition-colors"
+                  disabled={!projectName || !userName}
+                  className="w-full bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
                 >
                   Create Project
                 </button>
@@ -2581,7 +2726,7 @@
 
               <PulseOverview
                 projects={projects}
-                className="bg-gray-900 border border-gray-800/80"
+                className="shadow-lg"
                 subtitle="Live activity metabolism across your flows"
               />
             </div>
@@ -2652,17 +2797,17 @@
       };
 
       return (
-        <div className="min-h-screen bg-gray-950 text-gray-100">
-          <div className="border-b border-gray-800 bg-gray-900/50">
+        <div className="min-h-screen bg-[var(--bg)] text-[var(--text-strong)]">
+          <div className="border-b border-[var(--border)] bg-[var(--surface)]/50">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-bold">EO</h1>
-                  <p className="text-sm text-gray-400">Emergent Organizing</p>
+                  <p className="text-sm text-[var(--text-muted)]">Emergent Organizing</p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="text-sm text-gray-300">You: {currentUser}</div>
-                  <button onClick={onCreateProject} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+                  <div className="text-sm text-[var(--text)]">You: {currentUser}</div>
+                  <button onClick={onCreateProject} className="flex items-center gap-2 bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
                     <PlusIcon className="w-4 h-4" />New Project
                   </button>
                 </div>
@@ -2672,21 +2817,21 @@
 
           <div className="max-w-7xl mx-auto px-6 py-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-400">{allStats.totalProjects}</div>
-                <div className="text-sm text-gray-400">Projects</div>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+                <div className="text-2xl font-bold text-[var(--info)]">{allStats.totalProjects}</div>
+                <div className="text-sm text-[var(--text-muted)]">Projects</div>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <div className="text-2xl font-bold text-purple-400">{allStats.totalFlows}</div>
-                <div className="text-sm text-gray-400">Active Flows</div>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+                <div className="text-2xl font-bold text-[var(--accent)]">{allStats.totalFlows}</div>
+                <div className="text-sm text-[var(--text-muted)]">Active Flows</div>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <div className="text-2xl font-bold text-green-400">{allStats.totalReady}</div>
-                <div className="text-sm text-gray-400">Ready to Start</div>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+                <div className="text-2xl font-bold text-[var(--ok)]">{allStats.totalReady}</div>
+                <div className="text-sm text-[var(--text-muted)]">Ready to Start</div>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-400">{allStats.totalInProgress}</div>
-                <div className="text-sm text-gray-400">In Progress</div>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+                <div className="text-2xl font-bold text-[var(--info)]">{allStats.totalInProgress}</div>
+                <div className="text-sm text-[var(--text-muted)]">In Progress</div>
               </div>
             </div>
 
@@ -2698,7 +2843,7 @@
                 actions={(
                   <button
                     onClick={() => handlePanelToggle('pulse')}
-                    className="self-end bg-gray-800/80 hover:bg-gray-700 text-xs md:text-sm px-3 py-1.5 rounded-lg border border-gray-700 transition-colors"
+                    className="self-end bg-[var(--elevated)]/80 hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] text-xs md:text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] transition-colors"
                   >
                     {expandedPanel === 'pulse' ? 'Split view' : 'Full width'}
                   </button>
@@ -2706,15 +2851,15 @@
               />
 
               <div className={`${isProjectsHidden ? 'hidden' : ''} h-full`}>
-                <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 h-full flex flex-col">
+                <div className="bg-[var(--surface)]/60 border border-[var(--border)] rounded-2xl p-6 h-full flex flex-col">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-100">All Projects</h2>
-                      <p className="text-sm text-gray-400">Team matrix and flow overview</p>
+                      <h2 className="text-lg font-semibold text-[var(--text-strong)]">All Projects</h2>
+                      <p className="text-sm text-[var(--text-muted)]">Team matrix and flow overview</p>
                     </div>
                     <button
                       onClick={() => handlePanelToggle('projects')}
-                      className="self-end bg-gray-800/80 hover:bg-gray-700 text-xs md:text-sm px-3 py-1.5 rounded-lg border border-gray-700 transition-colors"
+                      className="self-end bg-[var(--elevated)]/80 hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] text-xs md:text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] transition-colors"
                     >
                       {expandedPanel === 'projects' ? 'Split view' : 'Full width'}
                     </button>
@@ -2722,9 +2867,9 @@
 
                   {projects.length === 0 ? (
                     <div className="text-center py-20">
-                      <LayersIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-4">No projects yet</p>
-                      <button onClick={onCreateProject} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">Create Your First Project</button>
+                      <LayersIcon className="w-16 h-16 text-[var(--text-muted)] mx-auto mb-4" />
+                      <p className="text-[var(--text-muted)] mb-4">No projects yet</p>
+                      <button onClick={onCreateProject} className="bg-[var(--accent)] hover:opacity-90 px-6 py-2 rounded-lg transition-colors">Create Your First Project</button>
                     </div>
                   ) : (
                     <div className="space-y-6">
@@ -2742,23 +2887,23 @@
                 <h2 className="text-xl font-semibold mb-4">My Active Work</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {myWork.map(({ project, flow, activity }) => (
-                    <div key={activity.id} className="bg-gray-900 border border-blue-800 rounded-lg p-4 cursor-pointer hover:border-blue-700" onClick={() => onSelectFlow(project, flow)}>
-                      <div className="text-xs text-gray-400 mb-2">{project.name} → {flow.name}</div>
+                    <div key={activity.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4 cursor-pointer hover:border-[var(--accent)] transition-colors" onClick={() => onSelectFlow(project, flow)}>
+                      <div className="text-xs text-[var(--text-muted)] mb-2">{project.name} → {flow.name}</div>
                       <h4 className="font-medium mb-2">{activity.title}</h4>
                       <div className="flex items-center gap-2">
                         {(() => {
                           const state = activity.activeStageState || 'in_progress';
                           const label = state.replace('_', ' ');
                           const cls = state === 'ready'
-                            ? 'bg-green-900 text-green-200'
+                            ? 'bg-[var(--ok)]/20 text-[var(--ok)]'
                             : state === 'completed'
-                              ? 'bg-gray-800 text-gray-400'
+                              ? 'bg-[var(--elevated)] text-[var(--text-muted)]'
                               : state === 'waiting'
-                                ? 'bg-yellow-900 text-yellow-200'
-                                : 'bg-blue-900 text-blue-300';
+                                ? 'bg-[var(--warn)]/20 text-[var(--warn)]'
+                                : 'bg-[var(--info)]/20 text-[var(--info)]';
                           return <span className={`text-xs px-2 py-1 rounded ${cls}`}>{label}</span>;
                         })()}
-                        {activity.activeStageEntry?.priority && <span className="text-xs text-gray-400">Priority: {activity.activeStageEntry.priority}</span>}
+                        {activity.activeStageEntry?.priority && <span className="text-xs text-[var(--text-muted)]">Priority: {activity.activeStageEntry.priority}</span>}
                       </div>
                     </div>
                   ))}
@@ -2773,27 +2918,27 @@
 
     function ProjectCard({ project, roles, onSelectFlow, onManageUsers, onManageTeams, onCreateFlow }) {
       return (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-800">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-[var(--border)]">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold">{project.name}</h3>
               <div className="flex gap-2">
-                <button onClick={onManageTeams} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+                <button onClick={onManageTeams} className="flex items-center gap-2 bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
                   <UsersIcon className="w-4 h-4" />Manage Teams
                 </button>
-                <button onClick={onManageUsers} className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded transition-colors">
+                <button onClick={onManageUsers} className="text-xs bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] px-3 py-1 rounded transition-colors">
                   <UsersIcon className="w-3 h-3 inline mr-1" />Users
                 </button>
-                <button onClick={onCreateFlow} className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors">
+                <button onClick={onCreateFlow} className="text-xs bg-[var(--accent)] hover:opacity-90 px-3 py-1 rounded transition-colors">
                   <PlusIcon className="w-3 h-3 inline mr-1" />Flow
                 </button>
               </div>
             </div>
-            <p className="text-sm text-gray-400">Team: {project.users.map(u => u.name).join(', ')} · {project.flows.length} flows</p>
+            <p className="text-sm text-[var(--text-muted)]">Team: {project.users.map(u => u.name).join(', ')} · {project.flows.length} flows</p>
           </div>
           
           {project.flows.length === 0 ? (
-            <div className="p-6 text-center text-gray-400 text-sm">
+            <div className="p-6 text-center text-[var(--text-muted)] text-sm">
               No flows yet. Create one to get started.
             </div>
           ) : (
@@ -2827,30 +2972,30 @@
       }, [flow]);
 
       return (
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 cursor-pointer hover:border-gray-600 transition-colors" onClick={onClick}>
+        <div className="bg-[var(--elevated)]/50 rounded-lg p-4 border border-[var(--border)] cursor-pointer hover:border-[var(--border)] transition-colors" onClick={onClick}>
           <div className="flex items-start justify-between mb-3">
             <div>
               <h4 className="font-medium text-sm mb-1">{flow.name}</h4>
-              <p className="text-xs text-gray-400">{flow.deliverables.join(' · ')}</p>
+              <p className="text-xs text-[var(--text-muted)]">{flow.deliverables.join(' · ')}</p>
             </div>
-            <div className="text-xs text-gray-400">{flow.activities.length} activities</div>
+            <div className="text-xs text-[var(--text-muted)]">{flow.activities.length} activities</div>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400 mb-1">Ready</div>
-              <div className="text-lg font-semibold text-green-400">{stats.ready}</div>
+            <div className="bg-[var(--surface)] rounded p-2">
+              <div className="text-xs text-[var(--text-muted)] mb-1">Ready</div>
+              <div className="text-lg font-semibold text-[var(--ok)]">{stats.ready}</div>
             </div>
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400 mb-1">Waiting</div>
-              <div className="text-lg font-semibold text-yellow-400">{stats.waiting}</div>
+            <div className="bg-[var(--surface)] rounded p-2">
+              <div className="text-xs text-[var(--text-muted)] mb-1">Waiting</div>
+              <div className="text-lg font-semibold text-[var(--warn)]">{stats.waiting}</div>
             </div>
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400 mb-1">In Progress</div>
-              <div className="text-lg font-semibold text-blue-400">{stats.inProgress}</div>
+            <div className="bg-[var(--surface)] rounded p-2">
+              <div className="text-xs text-[var(--text-muted)] mb-1">In Progress</div>
+              <div className="text-lg font-semibold text-[var(--info)]">{stats.inProgress}</div>
             </div>
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400 mb-1">Done</div>
-              <div className="text-lg font-semibold text-gray-500">{stats.completed}</div>
+            <div className="bg-[var(--surface)] rounded p-2">
+              <div className="text-xs text-[var(--text-muted)] mb-1">Done</div>
+              <div className="text-lg font-semibold text-[var(--text-muted)]">{stats.completed}</div>
             </div>
           </div>
         </div>
@@ -3010,15 +3155,15 @@
       };
 
       return (
-        <div className="min-h-screen bg-gray-950 text-gray-100">
-          <div className="border-b border-gray-800 bg-gray-900/50">
+        <div className="min-h-screen bg-[var(--bg)] text-[var(--text-strong)]">
+          <div className="border-b border-[var(--border)] bg-[var(--surface)]/50">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
-                <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-gray-100 transition-colors">
+                <button onClick={onBack} className="flex items-center gap-2 text-[var(--text)] hover:text-[var(--text-strong)] transition-colors">
                   <HomeIcon className="w-4 h-4" />
                   Dashboard
                 </button>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-[var(--text-muted)]">
                   {project.name} → {flow.name}
                 </div>
               </div>
@@ -3026,21 +3171,21 @@
           </div>
 
           <div className="max-w-7xl mx-auto p-6">
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-6 mb-8">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-2xl font-bold mb-2">{flow.name}</h1>
-                  {flow.description && <p className="text-gray-300">{flow.description}</p>}
+                  {flow.description && <p className="text-[var(--text)]">{flow.description}</p>}
                 </div>
-                <button onClick={() => onCreateActivity()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                <button onClick={() => onCreateActivity()} className="flex items-center gap-2 bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded-lg font-medium transition-colors">
                   <PlusIcon className="w-4 h-4" />New Activity
                 </button>
               </div>
               <div>
-                <div className="text-sm text-gray-300 mb-2">Flow Deliverables:</div>
+                <div className="text-sm text-[var(--text)] mb-2">Flow Deliverables:</div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {flow.deliverables.map((d, i) => (
-                    <div key={i} className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-200">{d}</div>
+                    <div key={i} className="bg-[var(--elevated)] rounded px-3 py-2 text-sm text-[var(--text)]">{d}</div>
                   ))}
                 </div>
               </div>
@@ -3060,13 +3205,13 @@
                 return (
                   <div key={tierKey} className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <h3 className="text-lg font-semibold text-blue-400">
+                      <h3 className="text-lg font-semibold text-[var(--info)]">
                         {tierLabel.title}
                       </h3>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-[var(--text-muted)]">
                         {tierLabel.subtitle}
                       </span>
-                      <div className="flex-1 h-px bg-gray-800" />
+                      <div className="flex-1 h-px bg-[var(--border)]" />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -3077,7 +3222,7 @@
                         const stageConditions = (stage.conditions || '').trim();
                         const stageIndex = stageData.ordered.findIndex(item => getStageIdentity(item) === identity);
                         return (
-                          <div key={identity} className={`bg-gray-900 border ${stage.skipped ? 'border-yellow-700 border-dashed opacity-70' : 'border-gray-800'} rounded-lg p-4 min-h-[320px] flex flex-col`}>
+                          <div key={identity} className={`bg-[var(--surface)] border ${stage.skipped ? 'border-[var(--warn)] border-dashed opacity-70' : 'border-[var(--border)]'} rounded-lg p-4 min-h-[320px] flex flex-col`}>
                             <div className="mb-4">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="space-y-1">
@@ -3085,20 +3230,20 @@
                                     <h3 className="font-semibold text-sm">{stageIndex + 1}. {stage.name}</h3>
                                     <button
                                       onClick={() => onCreateActivity(stage.operatorKey || stage.key || stage.uid || stage.name)}
-                                      className="p-1 rounded bg-gray-800/60 hover:bg-gray-700 transition-colors"
+                                      className="p-1 rounded bg-[var(--elevated)]/60 hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] transition-colors"
                                       title="Add activity"
                                     >
                                       <PlusIcon className="w-3.5 h-3.5" />
                                     </button>
                                   </div>
-                                  <p className="text-xs text-gray-300 leading-relaxed">{stage.description}</p>
+                                  <p className="text-xs text-[var(--text)] leading-relaxed">{stage.description}</p>
                                 </div>
-                                <span className="text-xs bg-gray-800 px-2 py-1 rounded self-start">{stageActivities.length}</span>
+                                <span className="text-xs bg-[var(--elevated)] px-2 py-1 rounded self-start">{stageActivities.length}</span>
                               </div>
                               {(() => {
                                 if (stageTeams.length === 0) {
                                   return (
-                                    <div className="text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-800/30 rounded px-2 py-1 mt-2">
+                                    <div className="text-xs text-[var(--warn)] bg-[var(--warn)]/20 border border-[var(--warn)]/30 rounded px-2 py-1 mt-2">
                                       ⚠️ No teams assigned - no one can work on activities in this stage
                                     </div>
                                   );
@@ -3108,9 +3253,12 @@
                                     {stageTeams.map(team => (
                                       <span
                                         key={team.id}
-                                        className="inline-flex items-center gap-1 text-xs bg-gray-800/60 px-2 py-1 rounded"
+                                        className="inline-flex items-center gap-1 text-xs bg-[var(--elevated)]/60 px-2 py-1 rounded"
                                       >
-                                        <div className={`w-2 h-2 rounded-full bg-${team.color}-500`}></div>
+                                        <div
+                                          className="w-2 h-2 rounded-full"
+                                          style={{ backgroundColor: TEAM_COLOR_MAP[team.color] || 'var(--accent)' }}
+                                        ></div>
                                         {team.name}
                                       </span>
                                     ))}
@@ -3118,7 +3266,7 @@
                                 );
                               })()}
                               {stageConditions && (
-                                <div className="text-xs text-blue-200 bg-blue-900/30 border border-blue-800/40 rounded px-2 py-1 mt-2">
+                                <div className="text-xs text-[var(--info)] bg-[var(--info)]/30 border border-[var(--info)]/40 rounded px-2 py-1 mt-2">
                                   Conditions: {stageConditions}
                                 </div>
                               )}
@@ -3129,7 +3277,7 @@
                                       onAssignStageTeams(identity);
                                     }
                                   }}
-                                  className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 transition-colors"
+                                  className="text-xs px-2 py-1 rounded bg-[var(--elevated)] hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] transition-colors"
                                 >
                                   <UsersIcon className="w-3 h-3 inline mr-1" />
                                   Teams ({stageTeams.length})
@@ -3143,13 +3291,13 @@
                                       onConfigureStageConditions(identity, input.trim());
                                     }
                                   }}
-                                  className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 transition-colors"
+                                  className="text-xs px-2 py-1 rounded bg-[var(--elevated)] hover:bg-[color:oklch(from_var(--text)_0.82_0_0)] transition-colors"
                                 >
                                   Conditions
                                 </button>
                                 <button
                                   onClick={() => onToggleStageSkip && onToggleStageSkip(identity)}
-                                  className={`text-xs px-2 py-1 rounded transition-colors ${stage.skipped ? 'bg-yellow-800/60 hover:bg-yellow-700/70 text-yellow-200' : 'bg-gray-800 hover:bg-gray-700'}`}
+                                  className={`text-xs px-2 py-1 rounded transition-colors ${stage.skipped ? 'bg-[var(--warn)]/60 hover:opacity-90/70 text-[var(--warn)]' : 'bg-[var(--elevated)] hover:bg-[color:oklch(from_var(--text)_0.82_0_0)]'}`}
                                 >
                                   {stage.skipped ? 'Resume Stage' : 'Skip Stage'}
                                 </button>
@@ -3157,7 +3305,7 @@
                             </div>
                             <div className="space-y-2 flex-1">
                               {stageActivities.length === 0 ? (
-                                <p className="text-sm text-gray-500 text-center py-6">No activities</p>
+                                <p className="text-sm text-[var(--text-muted)] text-center py-6">No activities</p>
                               ) : (
                                 stageActivities.map(activity => {
                                   const deps = getDependencies(activity.id, activity.currentStageId || activity.stageId);
@@ -3247,11 +3395,11 @@
       const showCompleteActivity = !nextStage && canCompleteStage;
 
       const stateConfig = {
-        ready: { label: 'Ready', color: 'bg-green-900 text-green-300' },
-        waiting: { label: 'Waiting', color: 'bg-yellow-900 text-yellow-300' },
-        in_progress: { label: isMine ? 'You' : (claimedBy || 'In progress'), color: isMine ? 'bg-blue-900 text-blue-300' : 'bg-gray-700 text-gray-300' },
-        completed: { label: '✓ Completed', color: 'bg-gray-700 text-gray-400' },
-        skipped: { label: 'Skipped', color: 'bg-yellow-800 text-yellow-200' }
+        ready: { label: 'Ready', color: 'bg-[var(--ok)]/20 text-[var(--ok)]' },
+        waiting: { label: 'Waiting', color: 'bg-[var(--warn)]/20 text-[var(--warn)]' },
+        in_progress: { label: isMine ? 'You' : (claimedBy || 'In progress'), color: isMine ? 'bg-[var(--info)]/20 text-[var(--info)]' : 'bg-[color:oklch(from_var(--text)_0.82_0_0)] text-[var(--text)]' },
+        completed: { label: '✓ Completed', color: 'bg-[color:oklch(from_var(--text)_0.82_0_0)] text-[var(--text-muted)]' },
+        skipped: { label: 'Skipped', color: 'bg-[var(--warn)]/20 text-[var(--warn)]' }
       };
 
       const config = stateConfig[stageState] || stateConfig.ready;
@@ -3261,7 +3409,7 @@
       const lastRead = stageReaders[currentUser] || 0;
       const hasUnread = (activity.comments || []).some(comment => !comment.system && comment.createdAt > lastRead && comment.author !== currentUser);
       const stageName = activeStage?.name || 'Unassigned stage';
-      const stageBadgeClass = stageState === 'completed' ? 'bg-emerald-900/60 text-emerald-200' : activeStage?.skipped ? 'bg-yellow-900/60 text-yellow-200' : 'bg-gray-700 text-gray-200';
+      const stageBadgeClass = stageState === 'completed' ? 'bg-[var(--ok)]/60 text-[var(--ok)]' : activeStage?.skipped ? 'bg-[var(--warn)]/60 text-[var(--warn)]' : 'bg-[color:oklch(from_var(--text)_0.82_0_0)] text-[var(--text)]';
       const stageHistoryLog = (activeEntry?.log || []).slice(-2).reverse();
       const stageStates = activity.stageStates || [];
       const projectUsers = project?.users || [];
@@ -3270,12 +3418,12 @@
         const ids = Array.isArray(taggedIds) ? taggedIds.filter(Boolean) : [];
         if (ids.length === 0) return null;
         return (
-          <div className={`${className} flex flex-wrap gap-1 text-[11px] text-blue-300`}>
+          <div className={`${className} flex flex-wrap gap-1 text-[11px] text-[var(--info)]`}>
             {ids.map(id => {
               const user = projectUsers.find(u => u.id === id);
               const label = user?.name || 'Unknown user';
               return (
-                <span key={id} className="inline-flex items-center gap-1 bg-blue-900/30 border border-blue-800/40 px-2 py-0.5 rounded">
+                <span key={id} className="inline-flex items-center gap-1 bg-[var(--info)]/30 border border-[var(--info)]/40 px-2 py-0.5 rounded">
                   <span className="text-[10px] font-semibold">{getUserInitials(user?.name || '')}</span>
                   {label}
                 </span>
@@ -3287,7 +3435,7 @@
 
       return (
         <div
-          className={`bg-gray-800 border ${isSelected ? 'border-blue-500' : 'border-gray-700'} rounded-lg p-3 hover:border-blue-400 transition-colors cursor-pointer`}
+          className={`bg-[var(--elevated)] border ${isSelected ? 'border-[var(--accent)]' : 'border-[var(--border)]'} rounded-lg p-3 hover:border-[var(--accent)] transition-colors cursor-pointer`}
           onClick={(e) => {
             if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('textarea')) return;
             onOpenDetails(activity.id);
@@ -3297,41 +3445,44 @@
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${stageBadgeClass}`}>{stageName}</span>
-                {priority && <span className="text-[10px] bg-blue-900/50 text-blue-200 px-2 py-0.5 rounded">{priority}</span>}
+                {priority && <span className="text-[10px] bg-[var(--info)]/50 text-[var(--info)] px-2 py-0.5 rounded">{priority}</span>}
                 {activity.skippedStages?.length > 0 && (
-                  <span className="text-[10px] text-yellow-300">{activity.skippedStages.length} skipped</span>
+                  <span className="text-[10px] text-[var(--warn)]">{activity.skippedStages.length} skipped</span>
                 )}
               </div>
               <h4 className="font-medium text-sm">{activity.title}</h4>
-              {claimedBy && <div className="text-[11px] text-gray-400">Claimed by {claimedBy}</div>}
+              {claimedBy && <div className="text-[11px] text-[var(--text-muted)]">Claimed by {claimedBy}</div>}
             </div>
             <div className="flex items-center gap-1 ml-2">
               <span className={`text-xs px-2 py-0.5 rounded ${config.color}`}>{config.label}</span>
-              {hasUnread && <span className="w-2 h-2 rounded-full bg-blue-400" title="Unread comments" />}
+              {hasUnread && <span className="w-2 h-2 rounded-full bg-[var(--info)]" title="Unread comments" />}
             </div>
           </div>
-          {activity.isRevision && <div className="text-xs text-orange-400 mb-2">🔄 Revision requested</div>}
+          {activity.isRevision && <div className="text-xs text-[var(--warn)] mb-2">🔄 Revision requested</div>}
           {(() => {
             const teams = resolveStageTeams(project, flow, activity.currentStageId);
             if (teams.length === 0) return null;
             return (
-              <div className="text-xs text-gray-300 mb-2">
+              <div className="text-xs text-[var(--text)] mb-2">
                 {teams.map(team => (
                   <span key={team.id} className="inline-flex items-center gap-1 mr-2">
-                    <span className={`w-2 h-2 rounded-full bg-${team.color}-500`}></span>
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: TEAM_COLOR_MAP[team.color] || 'var(--accent)' }}
+                    ></span>
                     {team.name}
                   </span>
                 ))}
               </div>
             );
           })()}
-          {activity.deliverable && <div className="text-xs text-gray-200 mb-2"><span className="text-gray-400">Delivers:</span> {activity.deliverable}</div>}
+          {activity.deliverable && <div className="text-xs text-[var(--text)] mb-2"><span className="text-[var(--text-muted)]">Delivers:</span> {activity.deliverable}</div>}
           {stageStates.length > 0 && (
-            <div className="flex flex-wrap gap-1 text-[10px] text-gray-400 mb-2">
+            <div className="flex flex-wrap gap-1 text-[10px] text-[var(--text-muted)] mb-2">
               {stageStates.map(({ stage: stageInfo, state }) => {
                 const status = state === 'in_progress' ? 'doing' : state.replace('_', ' ');
                 return (
-                  <span key={getStageIdentity(stageInfo)} className={`px-2 py-0.5 rounded ${state === 'completed' ? 'bg-emerald-900/40 text-emerald-200' : state === 'in_progress' ? 'bg-blue-900/40 text-blue-200' : state === 'ready' ? 'bg-green-900/40 text-green-200' : state === 'skipped' ? 'bg-yellow-900/30 text-yellow-200' : 'bg-gray-800 text-gray-300'}`}>
+                  <span key={getStageIdentity(stageInfo)} className={`px-2 py-0.5 rounded ${state === 'completed' ? 'bg-[var(--ok)]/40 text-[var(--ok)]' : state === 'in_progress' ? 'bg-[var(--info)]/40 text-[var(--info)]' : state === 'ready' ? 'bg-[var(--ok)]/40 text-[var(--ok)]' : state === 'skipped' ? 'bg-[var(--warn)]/30 text-[var(--warn)]' : 'bg-[var(--elevated)] text-[var(--text)]'}`}>
                     {stageInfo.name}: {status}
                   </span>
                 );
@@ -3339,8 +3490,8 @@
             </div>
           )}
           {stageHistoryLog.length > 0 && (
-            <div className="text-[11px] text-gray-400 mb-2">
-              <div className="uppercase tracking-wide text-gray-500 mb-1">Recent stage activity</div>
+            <div className="text-[11px] text-[var(--text-muted)] mb-2">
+              <div className="uppercase tracking-wide text-[var(--text-muted)] mb-1">Recent stage activity</div>
               <ul className="space-y-0.5">
                 {stageHistoryLog.map(entry => (
                   <li key={entry.id}>{entry.text}</li>
@@ -3349,62 +3500,62 @@
             </div>
           )}
           {dependencies.length > 0 && (
-            <div className="text-xs text-gray-300 mb-2">
-              <div className="text-gray-400 mb-1">Waiting on:</div>
+            <div className="text-xs text-[var(--text)] mb-2">
+              <div className="text-[var(--text-muted)] mb-1">Waiting on:</div>
               <ul className="space-y-0.5 ml-2">
                 {dependencies.slice(0, 2).map((dep, i) => {
                   const isCleared = dep.satisfied;
                   return (
-                    <li key={i} className={`flex items-center gap-2 ${isCleared ? 'text-gray-500' : 'text-gray-200'}`}>
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-800/80 text-[10px] text-gray-300">
+                    <li key={i} className={`flex items-center gap-2 ${isCleared ? 'text-[var(--text-muted)]' : 'text-[var(--text)]'}`}>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--elevated)]/80 text-[10px] text-[var(--text)]">
                         {dep.requiredStageName || 'Stage'}
                       </span>
-                      <span className="text-[10px] text-gray-500">→</span>
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-800/60 text-[10px] text-gray-200">
+                      <span className="text-[10px] text-[var(--text-muted)]">→</span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--elevated)]/60 text-[10px] text-[var(--text)]">
                         {dep.blockingStageName || 'Stage'}
                       </span>
-                      <span className={`text-[10px] ${dep.satisfied ? 'text-emerald-300' : 'text-yellow-300'}`}>{dep.satisfied ? 'cleared' : 'blocking'}</span>
+                      <span className={`text-[10px] ${dep.satisfied ? 'text-[var(--ok)]' : 'text-[var(--warn)]'}`}>{dep.satisfied ? 'cleared' : 'blocking'}</span>
                       <span className="flex-1">
                         {dep.activity ? dep.activity.title : 'Missing activity'} {dep.edgeType === 'loops' && '(revision)'}
                       </span>
                     </li>
                   );
                 })}
-                {dependencies.length > 2 && <li className="text-gray-400">+{dependencies.length - 2} more</li>}
+                {dependencies.length > 2 && <li className="text-[var(--text-muted)]">+{dependencies.length - 2} more</li>}
               </ul>
             </div>
           )}
-          <div className="flex items-center gap-3 text-xs text-gray-400 mt-3">
+          <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-3">
             {attachmentCount > 0 && (
               <div className="flex items-center gap-1"><span role="img" aria-label="attachments">📎</span>{attachmentCount}</div>
             )}
             {commentCount > 0 && (
               <div className="flex items-center gap-1"><ChatBubbleIcon className="w-3.5 h-3.5" />{commentCount}</div>
             )}
-            {activity.createdAt && <div className="ml-auto text-gray-500">{formatRelativeTime(activity.createdAt)}</div>}
+            {activity.createdAt && <div className="ml-auto text-[var(--text-muted)]">{formatRelativeTime(activity.createdAt)}</div>}
           </div>
           <div className="flex gap-1 mt-3 flex-wrap">
             {!activity.completedAt && (
               <>
-                <button onClick={(e) => { e.stopPropagation(); onEdit(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(activity.id); }} className="bg-red-900 hover:bg-red-800 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onEdit(activity.id); }} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] text-xs py-1 px-2 rounded transition-colors" title="Edit"><EditIcon className="w-3 h-3" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(activity.id); }} className="bg-[var(--danger)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors" title="Delete"><TrashIcon className="w-3 h-3" /></button>
               </>
             )}
-            {canClaim && <button onClick={(e) => { e.stopPropagation(); onClaim(activity.id); }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
-            {isMine && !activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-gray-700 hover:bg-gray-600 text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
+            {canClaim && <button onClick={(e) => { e.stopPropagation(); onClaim(activity.id); }} className="flex-1 bg-[var(--accent)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors">Claim</button>}
+            {isMine && !activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onUnclaim(activity.id); }} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] text-xs py-1 px-2 rounded transition-colors">Unclaim</button>}
             {canAdvanceStage && (
-              <button onClick={(e) => { e.stopPropagation(); onAdvanceStage(activity.id, { skip: false }); }} className="bg-green-600 hover:bg-green-700 text-xs py-1 px-2 rounded transition-colors">Advance</button>
+              <button onClick={(e) => { e.stopPropagation(); onAdvanceStage(activity.id, { skip: false }); }} className="bg-[var(--ok)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors">Advance</button>
             )}
             {canSkipStage && (
-              <button onClick={(e) => { e.stopPropagation(); onSkipStage(activity.id); }} className="bg-yellow-700 hover:bg-yellow-600 text-xs py-1 px-2 rounded transition-colors text-yellow-100">Skip</button>
+              <button onClick={(e) => { e.stopPropagation(); onSkipStage(activity.id); }} className="bg-[var(--warn)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors text-white">Skip</button>
             )}
           {showRevisionButton && (
-            <button onClick={(e) => { e.stopPropagation(); const lastDep = dependencies[dependencies.length - 1]; if (lastDep) { const reason = window.prompt('Reason for revision? (optional)', '') || ''; onRequestRevision(activity.id, lastDep.requiredStageId || activity.currentStageId, reason); } }} className="bg-orange-600 hover:bg-orange-700 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
+            <button onClick={(e) => { e.stopPropagation(); const lastDep = dependencies[dependencies.length - 1]; if (lastDep) { const reason = window.prompt('Reason for revision? (optional)', '') || ''; onRequestRevision(activity.id, lastDep.requiredStageId || activity.currentStageId, reason); } }} className="bg-[var(--warn)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1" title="Request revision"><RefreshIcon className="w-3 h-3" /></button>
           )}
             {showCompleteActivity && (
-              <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-xs py-1 px-2 rounded transition-colors">Complete Activity</button>
+              <button onClick={(e) => { e.stopPropagation(); onComplete(activity.id); }} className="flex-1 bg-[var(--ok)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors">Complete Activity</button>
             )}
-            {!activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-purple-600 hover:bg-purple-700 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
+            {!activity.completedAt && <button onClick={(e) => { e.stopPropagation(); onWire(activity.id); }} className="bg-[var(--accent)] hover:opacity-90 text-xs py-1 px-2 rounded transition-colors">Wire</button>}
           </div>
         </div>
       );
@@ -3500,28 +3651,28 @@
       return (
         <Modal onClose={onClose} title="Users & Care Team">
           <div className="space-y-6">
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
-              <p className="text-sm text-gray-100 font-semibold">Manage your care team and collaborators.</p>
-              <p className="text-xs text-blue-100 mt-2">
+            <div className="bg-[var(--info)]/30 border border-[var(--info)]/50 rounded p-4">
+              <p className="text-sm text-[var(--text-strong)] font-semibold">Manage your care team and collaborators.</p>
+              <p className="text-xs text-[var(--info)] mt-2">
                 Add doctors, family members, or stakeholders. Tag them in activity notes to keep everyone aligned.
               </p>
-              <p className="text-[11px] text-blue-200 mt-2">
+              <p className="text-[11px] text-[var(--info)] mt-2">
                 Future feature: share specific activity updates via Matrix using the Matrix ID field.
               </p>
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-gray-100">Care Team</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-strong)]">Care Team</h3>
               <button
                 onClick={startAdd}
-                className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm transition-colors"
+                className="bg-[var(--accent)] hover:opacity-90 px-3 py-1.5 rounded text-sm transition-colors"
               >
                 + Add User
               </button>
             </div>
 
             {users.length === 0 ? (
-              <div className="text-sm text-gray-400 bg-gray-900/60 border border-gray-800 rounded-lg p-6 text-center">
+              <div className="text-sm text-[var(--text-muted)] bg-[var(--surface)]/60 border border-[var(--border)] rounded-lg p-6 text-center">
                 No users added yet. Start by adding your care team or collaborators.
               </div>
             ) : (
@@ -3530,9 +3681,9 @@
                   const added = formatDateDisplay(user.addedAt);
                   const updated = formatDateDisplay(user.lastModified);
                   return (
-                    <div key={user.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+                    <div key={user.id} className="bg-[var(--elevated)] border border-[var(--border)] rounded-lg p-4 space-y-3">
                       <div className="flex flex-col md:flex-row md:items-start md:gap-4">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center font-semibold text-lg overflow-hidden flex-shrink-0">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--accent)] to-[color:oklch(from_var(--accent)_0.68_0.12_260)] text-white flex items-center justify-center font-semibold text-lg overflow-hidden flex-shrink-0">
                           {user.avatar ? (
                             <img src={user.avatar} alt={user.name || 'User avatar'} className="w-full h-full object-cover" />
                           ) : (
@@ -3542,15 +3693,15 @@
                         <div className="flex-1 space-y-3">
                           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                             <div>
-                              <div className="text-base font-semibold text-gray-100">{user.name || 'Unnamed User'}</div>
+                              <div className="text-base font-semibold text-[var(--text-strong)]">{user.name || 'Unnamed User'}</div>
                               <div className="flex flex-wrap gap-2 mt-1">
                                 {user.relationship && (
-                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-900/40 text-sky-200 border border-sky-800/40">
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--info)]/20 text-[var(--info)] border border-[var(--info)]/30">
                                     {user.relationship}
                                   </span>
                                 )}
                                 {user.role && (
-                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-200 border border-amber-800/40">
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--warn)]/20 text-[var(--warn)] border border-[var(--warn)]/30">
                                     {user.role}
                                   </span>
                                 )}
@@ -3559,30 +3710,30 @@
                             <div className="flex gap-2">
                               <button
                                 onClick={() => startEdit(user)}
-                                className="bg-gray-700 hover:bg-gray-600 text-sm px-3 py-1.5 rounded transition-colors"
+                                className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] text-sm px-3 py-1.5 rounded transition-colors"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleRemove(user.id)}
-                                className="bg-red-900/70 hover:bg-red-800 text-sm px-3 py-1.5 rounded text-red-200 transition-colors"
+                                className="bg-[var(--danger)]/70 hover:opacity-90 text-sm px-3 py-1.5 rounded text-[var(--danger)] transition-colors"
                               >
                                 Remove
                               </button>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                          <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
                             {user.email && <span>✉️ {user.email}</span>}
                             {user.phone && <span>📞 {user.phone}</span>}
                             {user.matrixId && <span>🔗 {user.matrixId}</span>}
                           </div>
                           {user.notes && (
-                            <div className="text-xs text-gray-300 bg-gray-900/50 border border-gray-800 rounded p-3 leading-relaxed">
+                            <div className="text-xs text-[var(--text)] bg-[var(--surface)]/50 border border-[var(--border)] rounded p-3 leading-relaxed">
                               {user.notes}
                             </div>
                           )}
                           {(added || updated) && (
-                            <div className="text-[10px] text-gray-500">
+                            <div className="text-[10px] text-[var(--text-muted)]">
                               {added && <span>Added {added}</span>}
                               {added && updated && <span className="mx-1">•</span>}
                               {updated && <span>Updated {updated}</span>}
@@ -3597,63 +3748,63 @@
             )}
 
             {showForm && (
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4">
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-100">{isEditing ? 'Edit User' : 'Add User'}</h3>
-                  <span className="text-xs text-gray-500">Fields marked with * are required.</span>
+                  <h3 className="text-sm font-semibold text-[var(--text-strong)]">{isEditing ? 'Edit User' : 'Add User'}</h3>
+                  <span className="text-xs text-[var(--text-muted)]">Fields marked with * are required.</span>
                 </div>
-                {error && <div className="text-xs text-red-400 bg-red-900/30 border border-red-800/50 rounded px-3 py-2">{error}</div>}
+                {error && <div className="text-xs text-[var(--danger)] bg-[var(--danger)]/30 border border-[var(--danger)]/50 rounded px-3 py-2">{error}</div>}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Name *</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Name *</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                       placeholder="Full name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Email</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Email</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                       placeholder="email@example.com"
                     />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Phone</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Phone</label>
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                       placeholder="(555) 000-0000"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Relationship / Title</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Relationship / Title</label>
                     <input
                       type="text"
                       value={formData.relationship}
                       onChange={(e) => handleInputChange('relationship', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                       placeholder="e.g., Primary Care Doctor"
                     />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Role</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Role</label>
                     <select
                       value={formData.role}
                       onChange={(e) => handleInputChange('role', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                     >
                       <option value="viewer">Viewer</option>
                       <option value="contributor">Contributor</option>
@@ -3661,45 +3812,45 @@
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Matrix ID</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Matrix ID</label>
                     <input
                       type="text"
                       value={formData.matrixId}
                       onChange={(e) => handleInputChange('matrixId', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                       placeholder="@username:matrix.org"
                     />
-                    <p className="text-[10px] text-gray-500 mt-1">Saved for future Matrix integrations.</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1">Saved for future Matrix integrations.</p>
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-200 mb-1">Avatar URL</label>
+                    <label className="block text-sm text-[var(--text)] mb-1">Avatar URL</label>
                     <input
                       type="text"
                       value={formData.avatar}
                       onChange={(e) => handleInputChange('avatar', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                      className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                       placeholder="Link to image (optional)"
                     />
                   </div>
                   <div className="hidden md:block"></div>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-200 mb-1">Notes</label>
+                  <label className="block text-sm text-[var(--text)] mb-1">Notes</label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     rows={3}
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100"
+                    className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text-strong)]"
                     placeholder="Additional information about this person"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={handleCancel} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors">
+                  <button onClick={handleCancel} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] px-4 py-2 rounded text-sm transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm transition-colors">
+                  <button onClick={handleSubmit} className="bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded text-sm transition-colors">
                     Save User
                   </button>
                 </div>
@@ -3707,7 +3858,7 @@
             )}
 
             <div className="flex justify-end pt-2">
-              <button onClick={onClose} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors">
+              <button onClick={onClose} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] px-4 py-2 rounded text-sm transition-colors">
                 Done
               </button>
             </div>
@@ -3760,26 +3911,29 @@
       return (
         <Modal onClose={onClose} title="Manage Teams" size="large">
           <div className="space-y-6">
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
-              <p className="text-sm text-gray-100">
+            <div className="bg-[var(--info)]/30 border border-[var(--info)]/50 rounded p-4">
+              <p className="text-sm text-[var(--text-strong)]">
                 Teams are groups of people who work together. Assign teams to stages in your flows.
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-200 mb-3">Current Teams</h3>
+              <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Current Teams</h3>
               <div className="space-y-2">
                 {teams.length === 0 ? (
-                  <p className="text-sm text-gray-500">No teams yet. Create one below.</p>
+                  <p className="text-sm text-[var(--text-muted)]">No teams yet. Create one below.</p>
                 ) : (
                   teams.map(team => (
-                    <div key={team.id} className="flex items-center justify-between bg-gray-800 rounded px-4 py-3">
+                    <div key={team.id} className="flex items-center justify-between bg-[var(--elevated)] rounded px-4 py-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full bg-${team.color}-500`}></div>
-                          <span className="font-medium text-gray-100">{team.name}</span>
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: TEAM_COLOR_MAP[team.color] || 'var(--accent)' }}
+                          ></div>
+                          <span className="font-medium text-[var(--text-strong)]">{team.name}</span>
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div className="text-xs text-[var(--text-muted)] mt-1">
                           {team.userIds.length} members:{' '}
                           {team.userIds
                             .map(uid => project.users.find(u => u.id === uid)?.name)
@@ -3788,8 +3942,8 @@
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => startEdit(team)} className="text-blue-400 hover:text-blue-300 text-sm">Edit</button>
-                        <button onClick={() => { if (confirm(`Delete team "${team.name}"?`)) { onDeleteTeam(team.id); } }} className="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                        <button onClick={() => startEdit(team)} className="text-[var(--info)] hover:text-[var(--info)] text-sm">Edit</button>
+                        <button onClick={() => { if (confirm(`Delete team "${team.name}"?`)) { onDeleteTeam(team.id); } }} className="text-[var(--danger)] hover:text-[var(--danger)] text-sm">Delete</button>
                       </div>
                     </div>
                   ))
@@ -3797,22 +3951,22 @@
               </div>
             </div>
 
-            <div className="border-t border-gray-800 pt-6">
-              <h3 className="text-sm font-semibold text-gray-200 mb-3">{editingTeam ? 'Edit Team' : 'Create New Team'}</h3>
+            <div className="border-t border-[var(--border)] pt-6">
+              <h3 className="text-sm font-semibold text-[var(--text)] mb-3">{editingTeam ? 'Edit Team' : 'Create New Team'}</h3>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-200 mb-2">Team name</label>
-                  <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="e.g., Writers, Editors, QA" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" />
+                  <label className="block text-sm text-[var(--text)] mb-2">Team name</label>
+                  <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="e.g., Writers, Editors, QA" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400" />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-200 mb-2">Team members</label>
+                  <label className="block text-sm text-[var(--text)] mb-2">Team members</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {project.users.map(user => (
-                      <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                      <label key={user.id} className="flex items-center gap-3 p-3 bg-[var(--elevated)] border border-[var(--border)] rounded cursor-pointer hover:border-[var(--border)]">
                         <input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} />
-                        <span className="text-sm text-gray-100">{user.name}</span>
+                        <span className="text-sm text-[var(--text-strong)]">{user.name}</span>
                       </label>
                     ))}
                   </div>
@@ -3820,17 +3974,17 @@
 
                 <div className="flex gap-3">
                   {editingTeam && (
-                    <button onClick={() => { setEditingTeam(null); setNewTeamName(''); setSelectedUserIds([]); }} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
+                    <button onClick={() => { setEditingTeam(null); setNewTeamName(''); setSelectedUserIds([]); }} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button>
                   )}
-                  <button onClick={editingTeam ? handleUpdateTeam : handleCreateTeam} disabled={!newTeamName.trim() || selectedUserIds.length === 0} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">
+                  <button onClick={editingTeam ? handleUpdateTeam : handleCreateTeam} disabled={!newTeamName.trim() || selectedUserIds.length === 0} className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors">
                     {editingTeam ? 'Update Team' : 'Create Team'}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-gray-800">
-              <button onClick={onClose} className="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded transition-colors">Done</button>
+            <div className="flex justify-end pt-4 border-t border-[var(--border)]">
+              <button onClick={onClose} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] px-6 py-2 rounded transition-colors">Done</button>
             </div>
           </div>
         </Modal>
@@ -3989,59 +4143,9 @@
       return (
         <Modal onClose={onClose} title="Create Project">
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Project name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Marketing"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-200 mb-2">Team members (comma separated)</label>
-              <input
-                type="text"
-                value={team}
-                onChange={(e) => setTeam(e.target.value)}
-                placeholder="e.g., alex, pat, sam"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
-              />
-              <p className="text-xs text-gray-500 mt-2">Select people or roles below to add them instantly.</p>
-            </div>
-            <DirectoryQuickAdd
-              directory={directory}
-              selectedKeys={selectedDirectoryUserKeys}
-              onToggleUserKey={toggleDirectoryUserKey}
-              onAddRoleMembers={handleAddRoleMembers}
-            />
-            {combinedMembers.length > 0 && (
-              <div>
-                <label className="block text-sm text-gray-200 mb-2">Team preview</label>
-                <div className="flex flex-wrap gap-2">
-                  {combinedMembers.map(memberName => (
-                    <span
-                      key={memberName}
-                      className="text-xs px-3 py-1 rounded-full bg-gray-800 border border-gray-700 text-gray-100"
-                    >
-                      {memberName}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex gap-3 pt-4">
-              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
-              <button
-                onClick={handleCreate}
-                disabled={!trimString(name)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 rounded transition-colors"
-              >
-                Create
-              </button>
-            </div>
+            <div><label className="block text-sm text-[var(--text)] mb-2">Project name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Marketing" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400" autoFocus /></div>
+            <div><label className="block text-sm text-[var(--text)] mb-2">Team members (comma separated)</label><input type="text" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g., alex, pat, sam" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400" /></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (name) { const teamList = team ? team.split(',').map(s => s.trim()) : []; onCreate(name, teamList); } }} disabled={!name} className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors">Create</button></div>
           </div>
         </Modal>
       );
@@ -4054,11 +4158,11 @@
       return (
         <Modal onClose={onClose} title="Create Flow" size="large">
           <div className="space-y-4">
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4"><p className="text-sm text-gray-100">Flows represent coordination cycles. Define up to three deliverables.</p></div>
-            <div><label className="block text-sm text-gray-200 mb-2">Flow name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Newsletter Creation" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" autoFocus /></div>
-            <div><label className="block text-sm text-gray-200 mb-2">Description (optional)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description" rows={2} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400" /></div>
-            <div><label className="block text-sm text-gray-200 mb-2">Flow Deliverables (1-3)</label><div className="space-y-2">{deliverables.map((d, i) => <input key={i} type="text" value={d} onChange={(e) => { const u = [...deliverables]; u[i] = e.target.value; setDeliverables(u); }} placeholder={i === 0 ? 'e.g., Published article' : i === 1 ? 'e.g., Social media package' : 'e.g., Analytics report'} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm text-gray-100 placeholder-gray-400" />)}</div></div>
-            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { const valid = deliverables.filter(d => d.trim()); if (name && valid.length > 0) onCreate(name, valid, description); }} disabled={!name || !deliverables.some(d => d.trim())} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create</button></div>
+            <div className="bg-[var(--info)]/30 border border-[var(--info)]/50 rounded p-4"><p className="text-sm text-[var(--text-strong)]">Flows represent coordination cycles. Define up to three deliverables.</p></div>
+            <div><label className="block text-sm text-[var(--text)] mb-2">Flow name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Newsletter Creation" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400" autoFocus /></div>
+            <div><label className="block text-sm text-[var(--text)] mb-2">Description (optional)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description" rows={2} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-sm text-[var(--text-strong)] placeholder-gray-400" /></div>
+            <div><label className="block text-sm text-[var(--text)] mb-2">Flow Deliverables (1-3)</label><div className="space-y-2">{deliverables.map((d, i) => <input key={i} type="text" value={d} onChange={(e) => { const u = [...deliverables]; u[i] = e.target.value; setDeliverables(u); }} placeholder={i === 0 ? 'e.g., Published article' : i === 1 ? 'e.g., Social media package' : 'e.g., Analytics report'} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-sm text-[var(--text-strong)] placeholder-gray-400" />)}</div></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => { const valid = deliverables.filter(d => d.trim()); if (name && valid.length > 0) onCreate(name, valid, description); }} disabled={!name || !deliverables.some(d => d.trim())} className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors">Create</button></div>
           </div>
         </Modal>
       );
@@ -4087,30 +4191,30 @@
       return (
         <Modal onClose={onClose} title="Create Activity">
           <div className="space-y-4">
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
-              <p className="text-sm text-gray-100">
+            <div className="bg-[var(--info)]/30 border border-[var(--info)]/50 rounded p-4">
+              <p className="text-sm text-[var(--text-strong)]">
                 Activities start in a stage. The teams assigned to that stage can work on it.
               </p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Activity name</label>
+              <label className="block text-sm text-[var(--text)] mb-2">Activity name</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Write article"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Starting stage</label>
+              <label className="block text-sm text-[var(--text)] mb-2">Starting stage</label>
               <select
                 value={startingStageId}
                 onChange={(e) => setStartingStageId(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
               >
                 {orderedStages.filter(s => !s.skipped).map(stage => (
                   <option key={getStageIdentity(stage)} value={getStageIdentity(stage)}>
@@ -4118,24 +4222,24 @@
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 Teams assigned: {selectedTeams.length === 0 ? 'None yet' : selectedTeams.map(team => team.name).join(', ')}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label>
+              <label className="block text-sm text-[var(--text)] mb-2">Deliverable (optional)</label>
               <input
                 type="text"
                 value={deliverable}
                 onChange={(e) => setDeliverable(e.target.value)}
                 placeholder="e.g., 800-word article"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
               />
             </div>
 
             <div className="flex gap-3 pt-4">
-              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
+              <button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">
                 Cancel
               </button>
               <button
@@ -4143,7 +4247,7 @@
                   if (title) onCreate(title, deliverable, { stageId: startingStageId });
                 }}
                 disabled={!title}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+                className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors"
               >
                 Create
               </button>
@@ -4168,30 +4272,30 @@
         <Modal onClose={onClose} title="Edit Activity">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Activity name</label>
+              <label className="block text-sm text-[var(--text)] mb-2">Activity name</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Write article"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label>
+              <label className="block text-sm text-[var(--text)] mb-2">Deliverable (optional)</label>
               <input
                 type="text"
                 value={deliverable}
                 onChange={(e) => setDeliverable(e.target.value)}
                 placeholder="e.g., 800-word article"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400"
               />
             </div>
 
             <div className="flex gap-3 pt-4">
-              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
+              <button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">
                 Cancel
               </button>
               <button
@@ -4199,7 +4303,7 @@
                   if (title) onUpdate({ title, deliverable });
                 }}
                 disabled={!title}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors"
+                className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors"
               >
                 Save
               </button>
@@ -4213,13 +4317,13 @@
       return (
         <Modal onClose={onClose} title="Delete Activity">
           <div className="space-y-4">
-            <div className="bg-red-900/30 border border-red-700/50 rounded p-4">
-              <p className="text-sm text-gray-100">Are you sure you want to delete this activity? This will also remove all edges connected to it. This action cannot be undone.</p>
+            <div className="bg-[var(--danger)]/30 border border-[var(--danger)]/50 rounded p-4">
+              <p className="text-sm text-[var(--text-strong)]">Are you sure you want to delete this activity? This will also remove all edges connected to it. This action cannot be undone.</p>
             </div>
-            <div className="bg-gray-900 rounded-lg p-4">
-              <h3 className="font-medium text-gray-100">{activity?.title}</h3>
+            <div className="bg-[var(--surface)] rounded-lg p-4">
+              <h3 className="font-medium text-[var(--text-strong)]">{activity?.title}</h3>
             </div>
-            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={onDelete} className="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded transition-colors">Delete</button></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={onDelete} className="flex-1 bg-[var(--danger)] hover:bg-[var(--danger)] py-2 rounded transition-colors">Delete</button></div>
           </div>
         </Modal>
       );
@@ -4230,9 +4334,9 @@
       return (
         <Modal onClose={onClose} title="Claim Activity">
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium mb-2 text-gray-100">{activity?.title}</h3></div>
-            <div><label className="block text-sm text-gray-200 mb-3">Priority</label><div className="space-y-2">{[{ value: 'high', label: 'High - Focus' }, { value: 'medium', label: 'Medium - Normal' }, { value: 'low', label: 'Low - When available' }].map(opt => <label key={opt.value} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600"><input type="radio" name="priority" value={opt.value} checked={priority === opt.value} onChange={(e) => setPriority(e.target.value)} /><span className="text-sm text-gray-100">{opt.label}</span></label>)}</div></div>
-            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => onClaim(priority)} className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">Claim</button></div>
+            <div className="bg-[var(--surface)] rounded-lg p-4"><h3 className="font-medium mb-2 text-[var(--text-strong)]">{activity?.title}</h3></div>
+            <div><label className="block text-sm text-[var(--text)] mb-3">Priority</label><div className="space-y-2">{[{ value: 'high', label: 'High - Focus' }, { value: 'medium', label: 'Medium - Normal' }, { value: 'low', label: 'Low - When available' }].map(opt => <label key={opt.value} className="flex items-center gap-3 p-3 bg-[var(--elevated)] border border-[var(--border)] rounded cursor-pointer hover:border-[var(--border)]"><input type="radio" name="priority" value={opt.value} checked={priority === opt.value} onChange={(e) => setPriority(e.target.value)} /><span className="text-sm text-[var(--text-strong)]">{opt.label}</span></label>)}</div></div>
+            <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => onClaim(priority)} className="flex-1 bg-[var(--accent)] hover:opacity-90 py-2 rounded transition-colors">Claim</button></div>
           </div>
         </Modal>
       );
@@ -4269,12 +4373,12 @@
         const values = Array.isArray(ids) ? ids.filter(Boolean) : [];
         if (values.length === 0) return null;
         return (
-          <div className="flex flex-wrap gap-1 text-[10px] text-blue-300 mt-1">
+          <div className="flex flex-wrap gap-1 text-[10px] text-[var(--info)] mt-1">
             {values.map(id => {
               const user = projectUsers.find(u => u.id === id);
               const label = user?.name || 'Unknown user';
               return (
-                <span key={id} className="inline-flex items-center gap-1 bg-blue-900/40 border border-blue-800/50 px-2 py-0.5 rounded">
+                <span key={id} className="inline-flex items-center gap-1 bg-[var(--info)]/40 border border-[var(--info)]/50 px-2 py-0.5 rounded">
                   <span className="font-semibold">{getUserInitials(user?.name || '')}</span>
                   {label}
                 </span>
@@ -4292,33 +4396,33 @@
       return (
         <Modal onClose={onClose} title="Advance Stage" size="large">
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-4">
-              <h3 className="font-medium text-gray-100">{activity?.title}</h3>
-              {currentStage && <p className="text-sm text-gray-300 mt-1">Mark the <span className="font-semibold text-gray-100">{currentStage.name}</span> stage as complete or skipped.</p>}
+            <div className="bg-[var(--surface)] rounded-lg p-4">
+              <h3 className="font-medium text-[var(--text-strong)]">{activity?.title}</h3>
+              {currentStage && <p className="text-sm text-[var(--text)] mt-1">Mark the <span className="font-semibold text-[var(--text-strong)]">{currentStage.name}</span> stage as complete or skipped.</p>}
             </div>
             {currentStage && (
-              <div className="bg-gray-900/40 border border-gray-800 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between text-sm text-gray-300">
+              <div className="bg-[var(--surface)]/40 border border-[var(--border)] rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between text-sm text-[var(--text)]">
                   <span>Current stage</span>
-                  <span className="text-gray-100 font-medium">{currentStage.name}</span>
+                  <span className="text-[var(--text-strong)] font-medium">{currentStage.name}</span>
                 </div>
-                {currentStage.conditions && <div className="text-xs text-blue-200 bg-blue-900/30 border border-blue-800/40 rounded px-3 py-2">Conditions: {currentStage.conditions}</div>}
-                <div className="text-xs text-gray-400">
+                {currentStage.conditions && <div className="text-xs text-[var(--info)] bg-[var(--info)]/30 border border-[var(--info)]/40 rounded px-3 py-2">Conditions: {currentStage.conditions}</div>}
+                <div className="text-xs text-[var(--text-muted)]">
                   {nextStage ? (
-                    <p>Advancing will move this activity to <span className="text-gray-100">{nextStage.name}</span>.</p>
+                    <p>Advancing will move this activity to <span className="text-[var(--text-strong)]">{nextStage.name}</span>.</p>
                   ) : (
                     <p>Advancing will complete this activity.</p>
                   )}
                 </div>
                 {stageLog.length > 0 && (
-                  <div className="text-xs text-gray-400">
-                    <div className="uppercase tracking-wide text-gray-500 mb-2">Recent stage history</div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    <div className="uppercase tracking-wide text-[var(--text-muted)] mb-2">Recent stage history</div>
                     <ul className="space-y-1">
                       {stageLog.slice(-5).reverse().map(entry => (
                         <li key={entry.id} className="space-y-0.5">
                           <div className="flex items-center justify-between gap-3">
                             <span>{entry.text}</span>
-                            <span className="text-[10px] text-gray-500">{formatRelativeTime(entry.timestamp)}</span>
+                            <span className="text-[10px] text-[var(--text-muted)]">{formatRelativeTime(entry.timestamp)}</span>
                           </div>
                           {renderTaggedHistoryUsers(entry.taggedUserIds)}
                         </li>
@@ -4329,13 +4433,13 @@
               </div>
             )}
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Notes (optional)</label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Add any context about this stage completion" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-500" />
+              <label className="block text-sm text-[var(--text)] mb-2">Notes (optional)</label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Add any context about this stage completion" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-500" />
             </div>
             <div>
-              <label className="block text-sm text-gray-200 mb-2">Tag Users (optional)</label>
+              <label className="block text-sm text-[var(--text)] mb-2">Tag Users (optional)</label>
               {projectUsers.length === 0 ? (
-                <div className="text-xs text-gray-500 bg-gray-900/50 border border-gray-800 rounded px-3 py-2">
+                <div className="text-xs text-[var(--text-muted)] bg-[var(--surface)]/50 border border-[var(--border)] rounded px-3 py-2">
                   Add users in the dashboard to enable tagging.
                 </div>
               ) : (
@@ -4345,15 +4449,15 @@
                     return (
                       <label
                         key={user.id}
-                        className={`flex items-center gap-3 p-2 rounded border transition-colors cursor-pointer ${selected ? 'border-blue-500 bg-blue-900/30' : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'}`}
+                        className={`flex items-center gap-3 p-2 rounded border transition-colors cursor-pointer ${selected ? 'border-[var(--accent)] bg-[var(--info)]/30' : 'border-[var(--border)] bg-[var(--surface)]/40 hover:border-[var(--border)]'}`}
                       >
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleTaggedUser(user.id)}
-                          className="accent-blue-500"
+                          className="accent-[var(--accent)]"
                         />
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs font-semibold flex items-center justify-center overflow-hidden">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--accent)] to-[color:oklch(from_var(--accent)_0.68_0.12_260)] text-white text-xs font-semibold flex items-center justify-center overflow-hidden">
                           {user.avatar ? (
                             <img src={user.avatar} alt={user.name || 'User avatar'} className="w-full h-full object-cover" />
                           ) : (
@@ -4361,9 +4465,9 @@
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm text-gray-100">{user.name || 'Unnamed User'}</div>
+                          <div className="text-sm text-[var(--text-strong)]">{user.name || 'Unnamed User'}</div>
                           {(user.relationship || user.role) && (
-                            <div className="text-[11px] text-gray-400">
+                            <div className="text-[11px] text-[var(--text-muted)]">
                               {[user.relationship, user.role].filter(Boolean).join(' • ')}
                             </div>
                           )}
@@ -4374,15 +4478,15 @@
                 </div>
               )}
               {taggedUserIds.length > 0 && (
-                <div className="text-xs text-blue-200 mt-2">
+                <div className="text-xs text-[var(--info)] mt-2">
                   Tagging {taggedUserIds.length} {taggedUserIds.length === 1 ? 'user' : 'users'}.
                 </div>
               )}
             </div>
             <div className="grid md:grid-cols-3 gap-3 pt-2">
-              <button onClick={onClose} className="bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
-              <button onClick={() => handleSubmit(true)} className="bg-yellow-800 hover:bg-yellow-700 text-yellow-100 py-2 rounded transition-colors">Skip Stage</button>
-              <button onClick={() => handleSubmit(false)} className="bg-green-600 hover:bg-green-700 py-2 rounded transition-colors">Mark Stage Complete</button>
+              <button onClick={onClose} className="bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button>
+              <button onClick={() => handleSubmit(true)} className="bg-[var(--warn)] hover:opacity-90 text-white py-2 rounded transition-colors">Skip Stage</button>
+              <button onClick={() => handleSubmit(false)} className="bg-[var(--ok)] hover:opacity-90 py-2 rounded transition-colors">Mark Stage Complete</button>
             </div>
           </div>
         </Modal>
@@ -4435,12 +4539,12 @@
       return (
         <Modal onClose={onClose} title="Wire Activity" size="large">
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-4"><h3 className="font-medium text-gray-100">{activity?.title}</h3><p className="text-sm text-gray-300 mt-1">Connect this activity to another</p></div>
-            <div><label className="block text-sm text-gray-200 mb-2">Connection type</label><select value={edgeType} onChange={(e) => setEdgeType(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="enables">Enables (this unlocks the other)</option><option value="requires">Requires (this depends on the other)</option></select></div>
+            <div className="bg-[var(--surface)] rounded-lg p-4"><h3 className="font-medium text-[var(--text-strong)]">{activity?.title}</h3><p className="text-sm text-[var(--text)] mt-1">Connect this activity to another</p></div>
+            <div><label className="block text-sm text-[var(--text)] mb-2">Connection type</label><select value={edgeType} onChange={(e) => setEdgeType(e.target.value)} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"><option value="enables">Enables (this unlocks the other)</option><option value="requires">Requires (this depends on the other)</option></select></div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-200 mb-2">Source stage</label>
-                <select value={srcStageId} onChange={(e) => setSrcStageId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                <label className="block text-sm text-[var(--text)] mb-2">Source stage</label>
+                <select value={srcStageId} onChange={(e) => setSrcStageId(e.target.value)} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]">
                   <option value="">Choose...</option>
                   {stageOptions.map(option => (
                     <option key={option.id} value={option.id}>{option.name}{option.skipped ? ' (skipped)' : ''}</option>
@@ -4448,36 +4552,36 @@
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-200 mb-2">{mode === 'existing' ? 'Target stage' : 'Dependency stage'}</label>
-                <select value={dstStageId} onChange={(e) => setDstStageId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                <label className="block text-sm text-[var(--text)] mb-2">{mode === 'existing' ? 'Target stage' : 'Dependency stage'}</label>
+                <select value={dstStageId} onChange={(e) => setDstStageId(e.target.value)} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]">
                   <option value="">Choose...</option>
                   {stageOptions.map(option => (
                     <option key={option.id} value={option.id}>{option.name}{option.skipped ? ' (skipped)' : ''}</option>
                   ))}
                 </select>
-                {mode === 'existing' && !targetActivity && <p className="text-xs text-gray-500 mt-1">Select a target activity to prefill its current stage.</p>}
+                {mode === 'existing' && !targetActivity && <p className="text-xs text-[var(--text-muted)] mt-1">Select a target activity to prefill its current stage.</p>}
               </div>
             </div>
-            <div className="flex gap-2 p-2 bg-gray-800 rounded"><button onClick={() => setMode('existing')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'existing' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Existing Activity</button><button onClick={() => setMode('new')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'new' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Create New</button></div>
+            <div className="flex gap-2 p-2 bg-[var(--elevated)] rounded"><button onClick={() => setMode('existing')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'existing' ? 'bg-[var(--accent)]' : 'bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)]'}`}>Existing Activity</button><button onClick={() => setMode('new')} className={`flex-1 py-2 px-3 rounded text-sm transition-colors ${mode === 'new' ? 'bg-[var(--accent)]' : 'bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)]'}`}>Create New</button></div>
             {mode === 'existing' ? (
               <>
-                <div><label className="block text-sm text-gray-200 mb-2">Select activity</label><select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100"><option value="">Choose...</option>{availableActivities.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}</select></div>
-                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (canWireExisting) onWire({ targetId, edgeType, srcStageId, dstStageId }); }} disabled={!canWireExisting} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Wire</button></div>
+                <div><label className="block text-sm text-[var(--text)] mb-2">Select activity</label><select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"><option value="">Choose...</option>{availableActivities.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}</select></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (canWireExisting) onWire({ targetId, edgeType, srcStageId, dstStageId }); }} disabled={!canWireExisting} className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors">Wire</button></div>
               </>
             ) : (
               <>
                 <div>
-                  <label className="block text-sm text-gray-200 mb-2">New activity starts at</label>
-                  <select value={newInitialStageId} onChange={(e) => setNewInitialStageId(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100">
+                  <label className="block text-sm text-[var(--text)] mb-2">New activity starts at</label>
+                  <select value={newInitialStageId} onChange={(e) => setNewInitialStageId(e.target.value)} className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]">
                     <option value="">Choose...</option>
                     {stageOptions.map(option => (
                       <option key={option.id} value={option.id}>{option.name}{option.skipped ? ' (skipped)' : ''}</option>
                     ))}
                   </select>
                 </div>
-                <div><label className="block text-sm text-gray-200 mb-2">New activity title</label><input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g., Review article" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                <div><label className="block text-sm text-gray-200 mb-2">Deliverable (optional)</label><input type="text" value={newDeliverable} onChange={(e) => setNewDeliverable(e.target.value)} placeholder="e.g., Reviewed draft" className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-gray-100 placeholder-gray-400" /></div>
-                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (canCreateNew) onCreate({ title: newTitle, deliverable: newDeliverable, edgeType, srcStageId, dstStageId, initialStageId: newInitialStageId }); }} disabled={!canCreateNew} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-2 rounded transition-colors">Create & Wire</button></div>
+                <div><label className="block text-sm text-[var(--text)] mb-2">New activity title</label><input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g., Review article" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400" /></div>
+                <div><label className="block text-sm text-[var(--text)] mb-2">Deliverable (optional)</label><input type="text" value={newDeliverable} onChange={(e) => setNewDeliverable(e.target.value)} placeholder="e.g., Reviewed draft" className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)] placeholder-gray-400" /></div>
+                <div className="flex gap-3 pt-4"><button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button><button onClick={() => { if (canCreateNew) onCreate({ title: newTitle, deliverable: newDeliverable, edgeType, srcStageId, dstStageId, initialStageId: newInitialStageId }); }} disabled={!canCreateNew} className="flex-1 bg-[var(--accent)] hover:opacity-90 disabled:bg-[color:oklch(from_var(--text)_0.82_0_0)] py-2 rounded transition-colors">Create & Wire</button></div>
               </>
             )}
           </div>
@@ -4527,25 +4631,28 @@
       return (
         <Modal onClose={onClose} title={`Assign Teams: ${stage?.name || stageId}`} size="large">
           <div className="space-y-6">
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded p-4">
-              <p className="text-sm text-gray-100">
+            <div className="bg-[var(--info)]/30 border border-[var(--info)]/50 rounded p-4">
+              <p className="text-sm text-[var(--text-strong)]">
                 Choose which teams can work on activities when they reach this stage. You can also assign individual users if needed.
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-200 mb-3">Assign Teams</h3>
+              <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Assign Teams</h3>
               {teams.length === 0 ? (
-                <p className="text-sm text-gray-500">No teams yet. Create teams in the dashboard.</p>
+                <p className="text-sm text-[var(--text-muted)]">No teams yet. Create teams in the dashboard.</p>
               ) : (
                 <div className="space-y-2">
                   {teams.map(team => (
-                    <label key={team.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                    <label key={team.id} className="flex items-center gap-3 p-3 bg-[var(--elevated)] border border-[var(--border)] rounded cursor-pointer hover:border-[var(--border)]">
                       <input type="checkbox" checked={selectedTeamIds.includes(team.id)} onChange={() => toggleTeam(team.id)} />
-                      <div className={`w-3 h-3 rounded-full bg-${team.color}-500`}></div>
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: TEAM_COLOR_MAP[team.color] || 'var(--accent)' }}
+                      ></div>
                       <div className="flex-1">
-                        <div className="text-sm text-gray-100">{team.name}</div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-sm text-[var(--text-strong)]">{team.name}</div>
+                        <div className="text-xs text-[var(--text-muted)]">
                           {team.userIds.length} members:{' '}
                           {team.userIds
                             .map(uid => project.users.find(u => u.id === uid)?.name)
@@ -4559,22 +4666,22 @@
               )}
             </div>
 
-            <div className="border-t border-gray-800 pt-6">
-              <h3 className="text-sm font-semibold text-gray-200 mb-3">Or assign individual users</h3>
-              <p className="text-xs text-gray-400 mb-3">For small flows, you can skip teams and assign users directly.</p>
+            <div className="border-t border-[var(--border)] pt-6">
+              <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Or assign individual users</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-3">For small flows, you can skip teams and assign users directly.</p>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {project.users.map(user => (
-                  <label key={user.id} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded cursor-pointer hover:border-gray-600">
+                  <label key={user.id} className="flex items-center gap-3 p-3 bg-[var(--elevated)] border border-[var(--border)] rounded cursor-pointer hover:border-[var(--border)]">
                     <input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => toggleUser(user.id)} />
-                    <span className="text-sm text-gray-100">{user.name}</span>
+                    <span className="text-sm text-[var(--text-strong)]">{user.name}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t border-gray-800">
-              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">Cancel</button>
-              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">Save Assignment</button>
+            <div className="flex gap-3 pt-4 border-t border-[var(--border)]">
+              <button onClick={onClose} className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors">Cancel</button>
+              <button onClick={handleSave} className="flex-1 bg-[var(--accent)] hover:opacity-90 py-2 rounded transition-colors">Save Assignment</button>
             </div>
           </div>
         </Modal>
@@ -4585,10 +4692,10 @@
       const sizeClasses = { medium: 'max-w-2xl', large: 'max-w-4xl' };
       return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-          <div className={`bg-gray-900 rounded-lg border border-gray-800 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
-            <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
-              <button onClick={onClose} className="text-gray-300 hover:text-gray-100 transition-colors"><XIcon className="w-5 h-5" /></button>
+          <div className={`bg-[var(--surface)] rounded-lg border border-[var(--border)] w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
+            <div className="sticky top-0 bg-[var(--surface)] border-b border-[var(--border)] p-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-[var(--text-strong)]">{title}</h2>
+              <button onClick={onClose} className="text-[var(--text)] hover:text-[var(--text-strong)] transition-colors"><XIcon className="w-5 h-5" /></button>
             </div>
             <div className="p-6">{children}</div>
           </div>
