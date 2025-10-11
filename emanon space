@@ -1,0 +1,668 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  MessageSquareText,
+  Anchor,
+  Image as ImageIcon,
+  Pin,
+  Sparkles,
+  Check,
+  X,
+  Clock,
+  HelpCircle,
+  Feather,
+  Quote,
+  StickyNote,
+  Wand2,
+  Tag as TagIcon,
+  Upload,
+  Trash2,
+  Palette,
+} from "lucide-react";
+
+/*
+  Emanon Lens – Hyphae Prototype
+  -------------------------------------------------------
+  What this file includes (front‑end only):
+  - Signal Stream (append-only, human language, tone + certainty)
+  - Sketchboard (simple sticky notes + image drops)
+  - Rituals sidebar (lightweight prompts)
+  - Threads (pin any signal or sketch into a named thread)
+  - Signal Composer (modal) with tone + certainty sliders
+  - Ambient field that reflects recent tones (no KPI bars)
+
+  Notes:
+  - All data in local component state (no backend). 
+  - Drag & drop images onto the sketchboard to create artifacts.
+  - Keyboard: "n" to compose a new signal, 
+              "/" to quick‑filter signals, 
+              "p" to pin selected to a thread.
+*/
+
+// --------------------------- Types
+
+const TONES = [
+  { id: "curious", label: "curious", hue: "#22c55e" },
+  { id: "uneasy", label: "uneasy", hue: "#f59e0b" },
+  { id: "relieved", label: "relieved", hue: "#38bdf8" },
+  { id: "energized", label: "energized", hue: "#a78bfa" },
+  { id: "calm", label: "calm", hue: "#14b8a6" },
+  { id: "overloaded", label: "overloaded", hue: "#ef4444" },
+];
+
+const CERTAINTY_STOPS = [
+  { k: 0.1, label: "foggy" },
+  { k: 0.35, label: "forming" },
+  { k: 0.65, label: "sharpening" },
+  { k: 0.9, label: "clear" },
+];
+
+function certaintyLabel(v) {
+  let last = CERTAINTY_STOPS[0].label;
+  for (const s of CERTAINTY_STOPS) {
+    if (v >= s.k) last = s.label;
+  }
+  return last;
+}
+
+// --------------------------- Mock seeds
+
+const seedSignals = [
+  {
+    id: cryptoRandom("sig"),
+    ts: Date.now() - 1000 * 60 * 14,
+    author: "Alice",
+    text: "prototype buckles when stressed – feels brittle",
+    tone: "uneasy",
+    certainty: 0.45,
+    tags: ["performance", "onboarding"],
+  },
+  {
+    id: cryptoRandom("sig"),
+    ts: Date.now() - 1000 * 60 * 10,
+    author: "Jamal",
+    text: "sync with design eased tension; worth a small experiment",
+    tone: "relieved",
+    certainty: 0.55,
+    tags: ["sync", "design"],
+  },
+  {
+    id: cryptoRandom("sig"),
+    ts: Date.now() - 1000 * 60 * 6,
+    author: "Maya",
+    text: "tokens feel inconsistent across surfaces – shared sheet?",
+    tone: "curious",
+    certainty: 0.5,
+    tags: ["design-system"],
+  },
+];
+
+const seedThreads = [
+  { id: cryptoRandom("thr"), name: "perf feels brittle", items: [] },
+];
+
+// --------------------------- Helpers
+
+function cryptoRandom(prefix = "id") {
+  const r = Math.random().toString(36).slice(2, 9);
+  return `${prefix}_${r}`;
+}
+
+function timeAgo(ts) {
+  const d = Math.round((Date.now() - ts) / 1000);
+  if (d < 60) return `${d}s`;
+  if (d < 3600) return `${Math.floor(d / 60)}m`;
+  return `${Math.floor(d / 3600)}h`;
+}
+
+// Blend a background glow by recent tones
+function ambientFromTones(sigList) {
+  const recent = sigList.slice(0, 12);
+  const counts = Object.fromEntries(TONES.map((t) => [t.id, 0]));
+  recent.forEach((s) => (counts[s.tone] = (counts[s.tone] || 0) + 1));
+  const top = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([id]) => TONES.find((t) => t.id === id)?.hue || "#94a3b8");
+  return top;
+}
+
+// --------------------------- Root Component
+
+export default function EmanonLensPrototype() {
+  const [signals, setSignals] = useState(seedSignals);
+  const [threads, setThreads] = useState(seedThreads);
+  const [filter, setFilter] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [selectedTone, setSelectedTone] = useState("curious");
+  const [draft, setDraft] = useState("");
+  const [certainty, setCertainty] = useState(0.4);
+  const [dragHint, setDragHint] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "n") setComposeOpen(true);
+      if (e.key === "/") {
+        e.preventDefault();
+        const el = document.getElementById("signal-filter");
+        el?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function emitSignal({ text, tone, certainty, tags = [], author = "you" }) {
+    const sig = {
+      id: cryptoRandom("sig"),
+      ts: Date.now(),
+      author,
+      text: text.trim(),
+      tone,
+      certainty,
+      tags,
+    };
+    setSignals((prev) => [sig, ...prev]);
+  }
+
+  function pinToThread(sigId, threadId) {
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId ? { ...t, items: [sigId, ...t.items] } : t
+      )
+    );
+  }
+
+  const filteredSignals = useMemo(() => {
+    if (!filter.trim()) return signals;
+    const f = filter.toLowerCase();
+    return signals.filter(
+      (s) =>
+        s.text.toLowerCase().includes(f) ||
+        s.tags?.some((t) => t.toLowerCase().includes(f)) ||
+        s.author.toLowerCase().includes(f)
+    );
+  }, [signals, filter]);
+
+  const ambientHues = ambientFromTones(signals);
+
+  // Drag & drop images into Sketchboard
+  function onDropSketch(e) {
+    e.preventDefault();
+    setDragHint(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    for (const f of files) {
+      if (!f.type.startsWith("image/")) continue;
+      const url = URL.createObjectURL(f);
+      emitSignal({
+        text: `added an image`,
+        tone: "energized",
+        certainty: 0.6,
+        tags: ["artifact:image", f.name],
+      });
+      // also add to sketchboard artifacts state (simple inline)
+      setArtifacts((prev) => [
+        { id: cryptoRandom("art"), url, x: 40 + prev.length * 16, y: 40 + prev.length * 12 },
+        ...prev,
+      ]);
+    }
+  }
+
+  const [artifacts, setArtifacts] = useState([
+    { id: cryptoRandom("art"), url: null, x: 40, y: 40, note: "rough flow" },
+  ]);
+
+  function addSticky() {
+    setArtifacts((prev) => [
+      { id: cryptoRandom("art"), url: null, x: 60 + prev.length * 12, y: 80 + prev.length * 10, note: "new note" },
+      ...prev,
+    ]);
+  }
+
+  function onDragOverSketch(e) {
+    e.preventDefault();
+    setDragHint(true);
+  }
+
+  return (
+    <div className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 to-stone-100 text-slate-800">
+      {/* Ambient field */}
+      <AmbientField hues={ambientHues} signals={signals} />
+
+      {/* Top bar */}
+      <div className="absolute inset-x-0 top-0 z-30 border-b border-slate-200/70 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/40">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Feather className="h-4 w-4" />
+            <div className="text-lg font-light">Emanon Space</div>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">sense & story</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                id="signal-filter"
+                className="w-64 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-300"
+                placeholder="/ filter by word, tag, author"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
+              <kbd className="pointer-events-none absolute right-2 top-1.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">/</kbd>
+            </div>
+            <button
+              onClick={() => setComposeOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-sm text-white shadow hover:bg-slate-800"
+            >
+              <Plus className="h-4 w-4" /> Emit signal <kbd className="ml-1 rounded bg-slate-800/60 px-1 text-[10px]">n</kbd>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Layout */}
+      <div className="absolute inset-0 top-12 z-10 grid h-[calc(100%-48px)] grid-cols-12 gap-3 p-3">
+        {/* Left: Stream */}
+        <div className="col-span-5 flex min-h-0 flex-col">
+          <Panel title={<><MessageSquareText className="mr-2 h-4 w-4"/>Signal stream</>}>
+            <SignalStream
+              signals={filteredSignals}
+              onPin={(sigId) => pinToThread(sigId, threads[0].id)}
+            />
+          </Panel>
+        </div>
+
+        {/* Center: Sketchboard */}
+        <div className="col-span-5 min-h-0">
+          <Panel title={<><StickyNote className="mr-2 h-4 w-4"/>Sketchboard</>} right={<SketchToolbar onAddSticky={addSticky} onUploadClick={() => fileInputRef.current?.click()} />}>
+            <div
+              className={`relative h-full rounded-xl border border-slate-200 bg-white/60 ${dragHint ? "ring-2 ring-emerald-400" : ""}`}
+              onDrop={onDropSketch}
+              onDragOver={onDragOverSketch}
+              onDragLeave={() => setDragHint(false)}
+            >
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e)=>{
+                const f = e.target.files?.[0];
+                if (!f) return; const url = URL.createObjectURL(f);
+                setArtifacts((prev)=>[{ id: cryptoRandom("art"), url, x: 80, y: 60 }, ...prev]);
+                emitSignal({ text: `added an image`, tone: "energized", certainty: 0.6, tags:["artifact:image", f.name] });
+                e.currentTarget.value = "";
+              }}/>
+              <Sketchboard artifacts={artifacts} setArtifacts={setArtifacts} />
+              {artifacts.length === 0 && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400">
+                  <div className="flex items-center gap-2 text-sm"><Upload className="h-4 w-4"/> drop an image or add a sticky</div>
+                </div>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        {/* Right: Rituals / Threads */}
+        <div className="col-span-2 flex min-h-0 flex-col">
+          <Panel title={<><Sparkles className="mr-2 h-4 w-4"/>Rituals</>}>
+            <Rituals onEmit={(payload)=>emitSignal(payload)} />
+          </Panel>
+          <div className="h-3"/>
+          <Panel title={<><Pin className="mr-2 h-4 w-4"/>Threads</>}>
+            <ThreadList threads={threads} signals={signals} />
+          </Panel>
+        </div>
+      </div>
+
+      {/* Composer */}
+      <AnimatePresence>
+        {composeOpen && (
+          <ComposerModal
+            onClose={() => setComposeOpen(false)}
+            onSubmit={(data) => { emitSignal(data); setComposeOpen(false); setDraft(""); setCertainty(0.4); }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// --------------------------- Ambient Field
+function AmbientField({ hues, signals }) {
+  // pulse tempo from recent signal rate
+  const tempo = Math.max(28, 120 - Math.min(18, signals.length) * 4);
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      {hues.map((h, i) => (
+        <motion.div
+          key={i}
+          className="absolute -inset-20 rounded-full blur-3xl opacity-40"
+          style={{ background: `radial-gradient(60% 60% at 50% 50%, ${h}44, transparent)` }}
+          animate={{
+            scale: [1, 1.05, 1],
+            opacity: [0.28, 0.36, 0.28],
+          }}
+          transition={{ duration: 2 + i * 0.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ))}
+      <motion.div
+        className="absolute inset-x-10 bottom-6 mx-auto h-1 rounded-full bg-gradient-to-r from-transparent via-slate-300/40 to-transparent"
+        animate={{ opacity: [0.25, 0.55, 0.25] }}
+        transition={{ duration: tempo / 60, repeat: Infinity }}
+      />
+    </div>
+  );
+}
+
+// --------------------------- Panel wrapper
+function Panel({ title, right, children }) {
+  return (
+    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center text-sm font-medium text-slate-700">{title}</div>
+        <div>{right}</div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+    </div>
+  );
+}
+
+// --------------------------- Signal Stream
+function SignalStream({ signals, onPin }) {
+  return (
+    <div className="space-y-2 pr-1">
+      {signals.map((s) => (
+        <SignalCard key={s.id} signal={s} onPin={() => onPin?.(s.id)} />
+      ))}
+      {signals.length === 0 && (
+        <div className="mt-10 text-center text-sm text-slate-500">
+          No signals match your filter.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignalCard({ signal, onPin }) {
+  const t = TONES.find((t) => t.id === signal.tone) || TONES[0];
+  return (
+    <motion.div
+      layout
+      className="group rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm ring-0 transition-all hover:shadow-md"
+    >
+      <div className="mb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-1"><Clock className="h-3 w-3"/> {timeAgo(signal.ts)} ago</div>
+          <span>•</span>
+          <span className="font-medium text-slate-600">{signal.author}</span>
+          {signal.tags?.slice(0,3).map((tg)=> (
+            <span key={tg} className="ml-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
+              <TagIcon className="h-3 w-3"/>{tg}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          <button onClick={onPin} className="rounded-full bg-slate-100 p-1 text-slate-600 hover:bg-slate-200" title="Pin to thread"><Pin className="h-3.5 w-3.5"/></button>
+        </div>
+      </div>
+      <div className="mb-2 text-[15px] leading-relaxed text-slate-800">{signal.text}</div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TonePill tone={t} />
+          <span className="text-xs text-slate-500">certainty: <span className="font-medium text-slate-700">{certaintyLabel(signal.certainty)}</span></span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <button className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 hover:bg-slate-200"><Quote className="h-3 w-3"/> acknowledge</button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function TonePill({ tone }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs shadow-sm ring-1 ring-slate-200">
+      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tone.hue }} />
+      <span className="text-slate-700">{tone.label}</span>
+    </span>
+  );
+}
+
+// --------------------------- Sketchboard
+function SketchToolbar({ onAddSticky, onUploadClick }) {
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={onAddSticky} className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800 hover:bg-amber-200">
+        <StickyNote className="h-3.5 w-3.5"/> sticky
+      </button>
+      <button onClick={onUploadClick} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200">
+        <ImageIcon className="h-3.5 w-3.5"/> image
+      </button>
+    </div>
+  );
+}
+
+function Sketchboard({ artifacts, setArtifacts }) {
+  const containerRef = useRef(null);
+  const [selected, setSelected] = useState(null);
+
+  function onMouseDown(e, id) {
+    e.preventDefault();
+    setSelected({ id, ox: e.clientX, oy: e.clientY });
+  }
+
+  function onMouseMove(e) {
+    if (!selected) return;
+    setArtifacts((prev) =>
+      prev.map((a) => {
+        if (a.id !== selected.id) return a;
+        const dx = e.clientX - selected.ox;
+        const dy = e.clientY - selected.oy;
+        return { ...a, x: (a.x || 0) + dx, y: (a.y || 0) + dy };
+      })
+    );
+    setSelected((s) => ({ ...s, ox: e.clientX, oy: e.clientY }));
+  }
+
+  function onMouseUp() {
+    setSelected(null);
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="h-full w-full cursor-default"
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+    >
+      {artifacts.map((a) => (
+        <div
+          key={a.id}
+          onMouseDown={(e) => onMouseDown(e, a.id)}
+          className="absolute select-none rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm hover:shadow"
+          style={{ left: a.x || 40, top: a.y || 40 }}
+        >
+          {a.url ? (
+            <img src={a.url} alt="artifact" className="max-h-40 max-w-[18rem] rounded-md" />
+          ) : (
+            <div className="min-w-[140px]">
+              <div className="mb-1 text-xs font-medium text-slate-600">sticky</div>
+              <textarea
+                className="w-full resize-none rounded-md border border-slate-200 bg-amber-50/60 p-2 text-sm outline-none placeholder:text-slate-400"
+                rows={3}
+                placeholder="write a rough thought"
+                value={a.note || ""}
+                onChange={(e) =>
+                  setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, note: e.target.value } : x)))
+                }
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --------------------------- Rituals & Threads
+function Rituals({ onEmit }) {
+  const [busy, setBusy] = useState(false);
+  const prompts = [
+    { id: "alive", label: "what feels alive?", tone: "energized" },
+    { id: "stuck", label: "where are you stuck?", tone: "uneasy" },
+    { id: "change", label: "what's changing others should feel?", tone: "curious" },
+  ];
+  async function send(p) {
+    setBusy(true);
+    onEmit({ text: p.label, tone: p.tone, certainty: 0.4, tags: ["ritual"] });
+    setTimeout(() => setBusy(false), 350);
+  }
+  return (
+    <div className="space-y-2">
+      {prompts.map((p) => (
+        <button
+          key={p.id}
+          disabled={busy}
+          onClick={() => send(p)}
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-left text-sm hover:bg-white disabled:opacity-60"
+        >
+          <span className="flex items-center gap-2"><Wand2 className="h-4 w-4"/> {p.label}</span>
+          <span className="text-[11px] text-slate-500">emit</span>
+        </button>
+      ))}
+      <div className="mt-3 rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-500">
+        Use real words. Short is fine. Honesty is faster than status.
+      </div>
+    </div>
+  );
+}
+
+function ThreadList({ threads, signals }) {
+  if (!threads?.length) return <div className="text-sm text-slate-500">No threads yet.</div>;
+  return (
+    <div className="space-y-3 pr-1">
+      {threads.map((t) => (
+        <div key={t.id} className="rounded-xl border border-slate-200 bg-white/70 p-2">
+          <div className="mb-1 flex items-center justify-between text-sm font-medium text-slate-700">
+            <span className="truncate">{t.name}</span>
+          </div>
+          <div className="space-y-1">
+            {t.items.slice(0, 3).map((sid) => {
+              const s = signals.find((x) => x.id === sid);
+              if (!s) return null;
+              return (
+                <div key={sid} className="truncate text-xs text-slate-600">• {s.text}</div>
+              );
+            })}
+            {t.items.length === 0 && (
+              <div className="text-xs text-slate-500">pin a few signals to start a thread</div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --------------------------- Composer Modal
+function ComposerModal({ onClose, onSubmit }) {
+  const [text, setText] = useState("");
+  const [tone, setTone] = useState(TONES[0].id);
+  const [certainty, setCertainty] = useState(0.4);
+  const [tags, setTags] = useState("");
+
+  function submit() {
+    if (!text.trim()) return;
+    const tagArr = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    onSubmit({ text, tone, certainty, tags: tagArr, author: "you" });
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+      onMouseDown={onClose}
+    >
+      <motion.div
+        onMouseDown={(e) => e.stopPropagation()}
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 20, opacity: 0 }}
+        className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <Feather className="h-4 w-4"/> Emit signal
+          </div>
+          <button onClick={onClose} className="rounded-full p-1 text-slate-500 hover:bg-slate-100"><X className="h-4 w-4"/></button>
+        </div>
+
+        <textarea
+          autoFocus
+          rows={4}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="say the real thing you would say out loud"
+          className="w-full resize-none rounded-lg border border-slate-200 bg-white/80 p-3 text-[15px] leading-relaxed outline-none placeholder:text-slate-400"
+        />
+
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <div>
+            <Label>tone</Label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {TONES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTone(t.id)}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs ring-1 ring-slate-200 ${
+                    tone === t.id ? "bg-white shadow" : "bg-white/70 hover:bg-white"
+                  }`}
+                >
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.hue }} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <Label>certainty</Label>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={certainty}
+                onChange={(e) => setCertainty(parseFloat(e.target.value))}
+                className="w-full"
+              />
+              <span className="w-20 text-right text-xs text-slate-600">{certaintyLabel(certainty)}</span>
+            </div>
+          </div>
+          <div>
+            <Label>tags (comma‑sep)</Label>
+            <input
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="performance, onboarding"
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-white/80 px-2 py-1.5 text-sm outline-none placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button onClick={onClose} className="rounded-full px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100">cancel</button>
+          <button onClick={submit} className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800">
+            <Plus className="h-4 w-4"/> emit
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Label({ children }) {
+  return <div className="text-xs font-medium text-slate-600">{children}</div>;
+}
