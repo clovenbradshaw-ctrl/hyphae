@@ -1,0 +1,2215 @@
+{
+  "metadata": {
+    "title": "Emergence and Self-Organization: Authenticated Quote Collection",
+    "description": "Comprehensive collection of quotes from scientists, naturalists, and scholars on emergence, self-organization, complex adaptive systems, and interconnected natural systems spanning nearly two centuries",
+    "total_quotes": 269,
+    "unique_authors": 51,
+    "date_range": "1835-2025",
+    "extraction_date": "2025",
+    "source_documents": [
+      {
+        "title": "Voices of Emergence: 268 Authenticated Quotes on Self-Organization and Systems",
+        "quotes_count": 133,
+        "authors_count": 13,
+        "focus": "Women scientists, global thinkers, quantum physicists, systems theorists, indigenous scholars"
+      },
+      {
+        "title": "The Grandeur of Emergence: Scientific Voices on Nature's Self-Organizing Wisdom",
+        "quotes_count": 136,
+        "authors_count": 39,
+        "focus": "Naturalists, biologists, ecologists, natural scientists"
+      }
+    ],
+    "themes": [
+      "emergence",
+      "self-organization",
+      "complex adaptive systems",
+      "quantum physics & non-locality",
+      "ecology & interconnection",
+      "evolution & symbiosis",
+      "systems thinking",
+      "collective intelligence",
+      "indigenous wisdom",
+      "holism",
+      "network theory",
+      "polycentric governance",
+      "autopoiesis"
+    ],
+    "featured_authors": [
+      "Aldo Leopold",
+      "Alfred Russel Wallace",
+      "Andy Clark",
+      "Arthur Tansley",
+      "Brian Goodwin",
+      "Carl Safina",
+      "Charles Darwin",
+      "David Quammen",
+      "Deborah Gordon",
+      "Donella Meadows",
+      "Donna Haraway",
+      "Edward O. Wilson",
+      "Ernst Haeckel",
+      "Ernst Mayr",
+      "Eugene P. Odum",
+      "Freeman Dyson",
+      "George Gaylord Simpson",
+      "Herbert Spencer",
+      "Howard T. Odum",
+      "Iain Couzin"
+    ]
+  },
+  "quotes": [
+    {
+      "quote": "evolution is no linear family tree, but change in the single multidimensional being that has grown to cover the entire surface of Earth",
+      "author": null,
+      "source": "What Is Life?",
+      "year": "1998",
+      "page": null,
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "we animals, all thirty million species of us, emanate from the microcosm",
+      "author": null,
+      "source": "Symbiotic Planet",
+      "year": "1998",
+      "page": null,
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "a major theme of the microbial drama is the emergence of individuality from the community interactions of once-independent actors",
+      "author": null,
+      "source": "Symbiotic Planet",
+      "year": "1998",
+      "page": null,
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "Gaia itself is not an organism directly selected among many. It is an emergent property of interaction among organisms, the spherical planet on which they reside, and an energy source, the sun",
+      "author": null,
+      "source": "The Symbiotic Planet",
+      "year": "1998",
+      "page": null,
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "in nature, nothing exists alone",
+      "author": "Rachel Carson",
+      "source": "Silent Spring",
+      "year": "1962",
+      "page": "51",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "the balance of nature is not a status quo; it is fluid, ever shifting, in a constant state of adjustment",
+      "author": "Rachel Carson",
+      "source": "Silent Spring",
+      "year": "1962",
+      "page": "246",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "without taking into account the complex biological systems against which they have been blindly hurled",
+      "author": "Rachel Carson",
+      "source": "Silent Spring",
+      "year": "1962",
+      "page": "246",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "Some sensing mechanism must be present in these instances to alert the cell to imminent danger, and to set in motion the orderly sequence of events that will mitigate this danger.",
+      "author": "Rachel Carson",
+      "source": "A Feeling for the Organism",
+      "year": "1983",
+      "page": "101",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "the closer her focus, the greater her attention to individual detail, to the unique characteristics of a single plant, of a single kernel, of a single chromosome, the more she could learn about the general principles by which the maize plant as a whole was organized",
+      "author": "Rachel Carson",
+      "source": "understanding the whole emerges from intimate attention to the particular",
+      "year": null,
+      "page": "101",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "sympoiesis is a simple word; it means 'making-with.' Nothing makes itself; nothing is really autopoietic or self-organizing",
+      "author": "Donna Haraway",
+      "source": "Staying with the Trouble",
+      "year": "2016",
+      "page": "58",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "nothing makes itself in the biological world, but rather reciprocal induction within and between always-in-process critters ramifies through space and time on both large and small scales in cascades of inter- and intra-action",
+      "author": "Donna Haraway",
+      "source": "all emergence is collaborative emergence",
+      "year": "2016",
+      "page": "32",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "the unit of selection is normally the whole community. Its prosperity depends on the efficiency of the workers",
+      "author": "Mary Midgley",
+      "source": "Beast and Man",
+      "year": "1979",
+      "page": "147",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "motivation is fundamentally plural",
+      "author": "Mary Midgley",
+      "source": null,
+      "year": "1979",
+      "page": "168",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "in evolution, all sorts of contingencies and needs arise, calling for all sorts of different responses",
+      "author": "Mary Midgley",
+      "source": null,
+      "year": "1979",
+      "page": "168",
+      "section": "Women scientists revolutionize our understanding of symbiosis and collective life"
+    },
+    {
+      "quote": "the basic mystery about ant colonies is that there is no management.",
+      "author": "Mary Midgley",
+      "source": "As she explained to",
+      "year": "2010",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "The queen is just a big ant that lays the eggs. That's it. She's not telling anybody what to do.",
+      "author": "Mary Midgley",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "ants use the rate at which they interact to decide what to do. No ant is coming back saying, 'Wow, I had a really hard time out there today!' It's just that by tuning the rate at which they go to the rate at which other ants are coming back, the whole system is tuned to the availability of food, but no ant is telling any other anything. So there's no message, it's just the pattern of interaction.",
+      "author": "Mary Midgley",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "when I look at biological systems, what I see is that they are collective. They are all made up of interacting components with only partly overlapping interests, who are noisy information processors dealing with noisy signals",
+      "author": "Jessica Flack",
+      "source": "Quanta Magazine",
+      "year": "2017",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "The mantra of complexity science—that complexity arises from interactions among simple components—is wrong. The parts—whether cells, neurons, bees, or humans—are often wonderfully complex themselves but operate under many constraints and are prone to failure and myopia and, consequently, errors in information processing",
+      "author": "Jessica Flack",
+      "source": "robust collective computation despite individual limitations",
+      "year": "2019",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "A complex system is a system in which large networks of components with no central control and simple rules of operation give rise to complex collective behavior, sophisticated information processing, and adaptation via learning or evolution",
+      "author": "Jessica Flack",
+      "source": null,
+      "year": "2009",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "twentieth-century science was marked by the demise of the reductionist dream",
+      "author": "Jessica Flack",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "fundamental physics, and more generally, scientific reductionism, have been notably mute in explaining the complex phenomena closest to our human-scale concerns.",
+      "author": "Jessica Flack",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "bacteria communicate with chemical words, they count their numbers, they act in groups, and they carry out tasks as collectives that they could never accomplish as individuals because, individually, each bacterium is too small to make a difference",
+      "author": "Jessica Flack",
+      "source": "Quanta Magazine",
+      "year": "2021",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "bacteria do this sophisticated computation, which is they have to decode that blend [of chemical signals] to understand who is in the minority and who is in the majority. They can actually decode how many bacteria are around. Is it mostly me, is it mostly something else? And then they actually tailor which quorum sensing-controlled genes they turn on or off, depending on not just the number of bacteria but actually who is in the neighborhood",
+      "author": "Jessica Flack",
+      "source": "Quanta Magazine",
+      "year": "2021",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "we can't think about species in isolation from each other. Network research gives us the tools to quantify, analyze, and model complex interactions, and to understand how ecological webs can unravel in response to species loss",
+      "author": "Jessica Flack",
+      "source": "Quanta Magazine",
+      "year": "2020",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "you pull out one node, you pull out one interaction, and it's not just about those species. It's about impacts that can potentially ripple throughout the whole system, and often in unexpected ways",
+      "author": "Jessica Flack",
+      "source": "Quanta Magazine",
+      "year": "2019",
+      "page": null,
+      "section": "Contemporary women scientists decode collective intelligence from ant colonies to bacteria"
+    },
+    {
+      "quote": "the being and doing of an autopoietic unity are inseparable, and this is their specific mode of organization",
+      "author": "Jessica Flack",
+      "source": "The Tree of Knowledge",
+      "year": "1987",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "living systems are units of interactions; they exist in an ambience. From a purely biological point of view they cannot be understood independently of that part of the ambience with which they interact: the niche; nor can the niche be defined [independently]",
+      "author": "Jessica Flack",
+      "source": "Autopoiesis and Cognition",
+      "year": "1980",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "Organisms do not passively receive information from their environments, which they then translate into internal representations. Natural cognitive systems...participate in the generation of meaning...engaging in transformational and not merely informational interactions: they enact a world",
+      "author": "Jessica Flack",
+      "source": "The Embodied Mind",
+      "year": "1991",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "the brain appears as a dynamical process (and not a syntactic one) of real time variables with a rich self-organizing capacity (and not a representational machinery)",
+      "author": "Jessica Flack",
+      "source": "Journal of Consciousness Studies",
+      "year": "1996",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "in fact, the key to autonomy is that a living system finds its way into the next moment by acting appropriately out of its own resources.",
+      "author": "Jessica Flack",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "a diverse community is a resilient community, capable of adapting to changing situations. However, diversity is a strategic advantage only if there is a truly vibrant community, sustained by a web of relationships. If the community is fragmented into isolated groups and individuals, diversity can easily become a source of prejudice and friction. But if the community is aware of the interdependence of all its members, diversity will enrich all the relationships and thus enrich the community as a whole, as well as each individual member",
+      "author": "Jessica Flack",
+      "source": "The Tree of Knowledge",
+      "year": "1987",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "organisms and their environments are united systems",
+      "author": "Jessica Flack",
+      "source": null,
+      "year": "1941",
+      "page": "25-26",
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "various individuals are continually contributing to the maintenance and perpetuation of the species society to which they belong,",
+      "author": "Jessica Flack",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "The ultimate goal of farming is not the growing of crops, but the cultivation and perfection of human beings",
+      "author": "Jessica Flack",
+      "source": "The One-Straw Revolution",
+      "year": "1978",
+      "page": "119",
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "a farmer does not grow something in the sense that he or she creates it. That human is only a small part of the whole process by which nature expresses its being",
+      "author": "Jessica Flack",
+      "source": "Mother Earth News",
+      "year": "1982",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "left alone, the earth maintains its own fertility, in accordance with the orderly cycle of plant and animal life",
+      "author": "Jessica Flack",
+      "source": "self-organizing natural systems",
+      "year": null,
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "uniformity is not nature's way; diversity is nature's way. Diversity creates harmony, and harmony creates beauty, balance, bounty and peace in nature and society, in agriculture and culture, in science and in politics",
+      "author": "Vandana Shiva",
+      "source": "India Divided",
+      "year": "2011",
+      "page": "68",
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "Maldevelopment is the violation of the integrity of organic, interconnected and interdependent systems, that sets in motion a process of exploitation, inequality, injustice and violence",
+      "author": "Vandana Shiva",
+      "source": "Staying Alive",
+      "year": "1988",
+      "page": "33",
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "in nature's economy the currency is not money, it is life",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": "2005",
+      "page": "33",
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "Might science and traditional knowledge be purple and yellow to one another, might they be goldenrod and asters? We see the world more fully when we use both",
+      "author": "Vandana Shiva",
+      "source": "Braiding Sweetgrass",
+      "year": "2013",
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "when times are easy and there's plenty to go around, individual species can go it alone. But when conditions are harsh and life is tenuous, it takes a team sworn to reciprocity to keep life going forward. In a world of scarcity, interconnection and mutual aid become critical for survival.",
+      "author": "Vandana Shiva",
+      "source": "\"All flourishing is mutual. Soil, fungus, tree, squirrel, boy—all are the beneficiaries of reciprocity.\"",
+      "year": null,
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "All flourishing is mutual. Soil, fungus, tree, squirrel, boy—all are the beneficiaries of reciprocity.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Global voices reveal non-Western paradigms of interconnection and autopoiesis"
+    },
+    {
+      "quote": "Rather, what should be said is that wholeness is what is real, and that fragmentation is the response of this whole to man's action, guided by illusory perception, which is shaped by fragmentary thought.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "in this flow, mind and matter are not separate substances. Rather, they are different aspects of one whole and unbroken movement.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "the essential feature in quantum interconnectedness is that the whole universe is enfolded in everything, and that each thing is enfolded in the whole.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "both observer and observed are merging and interpenetrating aspects of one whole reality, which is indivisible and unanalysable",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "relativity and quantum theory agree, in that they both imply the need to look on the world as an undivided whole, in which all parts of the universe, including the observer and his instruments, merge and unite in one totality.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "What all this means is that the flux of the holomovement is the implicate source of all forms, both physical and mental. That is to say, the whole of existence, including inanimate matter, living organisms, and 'mind,' arises in a single ground, in which these are all enfolded, or contained implicitly.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "the essential thing in metabolism is that the organism succeeds in freeing itself from all the entropy it cannot help producing while alive.",
+      "author": "Vandana Shiva",
+      "source": "\"Consciousness is a singular of which the plural is unknown; that there is only one thing and that what seems to be a plurality is merely a series of different aspects of this one thing.\"",
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "life seems to be orderly and lawful behavior of matter, not based exclusively on its tendency to go over from order to disorder, but based partly on existing order that is kept up.",
+      "author": "Vandana Shiva",
+      "source": "\"Consciousness is a singular of which the plural is unknown; that there is only one thing and that what seems to be a plurality is merely a series of different aspects of this one thing.\"",
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "Consciousness is a singular of which the plural is unknown; that there is only one thing and that what seems to be a plurality is merely a series of different aspects of this one thing.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "When two systems, of which we know the states by their respective representatives, enter into temporary physical interaction due to known forces between them, and when after a time of mutual influence the systems separate again, then they can no longer be described in the same way as before, viz. by endowing each of them with a representative of its own. I would not call that one but rather the characteristic trait of quantum mechanics, the one that enforces its entire departure from classical lines of thought. By the interaction the two representatives [the quantum states] have become entangled.",
+      "author": "Vandana Shiva",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "Separation of the observer from the phenomenon to be observed is no longer possible",
+      "author": "Werner Heisenberg",
+      "source": "Physics and Philosophy",
+      "year": "1958",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "what we observe is not nature itself, but nature exposed to our method of questioning",
+      "author": "Werner Heisenberg",
+      "source": "\"the atoms or elementary particles themselves are not real; they form a world of potentialities or possibilities rather than one of things or facts.\"",
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "the atoms or elementary particles themselves are not real; they form a world of potentialities or possibilities rather than one of things or facts.",
+      "author": "Werner Heisenberg",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "isolated material particles are abstractions, their properties being definable and observable only through their interaction with other systems",
+      "author": "Niels Bohr",
+      "source": "Atomic Theory and the Description of Nature",
+      "year": "1934",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "There is no quantum world. There is only an abstract quantum physical description. It is wrong to think that the task of physics is to find out how nature is. Physics concerns what we can say about Nature.",
+      "author": "Niels Bohr",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "It from bit symbolizes the idea that every item of the physical world has at bottom—at a very deep bottom, in most instances—an immaterial source and explanation; that which we call reality arises in the last analysis from the posing of yes–no questions and the registering of equipment-evoked responses; in short, that all things physical are information-theoretic in origin and that this is a participatory universe",
+      "author": "John Archibald Wheeler",
+      "source": "\"we are participators in bringing into being not only the near and here but the far away and long ago.\"",
+      "year": "1989",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "we are participators in bringing into being not only the near and here but the far away and long ago.",
+      "author": "John Archibald Wheeler",
+      "source": "His participatory ontology insists that \"'Participant' is the incontrovertible new concept given by quantum mechanics. It strikes down the 'observer' of classical theory, the man who stands safely behind the thick glass wall and watches what goes on without taking part. It can't be done, quantum mechanics says\" (",
+      "year": "2010",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "'Participant' is the incontrovertible new concept given by quantum mechanics. It strikes down the 'observer' of classical theory, the man who stands safely behind the thick glass wall and watches what goes on without taking part. It can't be done, quantum mechanics says",
+      "author": "John Archibald Wheeler",
+      "source": "Geons, Black Holes, and Quantum Foam",
+      "year": "2010",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "transgresses space and time in a very deep sense. We would be well advised to reconsider the foundations of space and time in a conceptual way",
+      "author": "John Archibald Wheeler",
+      "source": null,
+      "year": "2016",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "the predictions of quantum mechanics are independent of the relative arrangement in space and time of the individual measurements. Fully independent of their distance, independent of which is earlier or later etc.",
+      "author": "John Archibald Wheeler",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "quantum mechanics, via decoherence, is constantly injecting new bits of information into the world. Every detail that we see around us, every vein on a leaf, every whorl on a fingerprint, every star in the sky, can be traced back to some bit that quantum mechanics created",
+      "author": "John Archibald Wheeler",
+      "source": null,
+      "year": "2010",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "Every physical system registers information, and just by evolving in time, by doing its thing, it changes that information, transforms that information, or, if you like, processes that information",
+      "author": "John Archibald Wheeler",
+      "source": "Programming the Universe",
+      "year": "2006",
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "What is the entire universe computing, ultimately? Its own dynamical evolution. As the computation proceeds, reality unfolds.",
+      "author": "John Archibald Wheeler",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "I think our consciousness is not just a passive epiphenomenon carried along by the chemical events in our brains, but is an active agent forcing the molecular complexes to make choices between one quantum state and another. In other words, mind is already inherent in every electron, and the processes of human consciousness differ only in degree but not in kind from the processes of choice between quantum states which we call 'chance' when they are made by electrons.",
+      "author": "Freeman Dyson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Quantum physicists discover wholeness and non-local interconnection"
+    },
+    {
+      "quote": "What is the pattern which connects all the living creatures?",
+      "author": "Freeman Dyson",
+      "source": null,
+      "year": "1979",
+      "page": "11",
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the pattern which connects is a metapattern. It is a pattern of patterns. It is that metapattern which defines the vast generalization that, indeed, it is patterns which connect",
+      "author": "Freeman Dyson",
+      "source": null,
+      "year": "1979",
+      "page": "11",
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the major problems in the world are the result of the difference between how nature works and the way people think",
+      "author": "Freeman Dyson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "we have been trained to think of patterns, with the exception of those of music, as fixed affairs. It is easier and lazier that way but, of course, all nonsense. In truth, the right way to begin to think about the pattern which connects is to think of it as primarily (whatever that means) a dance of interacting parts and only secondarily pegged down by various sorts of physical limits.",
+      "author": "Freeman Dyson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "an interconnected set of elements that is coherently organized in a way that achieves something",
+      "author": "Donella Meadows",
+      "source": "Thinking in Systems",
+      "year": "2008",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the behavior of a system cannot be known just by knowing the elements of which the system is made.",
+      "author": "Donella Meadows",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "Because of feedback delays within complex systems, by the time a problem becomes apparent it may be unnecessarily difficult to solve.",
+      "author": "Donella Meadows",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "You can't navigate well in an interconnected, feedback-dominated world unless you take your eyes off short-term events and look for long term behavior and structure; unless you are aware of false boundaries and bounded rationality; unless you take into account limiting factors, nonlinearities and delays.",
+      "author": "Donella Meadows",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the least obvious part of the system, its function or purpose, is often the most crucial determinant of the system's behavior.",
+      "author": "Donella Meadows",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "Understanding of life begins with the understanding of patterns",
+      "author": "Donella Meadows",
+      "source": "The Web of Life",
+      "year": "1996",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the basic pattern of life is a network. Whenever you see life, you see networks.",
+      "author": "Donella Meadows",
+      "source": "He connected diversity to resilience: \"The more complex the network is, the more complex its pattern of interconnections, the more resilient it will be\" and noted that \"a diverse ecosystem will also be resilient, because it contains many species with overlapping ecological functions that can partially replace one another.\" On emergence, he wrote: \"The creativity and adaptability of life expresses itself through the spontaneous emergence of novelty at critical points of instability. Every human organization contains both designed and emergent structures. The challenge is to find the right balance between the creativity of emergence and the stability of design\" (",
+      "year": "2014",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "The more complex the network is, the more complex its pattern of interconnections, the more resilient it will be",
+      "author": "Donella Meadows",
+      "source": "The Systems View of Life",
+      "year": "2014",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "a diverse ecosystem will also be resilient, because it contains many species with overlapping ecological functions that can partially replace one another.",
+      "author": "Donella Meadows",
+      "source": "The Systems View of Life",
+      "year": "2014",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "The creativity and adaptability of life expresses itself through the spontaneous emergence of novelty at critical points of instability. Every human organization contains both designed and emergent structures. The challenge is to find the right balance between the creativity of emergence and the stability of design",
+      "author": "Donella Meadows",
+      "source": "The Systems View of Life",
+      "year": "2014",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "life exists in between order and chaos—in a kind of phase transition where it is best able to coordinate complex activities and evolve",
+      "author": "Donella Meadows",
+      "source": null,
+      "year": "1995",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "complex systems constructed so that they're on the boundary between order and chaos are those best able to adapt by mutation and selection",
+      "author": "Donella Meadows",
+      "source": "\"perpetual novelty is the hallmark of complex adaptive systems\"",
+      "year": "1995",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "living systems exist in the solid regime near the edge of chaos, and natural selection achieves and sustains such a poised state.",
+      "author": "Donella Meadows",
+      "source": "\"perpetual novelty is the hallmark of complex adaptive systems\"",
+      "year": "1995",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "perpetual novelty is the hallmark of complex adaptive systems",
+      "author": "Donella Meadows",
+      "source": null,
+      "year": "1995",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "We grow in direct proportion to the amount of chaos we can sustain and dissipate",
+      "author": "Ilya Prigogine's",
+      "source": "Order Out of Chaos",
+      "year": "1984",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "The irreversibility of time is the mechanism that brings order out of chaos.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "far from equilibrium, the concept of probability that underlies Boltzmann's order principle is no longer valid",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "contrary to what happens at equilibrium, or near equilibrium, systems far from equilibrium do not conform to any minimum principle that is valid for functions of free energy or entropy production.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "Entropy is the price of structure.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "first-order cybernetics is the science of observed systems; second-order cybernetics is the science of observing systems",
+      "author": "Ilya Prigogine's",
+      "source": "Observing Systems",
+      "year": "1981",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "objectivity is a subject's delusion that observing can be done without him",
+      "author": "Ilya Prigogine's",
+      "source": "Understanding Understanding",
+      "year": "2007",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the environment as we perceive it is our invention",
+      "author": "Ilya Prigogine's",
+      "source": "Understanding Understanding",
+      "year": "2007",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "Act always so as to increase the number of choices.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "should one name one central concept, a first principle, of cybernetics, it would be circularity.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "today our main problem is that of organized complexity. Concepts like those of organization, wholeness, directiveness, teleology, control, self-regulation, differentiation and the like are alien to conventional physics. However, they pop up everywhere in the biological, behavioural and social sciences, and are, in fact, indispensable for dealing with living organisms or social groups",
+      "author": "Ilya Prigogine's",
+      "source": "Main Currents in Modern Thought",
+      "year": "1955",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "modern science is characterized by its ever-increasing specialization, necessitated by the enormous amount of data, the complexity of techniques and of theoretical structures within every field. Thus science is split into innumerable disciplines continually generating new subdisciplines",
+      "author": "Ilya Prigogine's",
+      "source": "General System Theory",
+      "year": "1968",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "Only variety can destroy variety",
+      "author": "Ilya Prigogine's",
+      "source": "An Introduction to Cybernetics",
+      "year": "1956",
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "cybernetics treats not things but ways of behaving. It does not ask what is this thing? but what does it do?... It is thus essentially functional and behaviouristic.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "systems composed of interacting agents described in terms of rules. These agents adapt by changing their rules as experience accumulates",
+      "author": "Ilya Prigogine's",
+      "source": "Hidden Order",
+      "year": "1995",
+      "page": "4",
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "even though these complex systems differ in detail, the question of coherence under change is the central enigma for each",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "1995",
+      "page": "4",
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "A complex adaptive system acquires information about its environment and its own interaction with that environment, identifying regularities in that information, condensing those regularities into a kind of 'schema', or model, and acting in the real world on the basis of that schema",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "1995",
+      "page": "17",
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "the network of relationships linking the human race to itself and to the rest of the biosphere is so complex that all aspects affect all others to an extraordinary degree. Someone should be studying the whole system, however crudely that has to be done, because no gluing together of partial studies of a complex nonlinear system can give a good idea of the behavior of the whole.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Systems theorists map the universal patterns connecting all living forms"
+    },
+    {
+      "quote": "As long as a single center has a monopoly on the use of coercion, one has a state rather than a self-governed society",
+      "author": "Ilya Prigogine's",
+      "source": "Governing the Commons",
+      "year": "1990",
+      "page": null,
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "But until a theoretical explanation—based on human choice—for self-organized and self-governed enterprises is fully developed and accepted, major policy decisions will continue to be undertaken with a presumption that individuals cannot organize themselves and always need to be organized by external authorities",
+      "author": "Ilya Prigogine's",
+      "source": "Governing the Commons",
+      "year": "1990",
+      "page": null,
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "organizing is a process; an organization is the result of that process.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "'Polycentric' connotes many centers of decision making that are formally independent of each other. Whether they actually function independently, or instead constitute an interdependent system of relations, is an empirical question in particular cases. To the extent that they take each other into account in competitive relationships, enter into various contractual and cooperative undertakings or have recourse to central mechanisms to resolve conflicts, the various political jurisdictions in a metropolitan area may function in a coherent manner with consistent and predictable patterns of interacting behavior. To the extent that this is so, they may be said to function as a 'system'",
+      "author": "Ilya Prigogine's",
+      "source": "American Economic Review",
+      "year": "2009",
+      "page": "641-72",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "The humans we study have complex motivational structures and establish diverse private-for-profit, governmental, and community institutional arrangements that operate at multiple scales to generate productive and innovative as well as destructive and perverse outcomes",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "2009",
+      "page": "408",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "When analysts perceive the human beings they model as being trapped inside perverse situations, they then assume that other human beings external to those involved—scholars and public officials—are able to analyze the situation, ascertain why counterproductive outcomes are reached, and posit what changes in the rules-in-use will enable participants to improve outcomes. Then, external officials are expected to impose an optimal set of rules on those individuals involved. It is assumed that the momentum for change must come from outside the situation rather than from the self-reflection and creativity of those within a situation to restructure their own patterns of interaction",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "2009",
+      "page": "416-417",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "The most important lesson for public policy analysis derived from the intellectual journey I have outlined here is that humans have a more complex motivational structure and more capability to solve social dilemmas than posited in earlier rational-choice theory. Designing institutions to force (or nudge) entirely self-interested individuals to achieve better outcomes has been the major goal posited by policy analysts for governments to accomplish for much of the past half century. Extensive empirical research leads me to argue that instead, a core goal of public policy should be to facilitate the development of institutions that bring out the best in humans",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "2009",
+      "page": "435-436",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "We need to ask how diverse polycentric institutions help or hinder the innovativeness, learning, adapting, trustworthiness, levels of cooperation of participants, and the achievement of more effective, equitable, and sustainable outcomes at multiple scales",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "2009",
+      "page": "436",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "So, what we have is many local groups are very effective, but that it's not universal. So we can't just now be naïve and think, 'Oh, well, just leave it to the people, they will always organize.' There are many settings that discourage self-organization... And, thus, we must understand both the conditions—that they can, but the conditions under which they will",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": "2009",
+      "page": null,
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "If the individuals who are crafting and modifying rules do not understand how particular combinations of rules affect actions and outcomes in a particular ecological and cultural environment, rule changes may produce unexpected and, at times, disastrous outcomes",
+      "author": "Ilya Prigogine's",
+      "source": "Understanding Institutional Diversity",
+      "year": "2005",
+      "page": "3",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "After designing multiple research projects; writing numerous articles; developing ideas in the classroom; learning from eminent scholars in the field, from students, and from colleagues; and making diverse attacks on this problem, it is time to try to put thoughts on this subject together within the covers of a book, even though I am still not fully satisfied with my own understanding. Consider this a progress report on a long-term project that will be continued, I hope, by many others into the future",
+      "author": "Ilya Prigogine's",
+      "source": "Understanding Institutional Diversity",
+      "year": "2005",
+      "page": "3-4",
+      "section": "Eleanor Ostrom proves self-governance works without central authority"
+    },
+    {
+      "quote": "nature normally hates power laws. In ordinary systems all quantities follow bell curves, and correlations decay rapidly, obeying exponential laws. But all that changes if the system is forced to undergo a phase transition. Then power laws emerge—nature's unmistakable sign that chaos is departing in favor of order",
+      "author": "Ilya Prigogine's",
+      "source": "Linked",
+      "year": "2002",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "lifted complex networks out of the jungle of randomness where Erdos and Renyi had placed them forty years earlier and dropped them into the center of the colorful and conceptually rich arena of self-organization",
+      "author": "Ilya Prigogine's",
+      "source": "Linked",
+      "year": "2002",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "Hubs appear in most large complex networks that scientists have been able to study so far. They are ubiquitous, a generic building block of our complex, interconnected world.",
+      "author": "Ilya Prigogine's",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "the study of networks is broadly interdisciplinary and central developments have occurred in many fields, including mathematics, physics, computer and information sciences, biology, and the social sciences",
+      "author": "Mark Newman",
+      "source": "Networks: An Introduction",
+      "year": "2010",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "The structure and function of complex networks",
+      "author": "Mark Newman",
+      "source": null,
+      "year": "2003",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "after 3.8 billion years of research and development, failures are fossils, and what surrounds us is the secret to survival",
+      "author": "Mark Newman",
+      "source": null,
+      "year": "1997",
+      "page": "2",
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "Life creates conditions conducive to life.",
+      "author": "Mark Newman",
+      "source": null,
+      "year": "2009",
+      "page": "2",
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "Nature runs on sunlight. Nature uses only the energy it needs. Nature fits form to function. Nature recycles everything. Nature rewards cooperation. Nature banks on diversity. Nature demands local expertise. Nature curbs excess from within and taps the power of limits.",
+      "author": "Mark Newman",
+      "source": null,
+      "year": "2009",
+      "page": "2",
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "innovation inspired by nature. In a society accustomed to dominating or 'improving' nature, this respectful imitation is a radically new approach, a revolution really. Unlike the Industrial Revolution, the Biomimicry Revolution introduces an era based not on what we can extract from nature, but on what we can learn from her",
+      "author": "Mark Newman",
+      "source": null,
+      "year": "2009",
+      "page": "2",
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "It matters that we recognize the very large extent to which individual human thought and reason are not activities that occur solely in the brain or even solely within the organismic skin-bag. This matters because it drives home the degree to which environmental engineering is also self-engineering. In building our physical and social worlds, we build (or rather, we massively reconfigure) our minds and our capacities of thought and reason",
+      "author": "Andy Clark",
+      "source": null,
+      "year": "2008",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "active externalism, based on the active role of the environment in driving cognitive processes",
+      "author": "Andy Clark",
+      "source": "Analysis",
+      "year": "1998",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "Cognition leaks out into body and world.",
+      "author": "Andy Clark",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "contaminated diversity is cultural and biological ways of life that have developed in relation to the last few hundred years of widespread human disturbance... Diversity is created in collaborative synergies; it is always becoming",
+      "author": "Andy Clark",
+      "source": null,
+      "year": "2012",
+      "page": "160",
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "collaborative survival requires cross-species coordinations... Disturbance opens the terrain for transformative encounters, making new landscapes and assemblages possible",
+      "author": "Andy Clark",
+      "source": "The Mushroom at the End of the World",
+      "year": "2015",
+      "page": "160",
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "Such contamination produces diversity, as each collaboration changes those involved. Through collaboration and ensuing contaminated diversity, new historically contingent, relationally determined possibilities emerge.",
+      "author": "Andy Clark",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "follow the actors themselves, that is try to catch up with their often wild innovations in order to learn from them what the collective existence has become in their hands, which methods they have elaborated to make it fit together, which accounts best define the new associations that they have been forced to established",
+      "author": "Andy Clark",
+      "source": "Reassembling the Social",
+      "year": "2005",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "The world is not a solid continent of facts sprinkled by a few lakes of uncertainties, but a vast ocean of uncertainties speckled by a few islands of calibrated and stabilized forms.",
+      "author": "Andy Clark",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "The universe can be regarded as a giant quantum computer. The quantum computational model of the universe explains a variety of observed phenomena not encompassed by the ordinary laws of physics. In particular, the model shows that the quantum computational universe automatically gives rise to a mix of randomness and order, and to both simple and complex systems",
+      "author": "Andy Clark",
+      "source": "\"Ultimately, information and energy play complementary roles in the universe: Energy makes physical systems do things. Information tells them what to do\"",
+      "year": "2013",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "Ultimately, information and energy play complementary roles in the universe: Energy makes physical systems do things. Information tells them what to do",
+      "author": "Andy Clark",
+      "source": null,
+      "year": "2006",
+      "page": null,
+      "section": "Interdisciplinary voices reveal emergence across anthropology, networks, and biomimicry"
+    },
+    {
+      "quote": "There is grandeur in this view of life, with its several powers, having been originally breathed into a few forms or into one; and that, whilst this planet has gone cycling on according to the fixed law of gravity, from so simple a beginning endless forms most beautiful and most wonderful have been, and are being, evolved.",
+      "author": "Charles Darwin",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "It is interesting to contemplate a tangled bank, clothed with many plants of many kinds, with birds singing on the bushes, with various insects flitting about, and with worms crawling through the damp earth, and to reflect that these elaborately constructed forms, so different from each other, and dependent upon each other in so complex a manner, have all been produced by laws acting around us",
+      "author": "Charles Darwin",
+      "source": "On the Origin of Species",
+      "year": "1859",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "Thus, from the war of nature, from famine and death, the most exalted object which we are capable of conceiving, namely, the production of the higher animals, directly follows",
+      "author": "Charles Darwin",
+      "source": "On the Origin of Species",
+      "year": "1859",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "But Natural Selection, as we shall hereafter see, is a power incessantly ready for action, and is immeasurably superior to man's feeble efforts, as the works of Nature are to those of Art",
+      "author": "Charles Darwin",
+      "source": "On the Origin of Species",
+      "year": "1859",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "Each living creature must be looked at as a microcosm--a little universe, formed of a host of self-propagating organisms, inconceivably minute and as numerous as the stars in heaven",
+      "author": "Charles Darwin",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "We believe we have now shown that there is a tendency in nature to the continued progression of certain classes of varieties further and further from the original type—a progression to which there appears no reason to assign any definite limits—and that the same principle which produces this result in a state of nature will also explain why domestic varieties have a tendency to revert to the original type. This progression, by minute steps, in various directions, but always checked and balanced by the necessary conditions, subject to which alone existence can be preserved, may, it is believed, be followed out so as to agree with all the phenomena presented by organized beings.",
+      "author": "Alfred Russel Wallace",
+      "source": null,
+      "year": "1855",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "Every species has come into existence coincident both in space and time with a pre-existing closely allied species.",
+      "author": "Alfred Russel Wallace",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "The known is finite, the unknown infinite; intellectually we stand on an islet in the midst of an illimitable ocean of inexplicability",
+      "author": "Thomas Henry Huxley",
+      "source": "The Nineteenth Century",
+      "year": "1889",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "Unity of plan everywhere lies hidden under the mask of diversity of structure—the complex is everywhere evolved out of the simple",
+      "author": "Thomas Henry Huxley",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "It is an error to imagine that evolution signifies a constant tendency to increased perfection. That process undoubtedly involves a constant remodeling of the organism in adaptation to new conditions; but it depends on the nature of those conditions whether the direction of the modifications effected shall be upward or downward.",
+      "author": "Thomas Henry Huxley",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "By ecology, we understand the whole science of the organism's relationship with the surrounding outside world, which includes in a broader sense all 'existential conditions'... These are partly organic and partly inorganic in nature; both the former and the latter are... of utmost importance for the form of the organisms, because they force them to adapt to them",
+      "author": "Ernst Haeckel",
+      "source": "Generelle Morphologie der Organismen",
+      "year": "1866",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "Nothing is constant but change! All existence is a perpetual flux of 'being and becoming!' That is the broad lesson of the evolution of the world",
+      "author": "Ernst Haeckel",
+      "source": "Wonders of Life",
+      "year": "1904",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "Evolution is a change from an indefinite, incoherent homogeneity to a definite, coherent heterogeneity, through continuous differentiations and integrations",
+      "author": "Herbert Spencer",
+      "source": "First Principles",
+      "year": "1862",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "All structures in the universe develop from a simple, undifferentiated, homogeneity to a complex, differentiated, heterogeneity while undergoing increasing integration of the differentiated parts",
+      "author": "Herbert Spencer",
+      "source": "First Principles",
+      "year": "1862",
+      "page": null,
+      "section": "The Darwinian foundation: Evolution as emergent process"
+    },
+    {
+      "quote": "When we try to pick out anything by itself, we find it hitched to everything else in the universe",
+      "author": "John Muir",
+      "source": "My First Summer in the Sierra",
+      "year": "1911",
+      "page": "110",
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "The whole wilderness in unity and interrelation is alive and familiar, full of humanity. The very stones seem talkative, sympathetic, brotherly. No particle is ever wasted or worn out but eternally flowing from use to use.",
+      "author": "John Muir",
+      "source": "My First Summer in the Sierra",
+      "year": "1911",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "It is eternally flowing from use to use, beauty to yet higher beauty; and we soon cease to lament waste and death, and rather rejoice and exult in the imperishable, unspeakable wealth of the universe",
+      "author": "John Muir",
+      "source": "My First Summer in the Sierra",
+      "year": "1911",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "When we contemplate the whole globe as one great dewdrop, striped and dotted with continents and islands, flying through space with other stars all singing and shining together as one, the whole universe appears as an infinite storm of beauty",
+      "author": "John Muir",
+      "source": "Travels in Alaska",
+      "year": "1915",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "Harmony with land is like harmony with a friend; you cannot cherish his right hand and chop off his left. That is to say, you cannot love game and hate predators; you cannot conserve the waters and waste the ranges; you cannot build the forest and mine the farm. **The land is one organism**",
+      "author": "Aldo Leopold",
+      "source": "Round River",
+      "year": "1938",
+      "page": "145-146",
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "A thing is right when it tends to preserve the integrity, stability, and beauty of the biotic community. It is wrong when it tends otherwise",
+      "author": "Aldo Leopold",
+      "source": "A Sand County Almanac",
+      "year": "1949",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "We abuse land because we regard it as a commodity belonging to us. When we see land as a community to which we belong, we may begin to use it with love and respect",
+      "author": "Aldo Leopold",
+      "source": "A Sand County Almanac",
+      "year": "1949",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "**The outstanding scientific discovery of the twentieth century is not television, or radio, but rather the complexity of the land organism.** Only those who know the most about it can appreciate how little we know about it",
+      "author": "Aldo Leopold",
+      "source": "Round River",
+      "year": "1938",
+      "page": "146-147",
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "Conservation is a state of harmony between men and land",
+      "author": "Aldo Leopold",
+      "source": "Round River",
+      "year": "1966",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "One of the penalties of an ecological education is that one lives alone in a world of wounds. Much of the damage inflicted on land is quite invisible to laymen. An ecologist must either harden his shell and make believe that the consequences of science are none of his business, or he must be the doctor who sees the marks of death in a community that believes itself well and does not want to be told otherwise",
+      "author": "Aldo Leopold",
+      "source": "Round River",
+      "year": "1940",
+      "page": "165",
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "**Holism is the tendency in nature to form wholes that are greater than the sum of the parts through creative evolution**",
+      "author": "Jan Smuts",
+      "source": "Holism and Evolution",
+      "year": "1926",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "The whole exhibits a discernible regulatory function as it relates to cooperation and coordination of the structure and activity of parts...The result is a balanced correlation of organs and functions. The activities of the parts are directed to central ends: co-operation and unified action instead of the separate mechanical activities of the parts",
+      "author": "Jan Smuts",
+      "source": "Holism and Evolution",
+      "year": "1926",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "Creative evolution synthesises from the parts a new entity not only different from them, but quite transcending them. That is the essence of a whole. It is always transcendent to its parts, and its character cannot be inferred from the characters of its parts",
+      "author": "Jan Smuts",
+      "source": "Holism and Evolution",
+      "year": "1926",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "The intimate rapport with nature is one of the most precious things in life. Nature is indeed very close to us; sometimes closer than hands and feet, of which in truth she is but the extension",
+      "author": "Jan Smuts",
+      "source": "Holism and Evolution",
+      "year": "1926",
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "The universe is so unhuman, that is, it goes its way with so little thought of man. He is but an incident, not an end. We must adjust our notions to the discovery that things are not shaped to him, but that he is shaped to them. The air was not made for his lungs, but he has lungs because there is air; the light was not created for his eye, but he has eyes because there is light",
+      "author": "John Burroughs",
+      "source": "The Light of Day",
+      "year": null,
+      "page": null,
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "For all at last return to the sea—to Oceanus, the ocean river, like the ever-flowing stream of time, the beginning and the end",
+      "author": "Rachel Carson",
+      "source": "The Sea Around Us",
+      "year": "1951",
+      "page": "91",
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "The winds, the sea, and the moving tides are what they are. If there is wonder and beauty and majesty in them, science will discover these qualities...If there is poetry in my book about the sea, it is not because I deliberately put it there, but because no one could write truthfully about the sea and leave out the poetry",
+      "author": "Rachel Carson",
+      "source": "Lost Woods",
+      "year": "1952",
+      "page": "91",
+      "section": "Early ecological holism: The land as community"
+    },
+    {
+      "quote": "Mutations and chromosomal changes arise in every sufficiently studied organism with a certain finite frequency, and thus constantly and unremittingly supply the raw materials for evolution. But evolution involves something more than origin of mutations... Once produced, mutations are injected in the genetic composition of the population, where their further fate is determined by the dynamic regularities of the physiology of populations",
+      "author": "Theodosius Dobzhansky",
+      "source": "Genetics and the Origin of Species",
+      "year": "1937",
+      "page": "13",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "**The rules governing the genetic structure of a population are distinct from those governing the genetics of individuals**",
+      "author": "Theodosius Dobzhansky",
+      "source": "Genetics and the Origin of Species",
+      "year": "1937",
+      "page": "150",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "In its essence, the theory of natural selection is primarily an attempt to give an account of the probable mechanism of the origin of the adaptations of the organisms to their environment... That adaptations exist is so evident as to be almost a truism",
+      "author": "Theodosius Dobzhansky",
+      "source": "Genetics and Origin of Species",
+      "year": "1937",
+      "page": "150",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "**Nothing in biology makes sense except in the light of evolution**",
+      "author": "Theodosius Dobzhansky",
+      "source": "The American Biology Teacher",
+      "year": "1973",
+      "page": "125-129",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Seen in the light of evolution, biology is, perhaps, intellectually the most satisfying and inspiring science. Without that light it becomes a pile of sundry facts—some of them interesting or curious but making no meaningful picture as a whole",
+      "author": "Theodosius Dobzhansky",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "I am a creationist and an evolutionist. Evolution is God's, or Nature's method of creation. Creation is not an event that happened in 4004 BC; it is a process that began some 10 billion years ago and is still under way",
+      "author": "Theodosius Dobzhansky",
+      "source": "The fittest may also be the gentlest",
+      "year": "1962",
+      "page": "134",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Nature's stern discipline enjoins mutual help at least as often as warfare. **The fittest may also be the gentlest**",
+      "author": "Theodosius Dobzhansky",
+      "source": "Mankind Evolving",
+      "year": "1962",
+      "page": "134",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "I have attempted to form a judgment as to the conditions for evolution based on the statistical consequences of Mendelian heredity. **The most general conclusion is that evolution depends on a certain balance among its factors**. There must be gene mutation, but an excessive rate gives an array of freaks, not evolution; there must be selection, but too severe a process destroys the field of variability, and thus the basis for further advance... At all levels of organization life depends on the maintenance of a certain balance among its factors",
+      "author": "Sewall Wright",
+      "source": "Proceedings of the Sixth International Congress of Genetics",
+      "year": "1932",
+      "page": null,
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "The evolutionary process is concerned, not with individuals, but with the species, an intricate network of living matter, physically continuous in space-time, and with modes of response to external conditions which it appears can be related to the genetics of individuals only as statistical consequences",
+      "author": "Sewall Wright",
+      "source": "Genetics",
+      "year": "1931",
+      "page": "97-159",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Evolution In Mendelian Populations,",
+      "author": "Sewall Wright",
+      "source": "Genetics",
+      "year": "1931",
+      "page": "97-159",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "**The Darwinian process of continued interplay of a random and a selective process is not intermediate between pure chance and pure determinism, but qualitatively utterly different from either in its consequences**",
+      "author": "Sewall Wright",
+      "source": "Mathematical Challenges to the Neo-Darwinian Interpretation of Evolution",
+      "year": "1967",
+      "page": "117",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Over and over again in the study of the history of life it appears that what can happen does happen. There is little suggestion that what occurs must occur, that it was fated or that it follows some fixed plan, except simply as the expansion of life follows the opportunities that are presented. **In this sense, an outstanding characteristic of evolution is its opportunism**",
+      "author": "George Gaylord Simpson",
+      "source": "The Meaning of Evolution",
+      "year": "1949",
+      "page": "160",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Man has risen, not fallen. He can choose to develop his capacities as the highest animal and to try to rise still farther, or he can choose otherwise. The choice is his responsibility, and his alone. There is no automatism that will carry him upward without choice or effort and there is no trend solely in the right direction",
+      "author": "George Gaylord Simpson",
+      "source": "The Meaning of Evolution",
+      "year": "1949",
+      "page": "311",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Man is the result of a purposeless and natural process that did not have him in mind",
+      "author": "George Gaylord Simpson",
+      "source": "The Meaning of Evolution",
+      "year": "1967",
+      "page": "345",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Species evolve exactly as if they were adapting as best they could to a changing world, and not at all as if they were moving toward a set goal.",
+      "author": "George Gaylord Simpson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Evolution, thus, is merely contingent on certain processes articulated by Darwin: variation and selection. No longer is a fixed object transformed, as in transformational evolution, but an entirely new start is, so to speak, made in every generation",
+      "author": "Ernst Mayr",
+      "source": "Toward a New Philosophy of Biology",
+      "year": "1982",
+      "page": null,
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Generalizations in biology are almost invariably of a probabilistic nature. As one wit has formulated it, there is only one universal law in biology: 'All biological laws have exceptions'",
+      "author": "Ernst Mayr",
+      "source": "The Growth of Biological Thought",
+      "year": "1982",
+      "page": null,
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "We must… carefully distinguish between two quite different doctrines which Darwin popularised, the doctrine of evolution, and that of natural selection. It is quite possible to hold the first and not the second",
+      "author": "Ernst Mayr",
+      "source": "The Causes of Evolution",
+      "year": "1932",
+      "page": "2",
+      "section": "The evolutionary synthesis: Population-level emergence"
+    },
+    {
+      "quote": "Though the organisms may claim our primary interest, when we are trying to think fundamentally we cannot separate them from their special environment, with which they form one physical system. **It is the systems so formed which, from the point of view of the ecologist, are the basic units of nature on the face of the Earth**",
+      "author": "Arthur Tansley",
+      "source": "Ecology",
+      "year": "1935",
+      "page": "284-307",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The use and abuse of vegetational terms and concepts,",
+      "author": "Arthur Tansley",
+      "source": "Ecology",
+      "year": "1935",
+      "page": "284-307",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "These ecosystems, as we may call them, are of the most various kinds and sizes. They form one category of the multitudinous physical systems of the universe, which range from the universe as a whole down to the atom",
+      "author": "Arthur Tansley",
+      "source": null,
+      "year": null,
+      "page": "299",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "We would not first bring the student the liver of the frog, have him study that, then the next day bring him the isolated stomach or each individual muscle one by one — and finally during the last week of the course attempt to assemble all the parts into a frog. Our poor frog would be most incomplete and probably bear little resemblance to the real frog when we tried to assemble the parts we did study! Yet amazing as it may seem, many attempt to teach ecology using this backwards 'parts-before-the-whole procedure'",
+      "author": "Eugene P. Odum",
+      "source": "Fundamentals of Ecology",
+      "year": "1953",
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The ecosystem is greater than the sum of its parts.",
+      "author": "Eugene P. Odum",
+      "source": "succession is community controlled",
+      "year": "1969",
+      "page": "262-270",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "Ecological succession may be defined in terms of the following three parameters... It is an orderly process of community development that is reasonably directional and, therefore, predictable. It results from modification of the physical environment by the community; that is, **succession is community controlled** even though the physical environment determines the pattern, the rate of change, and often sets limits as to how far development can go",
+      "author": "Eugene P. Odum",
+      "source": "Science",
+      "year": "1969",
+      "page": "262-270",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The Strategy of Ecosystem Development,",
+      "author": "Eugene P. Odum",
+      "source": "Science",
+      "year": "1969",
+      "page": "262-270",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "**Ecosystems and other self-organizing systems develop system designs and mathematics that reinforce energy use**, characteristically with alternate pulsing of production and consumption, increasingly recognized as the new paradigm",
+      "author": "Howard T. Odum",
+      "source": "Science",
+      "year": "1988",
+      "page": "1132-1139",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "Self-Organization, Transformity, and Information,",
+      "author": "Howard T. Odum",
+      "source": "Science",
+      "year": "1988",
+      "page": "1132-1139",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "During the trials and errors of self-organization, species and relations are being selectively reinforced as more energy becomes available to those designs that feed products back into increased production",
+      "author": "Howard T. Odum",
+      "source": null,
+      "year": null,
+      "page": "1133",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "Ecosystems, earth systems, astronomical systems, and possibly all systems are organized in hierarchies because this design maximizes useful energy processing",
+      "author": "Howard T. Odum",
+      "source": null,
+      "year": null,
+      "page": "1133",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The essence of self-organization is automatic reinforcement of available choices. In ecosystems the multiple choices are the information in the species and their genetic variation, which allow many possible types of pathways to be tried out",
+      "author": "Howard T. Odum",
+      "source": null,
+      "year": null,
+      "page": "1133",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "**In nature nothing exists alone**",
+      "author": "Rachel Carson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The 'control of nature' is a phrase conceived in arrogance, born of the Neanderthal age of biology and philosophy, when it was supposed that nature exists for the convenience of man",
+      "author": "Rachel Carson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "For each of us, as for the robin in Michigan or the Salmon in the Miramichi, this is a problem of ecology, of interrelationships, of interdependence. We poison the caddis flies in a stream and the salmon runs dwindle and die. We poison the gnats in a lake and the poison travels from link to link of the food chain and soon the birds of the lake margins become its victims.",
+      "author": "Rachel Carson",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "Local species diversity is directly related to the efficiency with which predators prevent the monopolization of the major environmental requisites by one species",
+      "author": "Robert T. Paine",
+      "source": "American Naturalist",
+      "year": "1966",
+      "page": "65",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "Food Web Complexity and Species Diversity,",
+      "author": "Robert T. Paine",
+      "source": "American Naturalist",
+      "year": "1966",
+      "page": "65",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The species composition and physical appearance were greatly modified by the activities of a single native species high in the food web. These individual populations are the keystone of the community's structure, and the integrity of the community and its unaltered persistence through time",
+      "author": "Robert T. Paine",
+      "source": "American Naturalist",
+      "year": "1969",
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "A Note on Trophic Complexity and Community Stability,",
+      "author": "Robert T. Paine",
+      "source": "American Naturalist",
+      "year": "1969",
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "Every point [in the niche] corresponds to a state of the environment that would permit the species to exist indefinitely",
+      "author": "Robert T. Paine",
+      "source": "Cold Spring Harbor Symposia on Quantitative Biology",
+      "year": "1957",
+      "page": "416",
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "the idea of 'Circular Causal Systems', the tight link between biological and physical processes, and that the activity of organisms balanced the effects on the cycles of chemicals through organisms.",
+      "author": "Robert T. Paine",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "To do science is to search for repeated patterns, not simply to accumulate facts, and to do the science of geographical ecology is to search for patterns of plant and animal life that can be put on a map",
+      "author": "Robert T. Paine",
+      "source": "Geographical Ecology",
+      "year": "1972",
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "In pushing other species to extinction, humanity is busy sawing off the limb on which it perches",
+      "author": "Paul Ehrlich",
+      "source": "Extinction: The Causes and Consequences of the Disappearance of Species",
+      "year": "1981",
+      "page": null,
+      "section": "Ecosystem ecology: Emergence at landscape scale"
+    },
+    {
+      "quote": "The great problem in the study of man and of the other social organisms [is to discover] why these instincts were formed in the first place and what made them effective... Why do workers cooperate? Why are termites organized along the lines of castes?",
+      "author": "Edward O. Wilson",
+      "source": "The Insect Societies",
+      "year": "1971",
+      "page": "1",
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "Karl Marx was right, socialism works, it is just that he had the wrong species",
+      "author": "Edward O. Wilson",
+      "source": "Journey to the Ants",
+      "year": "1994",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "The colony is an intricate machine. As is evident from even the most casual observation of social insects, communication and division of labor are basic features of their organization... Together they create a remarkable type of biological organization",
+      "author": "Edward O. Wilson",
+      "source": "Sociobiology: The New Synthesis",
+      "year": "1975",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "These superorganisms—**a tightly knit colony of individuals, formed by altruistic cooperation, complex communication, and division of labor—represent one of the basic stages of biological organization**, midway between the organism and the entire species",
+      "author": "Edward O. Wilson",
+      "source": "The Superorganism",
+      "year": "2009",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "When you come to the self-organization, I just have to say, one additional word. Several organizations have worked. It doesn't explain very much. It's very good to have a term, but we like to understand which cascades of behavioral acts produce these incredible structures... This is a very similar questions in how the brain is organized",
+      "author": "Edward O. Wilson",
+      "source": null,
+      "year": "2008",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "It's a very similar question in how the brain is organized. We like to understand how the interactions of millions and billions of neurons lead to these structures which produces emergent ability, highly creative abilities... **How does an insect society work by self-organization? We don't know yet. But it is a true frontier to find out**",
+      "author": "Edward O. Wilson",
+      "source": null,
+      "year": "2008",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "**How do ant colonies get anything done, when no one is in charge?** An ant colony operates without a central control or hierarchy, and no ant directs another. Instead, ants decide what to do based on the rate, rhythm, and pattern of individual encounters and interactions—resulting in a dynamic network that coordinates the functions of the colony",
+      "author": "Deborah Gordon",
+      "source": "Ant Encounters",
+      "year": "2010",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "And the pattern of these interactions, just the rate at which ants meet each other, no other message, is what regulates and creates the behaviour of the collective",
+      "author": "Deborah Gordon",
+      "source": "Ants at Work",
+      "year": "2016",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "I see little that seems efficient about the ways that ants forage or interact with their neighbors. I am never struck by their perfection",
+      "author": "Deborah Gordon",
+      "source": "Ants at Work",
+      "year": "1999",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "Real ants do not offer lessons in behavior. They do, however, provide insight about the dynamics of networks. **Ants can show us how the rhythm of local interactions creates patterns in the behavior and development of large groups. There are no morals to be taken from the ants, but there is much to learn about systems without central control**",
+      "author": "Deborah Gordon",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "The remarkable collective action of organisms such as swarming ants, schooling fish and flocking birds has long captivated the attention of artists, naturalists, philosophers and scientists. Despite a long history of scientific investigation, only now are we beginning to decipher the relationship between individuals and group-level properties",
+      "author": "Iain Couzin",
+      "source": "Trends in Cognitive Sciences",
+      "year": "2009",
+      "page": "36-43",
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "Collective cognition in animal groups,",
+      "author": "Iain Couzin",
+      "source": "Trends in Cognitive Sciences",
+      "year": "2009",
+      "page": "36-43",
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "By operating without a leader the scout bees of a swarm neatly avoid one of the greatest threats to good decision making by groups: a domineering leader. Such an individual reduces a group's collective power to uncover a diverse set of possible solutions to a problem, to critically appraise these possibilities, and to winnow out all but the best one",
+      "author": "Thomas Seeley",
+      "source": "Honeybee Democracy",
+      "year": "2010",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "A group will possess a high level of swarm intelligence if among the group's members there is: 1) diversity of knowledge about the available options, 2) open and honest sharing of information about the options, 3) independence in the members' evaluations of the options, 4) unbiased aggregation of the members' opinions on the options, and 5) leadership that fosters but does not dominate the discussion",
+      "author": "Thomas Seeley",
+      "source": "Honeybee Democracy",
+      "year": "2010",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "A genetical mathematical model is described which allows for interactions between relatives on one another's fitness... a quantity is found which incorporates the maximizing property of Darwinian fitness. This quantity is named '**inclusive fitness**.' Species following the model should tend to evolve behaviour such that each organism appears to be attempting to maximize its inclusive fitness",
+      "author": "Thomas Seeley",
+      "source": "Journal of Theoretical Biology",
+      "year": "1964",
+      "page": "1-16",
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "The genetical evolution of social behaviour. I,",
+      "author": "Thomas Seeley",
+      "source": "Journal of Theoretical Biology",
+      "year": "1964",
+      "page": "1-16",
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "The insects indicate nearby food sources via a circular dance and faraway foods via a figure-eight-shaped waggle dance. The straight-run portion of the waggle dance, he explained, also contains information about direction, and the frequency of its turns correlates closely with distance: the closer the supply, the more rapidly the bees dance",
+      "author": "Thomas Seeley",
+      "source": "The Dancing Bees",
+      "year": "2016",
+      "page": null,
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "If a biologist says that the cat has crooked, pointed claws 'with which to catch mice,' he is not professing a belief in a mystical teleology, but succinctly stating that catching mice is the function whose selection pressure caused the evolution of that particular form of claws",
+      "author": "Konrad Lorenz",
+      "source": "Evolution and Modification of Behavior",
+      "year": "1965",
+      "page": "24",
+      "section": "Social insects: Collective intelligence without central control"
+    },
+    {
+      "quote": "Like a snowflake and its sixfold symmetry, the pinecone and its phyllotaxis may be part of **order for free**",
+      "author": "Stuart Kauffman",
+      "source": "At Home in the Universe",
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "The past three centuries of science have been predominantly reductionist... But it has often left a vacuum: How do we use the information gleaned about the parts to build up a theory of the whole? The deep difficulty here lies in the fact that **the complex whole may exhibit properties that are not readily explained by understanding the parts. The complex whole, in a completely nonmystical sense, can often exhibit collective properties, 'emergent' features that are lawful in their own right**",
+      "author": "Stuart Kauffman",
+      "source": "At Home in the Universe",
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "If biologists have ignored self-organization, it is not because self-ordering is not pervasive and profound. It is because we biologists have yet to understand how to think about systems governed simultaneously by two sources of order... **if ever we are to attain a final theory in biology, we will surely, surely have to understand the commingling of self-organization and selection**",
+      "author": "Stuart Kauffman",
+      "source": "At Home in the Universe",
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "This web of life, the most complex system we know of in the universe, breaks no law of physics, yet is partially lawless, ceaselessly creative",
+      "author": "Stuart Kauffman",
+      "source": "At Home in the Universe",
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "We grow in direct proportion to the amount of chaos we can sustain and dissipate",
+      "author": "Ilya Prigogine",
+      "source": "Order Out of Chaos",
+      "year": "1984",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Entropy is the price of structure",
+      "author": "Ilya Prigogine",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "The irreversibility [of time] is the mechanism that brings order out of chaos.",
+      "author": "Ilya Prigogine",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "The main character of any living system is openness",
+      "author": "Ilya Prigogine",
+      "source": "Order Out of Chaos",
+      "year": "1984",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "When matter is becoming disturbed by non-equilibrium conditions it organizes itself, it wakes up.",
+      "author": "Ilya Prigogine",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "The being and doing of an autopoietic unity are inseparable, and this is their specific mode of organization",
+      "author": "Ilya Prigogine",
+      "source": "The Tree of Knowledge",
+      "year": "1987",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "In other words, the nervous system does not 'pick up information' from the environment, as we often hear. On the contrary, it brings forth a world by specifying what patterns of the environment are perturbations and what changes trigger them in the organism. The popular metaphor of calling the brain an 'information processing device' is not only ambiguous but patently wrong",
+      "author": "Ilya Prigogine",
+      "source": "The Tree of Knowledge",
+      "year": "1987",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "**Life did not take over the world by combat, but by networking**",
+      "author": "Lynn Margulis",
+      "source": "Microcosmos",
+      "year": "1986",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Evolution is no linear family tree, but change in the single multidimensional being that has grown to cover the entire surface of Earth",
+      "author": "Lynn Margulis",
+      "source": "What Is Life?",
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Gaia is a tough bitch. People think the earth is going to die and they have to save it, that's ridiculous...There's no doubt that Gaia can compensate for our output of greenhouse gases, but the environment that's left will not be happy for any people",
+      "author": "Lynn Margulis",
+      "source": "The Third Culture",
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Living organisms and their material environment are tightly coupled. The coupled system is a superorganism, and as it evolves there emerges a new property, **the ability to self-regulate climate and chemistry**",
+      "author": "James Lovelock",
+      "source": null,
+      "year": "1995",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Life has to be a planetary phenomenon. You could no more have a partially occupied planet than you could half a cat or half a dog.",
+      "author": "James Lovelock",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Organisms are themselves expressions of emergent order and agents of higher levels of emergence",
+      "author": "Brian Goodwin",
+      "source": "How the Leopard Changed Its Spots",
+      "year": "1994",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "There is an inherent rationality to life that makes it intelligible at a much deeper level than functional utility",
+      "author": "Brian Goodwin",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "**Self-organized criticality is a new way of viewing nature. The basic picture is one where nature is perpetually out of balance, but organized in a poised state—the critical state—where anything can happen within well-defined statistical laws**",
+      "author": "Per Bak",
+      "source": "How Nature Works",
+      "year": "1996",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "In 1972 my colleague Niles Eldredge and I developed the theory of punctuated equilibrium. We argued that two outstanding facts of the fossil record—geologically 'sudden' origin of new species and failure to change thereafter (stasis)—reflect the predictions of evolutionary theory, not the imperfections of the fossil record",
+      "author": "Stephen Jay Gould",
+      "source": null,
+      "year": "1983",
+      "page": null,
+      "section": "Complexity theory: The physics of self-organization"
+    },
+    {
+      "quote": "Biodiversity is the key to the maintenance of the world as we know it. Life in a local site struck down by a passing storm springs back quickly because enough diversity still exists. … **This is the assembly of life that took a billion years to evolve. It has eaten the storms—folded them into its genes—and created the world that created us. It holds the world steady**",
+      "author": "Stephen Jay Gould",
+      "source": "The Diversity of Life",
+      "year": "1992",
+      "page": "15",
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "We are, it seems, Old World, catarrhine primates, brilliant emergent animals, defined genetically by our unique origins, blessed by our newfound biological genius, and secure in our homeland if we wish to make it so",
+      "author": "Stephen Jay Gould",
+      "source": "Consilience",
+      "year": "1998",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "The cost of scientific advance is the humbling recognition that reality was not constructed to be easily grasped by the human mind. This is the cardinal tenet of scientific understanding: Our species and its ways of thinking are a product of evolution, not the purpose of evolution",
+      "author": "Stephen Jay Gould",
+      "source": "Consilience",
+      "year": "1998",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "That mix of order and anarchy is what we now call **emergent behavior**",
+      "author": "Steven Johnson",
+      "source": "Emergence: The Connected Lives of Ants, Brains, Cities, and Software",
+      "year": "2001",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "We see emergent behavior in systems like ant colonies when the individual agents in the system pay attention to their immediate neighbors rather than wait for orders from above. **They think locally and act locally, but their collective action produces global behavior**",
+      "author": "Steven Johnson",
+      "source": "Emergence",
+      "year": "2001",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Cities have marvelous innate abilities for understanding, communicating, contriving and inventing what is required to combat their difficulties. **They get their order from below; they are learning machines, pattern recognizers**—even when the patterns they respond to are unhealthy ones",
+      "author": "Steven Johnson",
+      "source": "Emergence",
+      "year": "2001",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "**Ecosystems are prototypical examples of complex adaptive systems, in which patterns at higher levels emerge from localized interactions and selection processes acting at lower levels**",
+      "author": "Simon Levin",
+      "source": "Ecosystems",
+      "year": "1998",
+      "page": "431-436",
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Ecosystems and the Biosphere as Complex Adaptive Systems,",
+      "author": "Simon Levin",
+      "source": "Ecosystems",
+      "year": "1998",
+      "page": "431-436",
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "An essential aspect of such systems is nonlinearity, leading to historical dependency and multiple possible outcomes of dynamics. Given this, it is essential to determine the degree to which system features are determined by environmental conditions, and the degree to which they are the result of self-organization",
+      "author": "Simon Levin",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Ecological and economic systems are two sides of the same coin. They're both made up of individual agents... Everybody is trying to—or has evolved to—maximize their own fitness or their own payoffs",
+      "author": "Simon Levin",
+      "source": null,
+      "year": "2014",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "After 3.8 billion years of research and development, failures are fossils, and what surrounds us is the secret to survival",
+      "author": "Janine Benyus",
+      "source": "Biomimicry",
+      "year": "1997",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Nature runs on sunlight, uses only the energy it needs, fits form to function, recycles everything, **rewards cooperation**, banks on diversity, demands local expertise, curbs excess from within and taps the power of limits",
+      "author": "Janine Benyus",
+      "source": "Biomimicry",
+      "year": "1997",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "**Life creates conditions conducive to life**",
+      "author": "Janine Benyus",
+      "source": "Biomimicry",
+      "year": "1997",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "The more our world functions like the natural world, the more likely we are to endure on this home that is ours, but not ours alone.",
+      "author": "Janine Benyus",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Action on behalf of life transforms. Because the relationship between self and the world is reciprocal, it is not a question of first getting enlightened or saved and then acting. **As we work to heal the earth, the earth heals us**",
+      "author": "Robin Wall Kimmerer",
+      "source": "Braiding Sweetgrass",
+      "year": "2013",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Knowing that you love the earth changes you, activates you to defend and protect and celebrate. But when you feel that the earth loves you in return, that feeling transforms the relationship from a one-way street into a sacred bond",
+      "author": "Robin Wall Kimmerer",
+      "source": "Braiding Sweetgrass",
+      "year": "2013",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "The trees in a forest are often interconnected by subterranean networks of mycorrhizae, fungal strands that inhabit tree roots... These fungal networks appear to redistribute the wealth of carbs from tree to tree. A kind of Robin Hood, they take from the rich and give to the poor so that all trees arrive at the same carbon surplus at the same time. They weave a web of reciprocity, of giving and taking. **In this way, the trees all act as one because the fungi have connected them. Through unity, survival**",
+      "author": "Robin Wall Kimmerer",
+      "source": "Braiding Sweetgrass",
+      "year": "2013",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "We are one knot in a great web of being, building out of the vast past and (with luck) continuing billions of years into the future, until the sun dies, the last of its energy reaches Earth, and our local light goes out. **The most appropriate response to the world is to realize, with awe, the ferocious mystery of being alive in it**",
+      "author": "Carl Safina",
+      "source": "The View from Lazy Point",
+      "year": "2011",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Ethics that focus on human interactions, morals that focus on humanity's relationship to a Creator, fall short of these things we've learned... **life is- more than anything else- a process; it creates, and depends on, relationships among energy, land, water, air, time and various living things**... We're bound with the rest of life in a network",
+      "author": "Carl Safina",
+      "source": "The View from Lazy Point",
+      "year": "2011",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Evolution of form is very much a matter of teaching very old genes new tricks!",
+      "author": "Sean B. Carroll",
+      "source": "Endless Forms Most Beautiful",
+      "year": "2005",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Complex life is ironically much simpler than anyone ever expected",
+      "author": "Sean B. Carroll",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "Make no mistake, they are connected, these disease outbreaks coming one after another. And they are not simply happening to us; they represent the unintended results of things we are doing",
+      "author": "David Quammen",
+      "source": "Spillover",
+      "year": "2012",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "**Ecological disturbance causes diseases to emerge. Shake a tree, and things fall out**",
+      "author": "David Quammen",
+      "source": "Spillover",
+      "year": "2012",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "I shall argue that a predominant quality to be expected in a successful gene is ruthless selfishness. This gene selfishness will usually give rise to selfishness in individual behaviour. However, as we shall see, there are special circumstances in which a gene can achieve its own selfish goals best by fostering a limited form of altruism at the level of individual animals",
+      "author": "Richard Dawkins",
+      "source": "The Selfish Gene",
+      "year": "1976",
+      "page": "10",
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "In the long term, I expect the ESS concept to revolutionize the science of ecology... **Maynard Smith's concept of the ESS will enable us, for the first time, to see clearly how a collection of independent selfish entities can come to resemble a single organized whole**. I think this will be true not only of social organizations within species, but also of 'ecosystems' and 'communities' consisting of many species",
+      "author": "Richard Dawkins",
+      "source": "The Selfish Gene",
+      "year": "1976",
+      "page": null,
+      "section": "Contemporary synthesis: Networks, emergence, and planetary thinking"
+    },
+    {
+      "quote": "endless forms most beautiful and most wonderful",
+      "author": "Richard Dawkins",
+      "source": null,
+      "year": null,
+      "page": null,
+      "section": "Conclusion: A continuing revelation"
+    }
+  ]
+}
