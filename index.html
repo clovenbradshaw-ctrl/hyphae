@@ -101,7 +101,7 @@
   </script>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
     const OPERATORS = [
       { id: 'starter', name: 'Starter', desc: 'Conceives and designs work', seq: 1, tier: 'genesis', canRequestRevision: false },
@@ -804,6 +804,33 @@
     }
     function ChatBubbleIcon(props) {
       return <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 1.657-1.79 3-4 3-.295 0-.582-.021-.859-.061-.284 1.193-1.355 2.06-2.641 2.06-.358 0-.703-.065-1.019-.184-.44.498-1.086.814-1.781.814-.732 0-1.392-.347-1.829-.888-.51.355-1.137.558-1.812.558-1.648 0-2.985-1.343-2.985-3 0-.333.054-.654.153-.954C3.1 12.715 2 11.477 2 10c0-1.657 1.79-3 4-3h11c2.21 0 4 1.343 4 3z" /></svg>;
+    }
+    function KeyIcon(props) {
+      return (
+        <svg
+          {...props}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 7.5l-3-3L10.5 12l3 3L21 7.5z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 13.5L8.75 16.75"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5.5 20.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"
+          />
+        </svg>
+      );
     }
 
     function ActivityDetailPanel({ activity, stage, nextStage, stageMap, dependencies, project, flow, currentUser, canUserWorkOnStage, onClose, onEdit, onDelete, onClaim, onUnclaim, onAdvanceStage, onSkipStage, onComplete, onWire, onRequestRevision, onAddComment, onAddAttachment, onRemoveAttachment, onUpdate }) {
@@ -1678,6 +1705,313 @@
       const [selectedFlow, setSelectedFlow] = useState(null);
       const [showModal, setShowModal] = useState(null);
       const [modalData, setModalData] = useState({});
+      const credentialPopupRef = useRef(null);
+      const lastCredentialPayloadRef = useRef(null);
+      const [credentialPopupError, setCredentialPopupError] = useState(null);
+
+      const closeCredentialPopup = useCallback(() => {
+        if (credentialPopupRef.current && !credentialPopupRef.current.closed) {
+          try {
+            credentialPopupRef.current.close();
+          } catch (error) {
+            console.warn('Unable to close credentials popup', error);
+          }
+        }
+        credentialPopupRef.current = null;
+      }, []);
+
+      const escapeHtml = useCallback((value) => {
+        return (value ?? '').toString().replace(/[&<>"']/g, (char) => {
+          const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+          return map[char] || char;
+        });
+      }, []);
+
+      const buildCredentialPopupHtml = useCallback((payload = {}) => {
+        const safeName = escapeHtml(payload.elementName || 'Element Instance Credentials');
+        const safeUsername = escapeHtml(payload.username || '');
+        const safePassword = escapeHtml(payload.password || '');
+        const safeLoginUrl = escapeHtml(payload.loginUrl || '');
+        const safeNotes = escapeHtml(payload.notes || '');
+        const safeNotesHtml = safeNotes.replace(/\n/g, '<br />');
+        const safeCreatedAt = escapeHtml(new Date().toLocaleString());
+        const safeExpires = payload.expiresAt
+          ? escapeHtml(new Date(payload.expiresAt).toLocaleString())
+          : '';
+        const hasLoginUrl = Boolean(payload.loginUrl);
+
+        const additional = Array.isArray(payload.additionalFields)
+          ? payload.additionalFields
+              .filter(field => field && field.label && field.value)
+              .map(field => `<div class="meta-row"><span>${escapeHtml(field.label)}</span><span>${escapeHtml(field.value)}</span></div>`)
+              .join('')
+          : '';
+
+        const metadata = payload.metadata && typeof payload.metadata === 'object'
+          ? Object.entries(payload.metadata)
+              .filter(([, value]) => value !== undefined && value !== null && value !== '')
+              .map(([key, value]) => `<div class="meta-row"><span>${escapeHtml(key)}</span><span>${escapeHtml(value)}</span></div>`)
+              .join('')
+          : '';
+
+        return `<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${safeName}</title>
+      <style>
+        :root { color-scheme: dark; }
+        body {
+          margin: 0;
+          font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #020817;
+          color: #e2e8f0;
+        }
+        .wrap {
+          max-width: 520px;
+          margin: 0 auto;
+          padding: 32px 28px 40px;
+        }
+        header {
+          margin-bottom: 24px;
+        }
+        h1 {
+          margin: 0 0 8px;
+          font-size: 1.75rem;
+          font-weight: 600;
+          color: #f8fafc;
+        }
+        .timestamp {
+          font-size: 0.85rem;
+          color: #94a3b8;
+        }
+        .card {
+          background: rgba(30, 41, 59, 0.85);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+          border-radius: 16px;
+          padding: 20px;
+          margin-bottom: 18px;
+          box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+        }
+        .field {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 12px;
+          align-items: center;
+          margin-bottom: 14px;
+        }
+        .field:last-child { margin-bottom: 0; }
+        .label {
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #94a3b8;
+        }
+        .value {
+          font-size: 1.05rem;
+          font-weight: 600;
+          color: #f8fafc;
+          word-break: break-all;
+        }
+        .value strong { font-weight: 600; }
+        button.copy {
+          background: rgba(59, 130, 246, 0.15);
+          border: 1px solid rgba(59, 130, 246, 0.35);
+          color: #bfdbfe;
+          border-radius: 999px;
+          padding: 6px 14px;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
+        }
+        button.copy:hover {
+          background: rgba(59, 130, 246, 0.35);
+          border-color: rgba(59, 130, 246, 0.6);
+          color: #eff6ff;
+        }
+        a.login-link {
+          color: #60a5fa;
+          text-decoration: none;
+          word-break: break-all;
+        }
+        a.login-link:hover {
+          text-decoration: underline;
+        }
+        .meta-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          font-size: 0.85rem;
+          color: #cbd5f5;
+        }
+        .meta-row + .meta-row { margin-top: 10px; }
+        .hint {
+          font-size: 0.8rem;
+          color: #94a3b8;
+          text-align: center;
+          margin-top: 28px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="wrap">
+        <header>
+          <h1>${safeName}</h1>
+          <div class="timestamp">
+            Created ${safeCreatedAt}${safeExpires ? ` · Expires ${safeExpires}` : ''}
+          </div>
+        </header>
+        ${hasLoginUrl ? `<div class="card"><div class="label">Login URL</div><a id="credential-login" class="login-link" href="${safeLoginUrl}" target="_blank" rel="noreferrer">${safeLoginUrl}</a></div>` : ''}
+        <div class="card">
+          <div class="field">
+            <div>
+              <div class="label">Username</div>
+              <div class="value" id="credential-username">${safeUsername || '<em>Not provided</em>'}</div>
+            </div>
+            <button type="button" class="copy" data-copy-target="credential-username">Copy</button>
+          </div>
+          <div class="field">
+            <div>
+              <div class="label">Password</div>
+              <div class="value" id="credential-password">${safePassword || '<em>Not provided</em>'}</div>
+            </div>
+            <button type="button" class="copy" data-copy-target="credential-password">Copy</button>
+          </div>
+        </div>
+        ${safeNotes ? `<div class="card"><div class="label">Notes</div><div class="value" style="font-weight:400; line-height:1.55" id="credential-notes">${safeNotesHtml}</div></div>` : ''}
+        ${(additional || metadata) ? `<div class="card">${additional}${metadata}</div>` : ''}
+        <p class="hint">Keep this window handy until you finish signing in. Close it when you are done.</p>
+      </div>
+      <script>
+        (function () {
+          function fallbackCopy(text) {
+            try {
+              var area = document.createElement('textarea');
+              area.value = text;
+              area.style.position = 'fixed';
+              area.style.opacity = '0';
+              document.body.appendChild(area);
+              area.focus();
+              area.select();
+              document.execCommand('copy');
+              document.body.removeChild(area);
+            } catch (err) {
+              console.warn('Copy fallback failed', err);
+            }
+          }
+
+          function copyValue(id, button) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var text = el.textContent || '';
+            if (!text) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).catch(function () {
+                fallbackCopy(text);
+              });
+            } else {
+              fallbackCopy(text);
+            }
+            if (button) {
+              var original = button.textContent;
+              button.textContent = 'Copied!';
+              setTimeout(function () {
+                button.textContent = original;
+              }, 1600);
+            }
+          }
+
+          Array.from(document.querySelectorAll('[data-copy-target]')).forEach(function (button) {
+            button.addEventListener('click', function () {
+              var target = button.getAttribute('data-copy-target');
+              copyValue(target, button);
+            });
+          });
+
+          window.addEventListener('beforeunload', function () {
+            Array.from(document.querySelectorAll('[data-copy-target]')).forEach(function (button) {
+              button.removeEventListener('click', copyValue);
+            });
+          });
+        })();
+      </script>
+    </body>
+  </html>`;
+      }, [escapeHtml]);
+
+      const openCredentialsPopup = useCallback((payload = {}) => {
+        if (typeof window === 'undefined') return false;
+        lastCredentialPayloadRef.current = payload;
+        closeCredentialPopup();
+
+        const defaultWidth = Math.min(Math.max(window.outerWidth ? window.outerWidth * 0.45 : 420, 360), 520);
+        const width = Math.round(defaultWidth);
+        const height = Math.round(Math.min(Math.max(window.outerHeight ? window.outerHeight * 0.65 : 520, 420), 680));
+        const left = window.screenX !== undefined
+          ? Math.max(0, window.screenX + (window.outerWidth - width) / 2)
+          : 120;
+        const top = window.screenY !== undefined
+          ? Math.max(0, window.screenY + (window.outerHeight - height) / 2)
+          : 80;
+        const features = `popup=yes,width=${width},height=${height},left=${Math.round(left)},top=${Math.round(top)},resizable=yes,scrollbars=yes`;
+        const popup = window.open('', 'eo-element-credentials', features);
+        if (!popup) {
+          setCredentialPopupError('Your browser blocked the credentials window. Enable pop-ups for this site and try again.');
+          return false;
+        }
+
+        setCredentialPopupError(null);
+        popup.document.write(buildCredentialPopupHtml(payload));
+        popup.document.close();
+        try {
+          popup.focus();
+        } catch (error) {
+          console.warn('Unable to focus credentials popup', error);
+        }
+        credentialPopupRef.current = popup;
+        return true;
+      }, [buildCredentialPopupHtml, closeCredentialPopup]);
+
+      const handleElementProvisioned = useCallback((payload = {}) => {
+        if (typeof window === 'undefined') return;
+        lastCredentialPayloadRef.current = payload;
+        const opened = openCredentialsPopup(payload);
+        const loginUrl = typeof payload.loginUrl === 'string' ? payload.loginUrl.trim() : '';
+        if (loginUrl) {
+          setTimeout(() => {
+            try {
+              window.location.assign(loginUrl);
+            } catch (error) {
+              console.error('Failed to navigate to element login URL', error);
+            }
+          }, opened ? 120 : 0);
+        }
+      }, [openCredentialsPopup]);
+
+      const retryCredentialPopup = useCallback(() => {
+        if (!lastCredentialPayloadRef.current) return;
+        const opened = openCredentialsPopup(lastCredentialPayloadRef.current);
+        if (opened) {
+          setCredentialPopupError(null);
+        }
+      }, [openCredentialsPopup]);
+
+      useEffect(() => {
+        return () => {
+          closeCredentialPopup();
+        };
+      }, [closeCredentialPopup]);
+
+      useEffect(() => {
+        if (typeof window === 'undefined') return;
+        window.showElementCredentials = handleElementProvisioned;
+        return () => {
+          if (window.showElementCredentials === handleElementProvisioned) {
+            delete window.showElementCredentials;
+          }
+        };
+      }, [handleElementProvisioned]);
 
       useEffect(() => {
         if (selectedProject && projects.length > 0) {
@@ -2712,7 +3046,35 @@
       if (view === 'welcome') {
         mainContent = <WelcomeView onCreate={createProject} projects={projects} />;
       } else if (view === 'dashboard') {
-        mainContent = <DashboardView projects={projects} currentUser={currentUser} roles={selectedProjectTeams} onSelectFlow={(p, f) => { setSelectedProject(p); setSelectedFlow(f); setView('activities'); }} onCreateProject={() => setShowModal('createProject')} onManageUsers={(p) => { setSelectedProject(p); setShowModal('manageUsers'); }} onManageTeams={(p) => { setSelectedProject(p); setShowModal('manageTeams'); }} onCreateFlow={(p) => { setSelectedProject(p); setShowModal('createFlow'); }} />;
+        mainContent = (
+          <DashboardView
+            projects={projects}
+            currentUser={currentUser}
+            roles={selectedProjectTeams}
+            onSelectFlow={(p, f) => {
+              setSelectedProject(p);
+              setSelectedFlow(f);
+              setView('activities');
+            }}
+            onCreateProject={() => setShowModal('createProject')}
+            onManageUsers={(p) => {
+              setSelectedProject(p);
+              setShowModal('manageUsers');
+            }}
+            onManageTeams={(p) => {
+              setSelectedProject(p);
+              setShowModal('manageTeams');
+            }}
+            onCreateFlow={(p) => {
+              setSelectedProject(p);
+              setShowModal('createFlow');
+            }}
+            onProvisionElement={(p) => {
+              setSelectedProject(p);
+              setShowModal('provisionElement');
+            }}
+          />
+        );
       } else if (view === 'activities' && selectedProject && selectedFlow) {
         mainContent = (
           <ActivitiesView
@@ -2852,6 +3214,45 @@
               onClose={() => { setShowModal(null); setModalData({}); }}
               onUpdate={(stageId, updates) => assignTeamsToStage(selectedProject.id, selectedFlow.id, stageId, updates)}
             />
+          )}
+          {showModal === 'provisionElement' && selectedProject && (
+            <ProvisionElementModal
+              project={selectedProject}
+              onClose={() => { setShowModal(null); setModalData({}); }}
+              onProvision={(payload) => {
+                const mergedMetadata = {
+                  ...(payload.metadata || {}),
+                  project: selectedProject.name || (payload.metadata && payload.metadata.project) || undefined
+                };
+                handleElementProvisioned({ ...payload, metadata: mergedMetadata });
+                setShowModal(null);
+                setModalData({});
+              }}
+            />
+          )}
+          {credentialPopupError && (
+            <div className="fixed bottom-4 right-4 max-w-sm bg-[var(--surface)] border border-[var(--warn)] text-[var(--text-strong)] shadow-xl rounded-lg p-4 space-y-3 z-50">
+              <div className="text-sm font-semibold text-[var(--warn)]">Credentials window blocked</div>
+              <p className="text-xs text-[var(--text)]">
+                {credentialPopupError}
+              </p>
+              <div className="flex gap-2">
+                {lastCredentialPayloadRef.current && (
+                  <button
+                    onClick={retryCredentialPopup}
+                    className="flex-1 bg-[var(--accent)] hover:opacity-90 text-white text-sm py-2 rounded transition-colors"
+                  >
+                    Open credentials window
+                  </button>
+                )}
+                <button
+                  onClick={() => setCredentialPopupError(null)}
+                  className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] text-sm py-2 rounded transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           )}
         </>
       );
@@ -3010,7 +3411,7 @@
       );
     }
 
-    function DashboardView({ projects, currentUser, roles, onSelectFlow, onCreateProject, onManageUsers, onManageTeams, onCreateFlow }) {
+    function DashboardView({ projects, currentUser, roles, onSelectFlow, onCreateProject, onManageUsers, onManageTeams, onCreateFlow, onProvisionElement }) {
       const [expandedPanel, setExpandedPanel] = useState(null);
       const allStats = useMemo(() => {
         let totalProjects = projects.length;
@@ -3149,7 +3550,16 @@
                   ) : (
                     <div className="space-y-6">
                       {projects.map(project => (
-                        <ProjectCard key={project.id} project={project} roles={roles} onSelectFlow={(f) => onSelectFlow(project, f)} onManageUsers={() => onManageUsers(project)} onManageTeams={() => onManageTeams && onManageTeams(project)} onCreateFlow={() => onCreateFlow(project)} />
+            <ProjectCard
+              key={project.id}
+              project={project}
+              roles={roles}
+              onSelectFlow={(f) => onSelectFlow(project, f)}
+              onManageUsers={() => onManageUsers(project)}
+              onManageTeams={() => onManageTeams && onManageTeams(project)}
+              onCreateFlow={() => onCreateFlow(project)}
+              onProvisionElement={() => onProvisionElement && onProvisionElement(project)}
+            />
                       ))}
                     </div>
                   )}
@@ -3191,13 +3601,21 @@
       );
     }
 
-    function ProjectCard({ project, roles, onSelectFlow, onManageUsers, onManageTeams, onCreateFlow }) {
+    function ProjectCard({ project, roles, onSelectFlow, onManageUsers, onManageTeams, onCreateFlow, onProvisionElement }) {
       return (
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden">
           <div className="p-6 border-b border-[var(--border)]">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold">{project.name}</h3>
               <div className="flex gap-2">
+                {onProvisionElement && (
+                  <button
+                    onClick={onProvisionElement}
+                    className="text-xs bg-[var(--info)] hover:opacity-90 px-3 py-1 rounded transition-colors flex items-center gap-1"
+                  >
+                    <KeyIcon className="w-3 h-3" />Credentials
+                  </button>
+                )}
                 <button onClick={onManageTeams} className="flex items-center gap-2 bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
                   <UsersIcon className="w-4 h-4" />Manage Teams
                 </button>
@@ -4389,6 +4807,160 @@
             </div>
           )}
         </div>
+      );
+    }
+
+    function ProvisionElementModal({ project, onClose, onProvision }) {
+      const [instanceName, setInstanceName] = useState(project ? `${project.name} Instance` : '');
+      const [loginUrl, setLoginUrl] = useState('');
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [notes, setNotes] = useState('');
+      const [expiresAt, setExpiresAt] = useState('');
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        setInstanceName(project ? `${project.name} Instance` : '');
+        setLoginUrl('');
+        setUsername('');
+        setPassword('');
+        setNotes('');
+        setExpiresAt('');
+        setError('');
+      }, [project?.id, project?.name]);
+
+      const handleSubmit = (event) => {
+        event.preventDefault();
+        const trimmedUser = username.trim();
+        const trimmedPassword = password.trim();
+        if (!trimmedUser || !trimmedPassword) {
+          setError('Username and password are required to display credentials.');
+          return;
+        }
+
+        const payload = {
+          elementName: instanceName.trim() || (project?.name ? `${project.name} Instance` : 'Element Instance'),
+          username: trimmedUser,
+          password: trimmedPassword,
+          loginUrl: loginUrl.trim() || null,
+          notes: notes.trim() || null,
+          expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+          metadata: { project: project?.name || undefined }
+        };
+
+        setError('');
+        if (onProvision) {
+          onProvision(payload);
+        }
+      };
+
+      return (
+        <Modal onClose={onClose} title="Element Credentials" size="large">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div className="bg-[var(--info)]/15 border border-[var(--info)]/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm text-[var(--text)]">
+                Paste or type the credentials returned by the provisioning API. When you submit, a dedicated popup window will open
+                with the sensitive values and this page will move to the login URL so you can sign in immediately.
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                If your browser blocks the popup you will see a banner with a button to reopen it after allowing pop-ups for this
+                site.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-[var(--text)] mb-2">Instance label</label>
+              <input
+                type="text"
+                value={instanceName}
+                onChange={(e) => setInstanceName(e.target.value)}
+                placeholder="e.g., Matrix Element Login"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-[var(--text)] mb-2">Login URL (optional)</label>
+              <input
+                type="url"
+                value={loginUrl}
+                onChange={(e) => setLoginUrl(e.target.value)}
+                placeholder="https://example.com/login"
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-[var(--text)] mb-2">Username</label>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="auto-generated username"
+                  className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[var(--text)] mb-2">Password</label>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="temporary password"
+                  className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm text-[var(--text)] mb-2">Expires at (optional)</label>
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-[var(--text)] mb-2">Notes (optional)</label>
+              <textarea
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Anything the recipient should know before logging in."
+                className="w-full bg-[var(--elevated)] border border-[var(--border)] rounded px-4 py-2 text-[var(--text-strong)]"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-[var(--danger)]/15 border border-[var(--danger)]/40 text-[var(--text-strong)] text-sm rounded-lg p-3">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4 border-t border-[var(--border)]">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-[color:oklch(from_var(--text)_0.82_0_0)] hover:bg-[color:oklch(from_var(--text)_0.74_0_0)] py-2 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-[var(--accent)] hover:opacity-90 text-white py-2 rounded transition-colors"
+              >
+                Open credentials popup
+              </button>
+            </div>
+          </form>
+        </Modal>
       );
     }
 
